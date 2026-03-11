@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<div class="container-fluid">
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="fas 
+                {% if message.tags == 'success' %}fa-check-circle
+                {% elif message.tags == 'error' %}fa-exclamation-circle
+                {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                {% else %}fa-info-circle{% endif %}
+                me-2"></i>
+            <div>{{ message }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-card">
+
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    {% translate "Campañas" %}
+                </h3>
+                <div class="small">
+                    <h6 class="mb-1 mt-2">
+                        {% translate "Creación de nueva campaña" %}
+                    </h6>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <p class="card-description">
+                            {% translate "Información general" %}
+                        </p>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">
+                                        {% translate "Campaña" %}
+                                    </label>
+                                    <div class="col-sm-9">
+                                        <input type="text"
+                                               class="form-control"
+                                               value="{{ form.instance.nombre|default:_('Se generará automáticamente') }}"
+                                               readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">
+                                        {% translate "Observaciones" %}
+                                    </label>
+                                    <div class="col-sm-9">
+                                        {{ form.observaciones }}
+                                        {{ form.observaciones.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">
+                                        {% translate "Fecha desde" %}
+                                    </label>
+                                    <div class="col-sm-9">
+                                        {{ form.fecha_desde }}
+                                        {{ form.fecha_desde.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label">
+                                        {% translate "Fecha hasta" %}
+                                    </label>
+                                    <div class="col-sm-9">
+                                        {{ form.fecha_hasta }}
+                                        {{ form.fecha_hasta.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            {% if modificacion %}
+                                <button type="submit" name="ok" class="btn btn-primary me-2">
+                                    {% translate "Actualizar" %}
+                                </button>
+                                <button type="submit" name="borrar" class="btn btn-danger me-2">
+                                    {% translate "Borrar" %}
+                                </button>
+                            {% else %}
+                                <button type="submit" name="ok" class="btn btn-primary me-2">
+                                    {% translate "Nuevo" %}
+                                </button>
+                            {% endif %}
+
+                            <button type="button"
+                                    class="btn btn-dark"
+                                    onclick="window.location.href='{% url 'vista_campanas' %}';">
+                                {% translate "Cancelar" %}
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+
+                    <h4 class="card-title">{% translate "Campañas" %}</h4>
+                    <p class="card-description">{{ empresa.nombre }}</p>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>{% translate "Nombre" %}</th>
+                                    <th>{% translate "Inicio" %}</th>
+                                    <th>{% translate "Fin" %}</th>
+                                    <th>{% translate "Acciones" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for campana in campanas %}
+                                <tr>
+                                    <td>{{ campana.nombre }}</td>
+                                    <td>{{ campana.fecha_desde }}</td>
+                                    <td>{{ campana.fecha_hasta }}</td>
+                                    <td>
+                                        <a href="{% url 'editar_campana' campana.id %}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            {% translate "Editar" %}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">
+                                        {% translate "No hay campañas cargadas" %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
