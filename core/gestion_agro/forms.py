@@ -2,6 +2,7 @@ from django import forms
 from django.utils.translation import gettext as _
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User  
+from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad
 from gestion_agro.models import Campo, Campana, CicloAgricola
@@ -40,11 +41,33 @@ class CampanaForm(BaseForm):
             "observaciones": forms.Textarea(attrs={"rows": 2}),
         }
 
+
+from django import forms
+from django.utils import timezone
+
 class CicloForm(BaseForm):
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if not self.instance.pk:
+           self.fields["fecha_inicio"].initial = timezone.localdate()
+
+        if empresa:
+            self.fields["campo"].queryset = Campo.objects.filter(empresa=empresa).order_by("nombre")
+            self.fields["campana"].queryset = Campana.objects.filter(empresa=empresa).order_by("-fecha_desde")
+
+            campana_activa = Campana.objects.filter(
+                empresa=empresa,
+                activa=True
+            ).first()
+
+            if campana_activa:
+                self.fields["campana"].initial = campana_activa
+
     class Meta:
         model = CicloAgricola
-        fields = "__all__"
+        fields = ["campo", "campana", "cultivo", "superficie_ha", "fecha_inicio", "fecha_fin"]
         widgets = {
-            "fecha_inicio": forms.DateInput(attrs={"type": "date"}),
-            "fecha_fin": forms.DateInput(attrs={"type": "date"}),
+            "fecha_inicio": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "fecha_fin": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }

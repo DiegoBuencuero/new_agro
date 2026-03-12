@@ -8,14 +8,16 @@
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="fas 
-                {% if message.tags == 'success' %}fa-check-circle
-                {% elif message.tags == 'error' %}fa-exclamation-circle
-                {% elif message.tags == 'warning' %}fa-exclamation-triangle
-                {% else %}fa-info-circle{% endif %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi 
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
                 me-2"></i>
+
             <div>{{ message }}</div>
+
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
@@ -27,7 +29,7 @@
         <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
             <div>
                 <h3 class="mb-1">
-                    <i class="fas fa-calendar-alt me-2"></i>
+                    <i class="mdi mdi-calendar-check icon-agro me-2"></i>
                     {% translate "Campañas" %}
                 </h3>
                 <div class="small">
@@ -103,25 +105,24 @@
                             </div>
                         </div>
 
-                        <div class="mt-4">
+                        <div class="mt-3 d-flex gap-2">
                             {% if modificacion %}
-                                <button type="submit" name="ok" class="btn btn-primary me-2">
+                                <button type="submit" name="ok" class="btn btn-primary">
                                     {% translate "Actualizar" %}
                                 </button>
-                                <button type="submit" name="borrar" class="btn btn-danger me-2">
+
+                                <button type="submit" name="borrar" class="btn btn-danger">
                                     {% translate "Borrar" %}
                                 </button>
                             {% else %}
-                                <button type="submit" name="ok" class="btn btn-primary me-2">
+                                <button type="submit" name="ok" class="btn btn-primary">
                                     {% translate "Nuevo" %}
                                 </button>
                             {% endif %}
 
-                            <button type="button"
-                                    class="btn btn-dark"
-                                    onclick="window.location.href='{% url 'vista_campanas' %}';">
+                            <a href="{% url 'vista_crear_campana' %}" class="btn btn-dark">
                                 {% translate "Cancelar" %}
-                            </button>
+                            </a>
                         </div>
 
                     </form>
@@ -154,7 +155,7 @@
                                     <td>{{ campana.fecha_desde }}</td>
                                     <td>{{ campana.fecha_hasta }}</td>
                                     <td>
-                                        <a href="{% url 'editar_campana' campana.id %}"
+                                        <a href="{% url 'vista_editar_campana' campana.id %}"
                                            class="btn btn-sm btn-outline-primary">
                                             {% translate "Editar" %}
                                         </a>

@@ -55,27 +55,9 @@ class Provincia(models.Model):
 
 class Ciudad(models.Model):
     nombre = models.CharField(max_length=100)
-
-    provincia = models.ForeignKey(
-        Provincia,
-        verbose_name="Provincia",
-        on_delete=models.CASCADE,
-        related_name="ciudades"
-    )
-
-    latitud = models.DecimalField(
-        max_digits=10,
-        decimal_places=6,
-        null=True,
-        blank=True
-    )
-
-    longitud = models.DecimalField(
-        max_digits=10,
-        decimal_places=6,
-        null=True,
-        blank=True
-    )
+    provincia = models.ForeignKey(Provincia, verbose_name="Provincia", on_delete=models.CASCADE, related_name="ciudades")
+    latitud = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True)
+    longitud = models.DecimalField(max_digits=10, decimal_places=6, null=True, blank=True )
 
     class Meta:
         verbose_name = "Ciudad"
@@ -129,8 +111,6 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
-
-
 
 # =========================
 # UNIDADES

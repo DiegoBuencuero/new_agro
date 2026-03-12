@@ -10167,7 +10167,7 @@ progress {
   --bs-table-active-color: var(--bs-emphasis-color);
   --bs-table-active-bg: rgba(var(--bs-emphasis-color-rgb), 0.1);
   --bs-table-hover-color: var(--bs-emphasis-color);
-  --bs-table-hover-bg: #eaeaf1;
+  --bs-table-hover-bg: #347a34;
   width: 100%;
   margin-bottom: 1rem;
   vertical-align: top;
@@ -10239,9 +10239,9 @@ progress {
   --bs-table-border-color: #a6b5cc;
   --bs-table-striped-bg: #c5d7f2;
   --bs-table-striped-color: #000;
-  --bs-table-active-bg: #bacbe6;
+  --bs-table-active-bg: #c0ffec;
   --bs-table-active-color: #000;
-  --bs-table-hover-bg: #bfd1ec;
+  --bs-table-hover-bg: #347a34;
   --bs-table-hover-color: #000;
   color: var(--bs-table-color);
   border-color: var(--bs-table-border-color);
@@ -30349,4 +30349,16 @@ dl li {
       width:calc(65% - 100px) !important;
   }
 
+}
+
+.icon-agro {
+    color: #347a34;
+}
+
+.form-control:focus,
+.form-select:focus,
+select.form-control:focus {
+
+    border-color: #347a34;
+    box-shadow: 0 0 0 0.2rem rgba(52,122,52,0.25);
 }

@@ -17,8 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from agro.views import index,login_page
-from gestion_agro.views import (vista_campos, editar_campos, vista_campanas, editar_campana,vista_crear_ciclo,
-vista_lista_ciclo                             
+from gestion_agro.views import (vista_crear_campo, vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
+vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo                            
 )
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,11 +30,15 @@ urlpatterns = [
     # path('activate/<uidb64>/<token>/', activate, name='activate'),
     path('accounts/', include('django.contrib.auth.urls')),
 
-    path('campos/', vista_campos, name='vista_campos'),
-    path('campos/<int:id_campo>/', editar_campos, name='editar_campos'),
-    path('campanas/', vista_campanas, name='vista_campanas'),
-    path('campana/<int:id_campana>/', editar_campana, name='editar_campana'),
-    path("ciclo/nueva/", vista_crear_ciclo, name="vista_crear_ciclo"),
-    path("ciclos/", vista_lista_ciclo, name="vista_lista_ciclo"),
+    path('campos/', vista_crear_campo, name='vista_crear_campo'),
+    path('campos/<int:id_campo>/', vista_editar_campo, name='vista_editar_campo'),
+
+    path('campanas/', vista_crear_campana, name='vista_crear_campana'),
+    path('campanas/<int:id_campana>/', vista_editar_campana, name='vista_editar_campana'),
+
+    path('ciclos/', vista_lista_ciclos, name='vista_lista_ciclos'),
+    path('ciclos/nuevo/', vista_crear_ciclo, name='vista_crear_ciclo'),
+    path('ciclos/<int:id_ciclo>/', vista_detalle_ciclo, name='vista_detalle_ciclo'),
+    path('ciclos/<int:id_ciclo>/editar/', vista_editar_ciclo, name='vista_editar_ciclo'),
 
 ]

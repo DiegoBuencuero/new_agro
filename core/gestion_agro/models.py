@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 
 
 class Campo(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, null=True, blank=True, verbose_name=_("Empresa"), )
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE,verbose_name=_("Empresa"), )
     nombre = models.CharField( max_length=100, verbose_name=_("Nombre del campo"),)
     ciudad =models.ForeignKey("agro.Ciudad", on_delete=models.PROTECT, verbose_name=_("Ciudad / Localidad"), )
     descripcion = models.CharField( max_length=100, verbose_name=_("Descripción"), )
@@ -49,11 +49,7 @@ class Actividad(models.Model):
 
 
 class Cultivo(models.Model):
-    nombre = models.CharField(
-        max_length=100,
-        unique=True,
-        verbose_name=_("Cultura")
-    )
+    nombre = models.CharField(max_length=100, unique=True, verbose_name=_("Cultura"))
 
     class Meta:
         verbose_name = _("Cultura")
@@ -65,17 +61,8 @@ class Cultivo(models.Model):
 
 
 class Variedad(models.Model):
-    cultivo = models.ForeignKey(
-        Cultivo,
-        on_delete=models.CASCADE,
-        related_name="variedades",
-        verbose_name=_("Cultura")
-    )
-
-    nombre = models.CharField(
-        max_length=100,
-        verbose_name=_("Variedade")
-    )
+    cultivo = models.ForeignKey(Cultivo, on_delete=models.CASCADE, related_name="variedades", verbose_name=_("Cultura"))
+    nombre = models.CharField(max_length=100, verbose_name=_("Variedade"))
 
     class Meta:
         verbose_name = _("Variedade")
@@ -88,7 +75,7 @@ class Variedad(models.Model):
 
 class Campana(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
-    nombre = models.CharField(max_length=9, unique=True, editable=False, verbose_name=_("Campaña"))
+    nombre = models.CharField(max_length=9, editable=False, verbose_name=_("Campaña"))   
     fecha_desde = models.DateField(verbose_name=_("Fecha de inicio"))
     fecha_hasta = models.DateField(verbose_name=_("Fecha de finalización"))
     activa = models.BooleanField(default=False, verbose_name=_("Campaña activa"))
@@ -118,18 +105,23 @@ class Campana(models.Model):
 
 
 class CicloAgricola(models.Model):
-
-    campo = models.ForeignKey( Campo, on_delete=models.PROTECT, related_name="implantaciones" )
-    campana = models.ForeignKey( Campana, on_delete=models.PROTECT, related_name="implantaciones")
+    def clean(self):
+        if self.campo and self.campana:
+            if self.campo.empresa != self.campana.empresa:
+                raise ValidationError(
+                    _("El campo y la campaña deben pertenecer a la misma empresa.")
+                )
+    def __str__(self):
+        return f"{self.nombre_lote} – {self.campana} – {self.cultivo}"
+    
+    campo = models.ForeignKey(Campo, on_delete=models.PROTECT, related_name="ciclos")
+    campana = models.ForeignKey(Campana, on_delete=models.PROTECT, related_name="ciclos")
     nombre_lote = models.CharField( max_length=50, blank= True, null=True )
     cultivo = models.ForeignKey( Cultivo, on_delete=models.PROTECT, related_name="ciclos")
     superficie_ha = models.DecimalField(max_digits=8, decimal_places=2)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(null=True, blank=True)
     activa = models.BooleanField(default=True)
-
-    def __str__(self):
-        return f"{self.nombre_lote} – {self.campana} – {self.cultivo}"
 
 
 class FaseAgricola(models.Model):
@@ -219,8 +211,6 @@ class ActividadProductiva(models.Model):
         return f"{self.get_tipo_display()} - {self.fecha}"
 
 
-
-
 class CamposVistoria(models.Model):
     actividad = models.OneToOneField(ActividadProductiva, on_delete=models.CASCADE)
     plantas_m2 = models.IntegerField(null=True, blank=True)
@@ -232,7 +222,6 @@ class CamposVistoria(models.Model):
     def __str__(self):
         return f"Vistoria · {self.actividad.fecha.strftime('%d/%m/%Y')}"
     
-
 class CamposCosecha(models.Model):
     actividad = models.OneToOneField(ActividadProductiva, on_delete=models.CASCADE)
     rendimiento = models.DecimalField(
@@ -252,7 +241,6 @@ class CamposCosecha(models.Model):
         null=True,
         help_text=_("Observaciones generales de la actividad"),
     )
-
 
 
 class ActividadInsumo(models.Model):
@@ -293,13 +281,6 @@ class ActividadInsumo(models.Model):
         null=True,
         blank=True
     )
-
-
-
-
-
-
-
 
 class ProductoNormalizado(models.Model):
     """Productos extraídos y normalizados de facturas"""

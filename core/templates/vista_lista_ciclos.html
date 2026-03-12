@@ -11,24 +11,27 @@
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="fas 
-                {% if message.tags == 'success' %}fa-check-circle
-                {% elif message.tags == 'error' %}fa-exclamation-circle
-                {% elif message.tags == 'warning' %}fa-exclamation-triangle
-                {% else %}fa-info-circle{% endif %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi 
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
                 me-2"></i>
+
             <div>{{ message }}</div>
+
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
     </div>
     {% endif %}
+
     <div class="upload-card">
         <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
             <div>
                 <h3 class="mb-1">
-                    <i class="fas fa-seedling me-2"></i>
+                    <i class="mdi mdi-view-list icon-agro me-0"></i>
                     {% translate "Ciclos Productivos" %}
                 </h3>
                 <div class="small">
@@ -39,13 +42,13 @@
             </div>
 
             <div>
-                <a href="{% url 'vista_crear_ciclo' %}"
-                   class="btn btn-success">
-                    <i class="fas fa-plus me-1"></i>
+                <a href="{% url 'vista_crear_ciclo' %}" class="btn btn-success">
+                    <i class="mdi mdi-plus-circle me-2"></i>
                     {% translate "Nuevo ciclo" %}
                 </a>
             </div>
         </div>
+
         <div class="col-lg-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
@@ -55,8 +58,28 @@
                     <p class="card-description">
                         {{ empresa.nombre }}
                     </p>
+
+                    <form method="get" class="mb-4">
+                        <div class="row align-items-end">
+                            <div class="col-md-4 col-lg-3">
+                                <label for="id_campana" class="form-label">
+                                    {% translate "Campaña" %}
+                                </label>
+                                <select name="campana" id="id_campana" class="form-control" onchange="this.form.submit()">
+                                    <option value="">{% translate "Todas" %}</option>
+                                    {% for campana in campanas %}
+                                        <option value="{{ campana.id }}"
+                                            {% if campana.id|stringformat:"s" == campana_seleccionada %}selected{% endif %}>
+                                            {{ campana.nombre }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </form>
+
                     <div class="table-responsive">
-                        <table class="table table-striped">
+                        <table class="table table-striped ">
                             <thead>
                                 <tr>
                                     <th>{% translate "Campo" %}</th>
@@ -72,37 +95,25 @@
                             <tbody>
                                 {% for ciclo in ciclos %}
                                 <tr>
-                                    <td>
-                                        {{ ciclo.campo.nombre }}
-                                    </td>
-                                    <td>
-                                        {{ ciclo.campana }}
-                                    </td>
-                                    <td>
-                                        {{ ciclo.nombre_lote }}
-                                    </td>
-                                    <td>
-                                        {{ ciclo.cultivo }}
-                                    </td>
-                                    <td>
-                                        {{ ciclo.superficie_ha }}
-                                    </td>
-                                    <td>
-                                        {{ ciclo.fecha_inicio }}
-                                    </td>
+                                    <td>{{ ciclo.campo.nombre }}</td>
+                                    <td>{{ ciclo.campana }}</td>
+                                    <td>{{ ciclo.nombre_lote }}</td>
+                                    <td>{{ ciclo.cultivo }}</td>
+                                    <td>{{ ciclo.superficie_ha }}</td>
+                                    <td>{{ ciclo.fecha_inicio }}</td>
                                     <td>
                                         {% if ciclo.fecha_fin %}
-                                        <span class="badge bg-secondary">
-                                            {% translate "Cerrado" %}
-                                        </span>
+                                            <span class="badge bg-secondary">
+                                                {% translate "Cerrado" %}
+                                            </span>
                                         {% else %}
-                                        <span class="badge bg-success">
-                                            {% translate "Activo" %}
-                                        </span>
+                                            <span class="badge bg-success">
+                                                {% translate "Activo" %}
+                                            </span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        <a href="{% url 'vista_ciclo_agricola' ciclo.id %}"
+                                        <a href="{% url 'vista_detalle_ciclo' ciclo.id %}"
                                            class="btn btn-sm btn-outline-primary">
                                             {% translate "Ver" %}
                                         </a>
@@ -123,4 +134,5 @@
         </div>
     </div>
 </div>
+
 {% endblock %}
