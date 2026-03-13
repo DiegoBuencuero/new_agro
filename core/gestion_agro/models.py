@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 class Campo(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE,verbose_name=_("Empresa"), )
     nombre = models.CharField( max_length=100, verbose_name=_("Nombre del campo"),)
-    ciudad =models.ForeignKey("agro.Ciudad", on_delete=models.PROTECT, verbose_name=_("Ciudad / Localidad"), )
+    ciudad =models.ForeignKey("agro.Ciudad", on_delete=models.CASCADE, verbose_name=_("Ciudad / Localidad"), )
     descripcion = models.CharField( max_length=100, verbose_name=_("Descripción"), )
     superficie_ha = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_("Superficie total"),
         help_text=_("Superficie total del campo expresada en hectáreas"),
@@ -114,10 +114,10 @@ class CicloAgricola(models.Model):
     def __str__(self):
         return f"{self.nombre_lote} – {self.campana} – {self.cultivo}"
     
-    campo = models.ForeignKey(Campo, on_delete=models.PROTECT, related_name="ciclos")
-    campana = models.ForeignKey(Campana, on_delete=models.PROTECT, related_name="ciclos")
+    campo = models.ForeignKey(Campo, on_delete=models.CASCADE, related_name="ciclos")
+    campana = models.ForeignKey(Campana, on_delete=models.CASCADE, related_name="ciclos")
     nombre_lote = models.CharField( max_length=50, blank= True, null=True )
-    cultivo = models.ForeignKey( Cultivo, on_delete=models.PROTECT, related_name="ciclos")
+    cultivo = models.ForeignKey( Cultivo, on_delete=models.CASCADE, related_name="ciclos")
     superficie_ha = models.DecimalField(max_digits=8, decimal_places=2)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(null=True, blank=True)
@@ -175,40 +175,77 @@ class FaseAgricola(models.Model):
 
     def es_activa(self):
         return self.estado == 'abierto'
-
+    
 class TipoActividad(models.Model):
-    TIPO_DES_ACTIVIDAD = [
-        ('D', 'Default'),
-        ('C', 'Cosecha'),
-        ('V', 'Visitoria'),
-    ]
-    nombre = models.CharField(max_length=30)
-    tipo = models.CharField(max_length=1, choices=TIPO_DES_ACTIVIDAD)
-    abre_fase = models.BooleanField()
-    cierra_fase = models.BooleanField()
-    requiere_subtipo = models.BooleanField()
-    adicionales = models.BooleanField()
-    requiere_insumo = models.BooleanField()
-    requiere_mo = models.BooleanField()
-    requiere_maq = models.BooleanField()
-    #agregar campo cosecha visototia y sacamos tipo
+    nombre = models.CharField(max_length=50, unique=True)
+    descripcion = models.CharField(max_length=150, blank=True, null=True)
+    orden = models.PositiveIntegerField(default=0)
+    activo = models.BooleanField(default=True)
 
-class SubTipoActividad(models.Model):
-    nombre = models.CharField(max_length=30)
-
-class ActividadProductiva(models.Model):
-    fase = models.ForeignKey(
-        FaseAgricola,
-        on_delete=models.CASCADE,
-        related_name="actividades"
-    )
-
-    fecha = models.DateField()
-    tipo = models.ForeignKey( TipoActividad, on_delete=models.CASCADE)
-    siembra_subtipo = models.ForeignKey( SubTipoActividad, on_delete=models.CASCADE, null=True, blank=True )
+    def tiene_caracteristica(self, codigo):
+        return self.caracteristicas_asignadas.filter(
+            caracteristica__codigo=codigo
+        ).exists()
 
     def __str__(self):
-        return f"{self.get_tipo_display()} - {self.fecha}"
+        return self.nombre
+
+#### es para meter en una tabla si una actividad requiere insumos, maqui  mano de obra, si abre fsase si cierra fase
+class CaracteristicaActividad(models.Model):
+    codigo = models.CharField(max_length=30, unique=True)
+    nombre = models.CharField(max_length=50)
+    descripcion = models.CharField(max_length=150, blank=True, null=True)
+
+    def __str__(self):
+        return self.nombre
+
+# tabla intermedia para saber que  reglas  que vienen de CaracteristicaActividad
+# , si una actividad por ejemplo, requiere insumos, req maquina,  inicia fase cierra fase 
+class TipoActividadCaracteristica(models.Model):
+    tipo_actividad = models.ForeignKey(
+        TipoActividad,
+        on_delete=models.CASCADE,
+        related_name='caracteristicas_asignadas'
+    )
+    caracteristica = models.ForeignKey(
+        CaracteristicaActividad,
+        on_delete=models.CASCADE,
+        related_name='tipos_actividad'
+    )
+
+    class Meta:
+        unique_together = ('tipo_actividad', 'caracteristica')
+
+    def __str__(self):
+        return f"{self.tipo_actividad} - {self.caracteristica}"
+
+
+class SubTipoActividad(models.Model):
+    tipo_actividad = models.ForeignKey(
+        TipoActividad,
+        on_delete=models.CASCADE,
+        related_name='subtipos'
+    )
+    nombre = models.CharField(max_length=50)
+    descripcion = models.CharField(max_length=150, blank=True, null=True)
+    activo = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('tipo_actividad', 'nombre')
+
+    def __str__(self):
+        return f"{self.tipo_actividad.nombre} - {self.nombre}"
+
+
+class ActividadProductiva(models.Model):
+    fase = models.ForeignKey( FaseAgricola, on_delete=models.CASCADE, related_name='actividades')
+    fecha = models.DateField()
+    tipo = models.ForeignKey(TipoActividad, on_delete=models.CASCADE, related_name='actividades')
+    subtipo = models.ForeignKey(SubTipoActividad,  on_delete=models.CASCADE, null=True, blank=True, related_name='actividades')
+    observaciones = models.TextField(blank=True, null=True)
+
+    def __str__(self):
+        return f"{self.tipo.nombre} - {self.fecha}"
 
 
 class CamposVistoria(models.Model):
@@ -253,18 +290,14 @@ class ActividadInsumo(models.Model):
 
     producto = models.ForeignKey(
         "gestion_agro.Producto",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         null=True,
         blank=True
     )
 
     dosis = models.DecimalField(max_digits=10, decimal_places=2)
 
-    um = models.ForeignKey(
-        "agro.Unidad",
-        on_delete=models.PROTECT,
-        related_name="dosis_insumos"
-    )
+    um = models.ForeignKey("agro.Unidad", on_delete=models.CASCADE, related_name="dosis_insumos")
 
     cantidad_real = models.DecimalField(max_digits=12, decimal_places=2)
 
@@ -521,7 +554,7 @@ class CategoriaProducto(models.Model):
 class Producto(models.Model):
     empresa = models.ForeignKey(
         Empresa,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="productos_agro",
         verbose_name=_("Empresa")
     )
@@ -533,19 +566,19 @@ class Producto(models.Model):
 
     categoria = models.ForeignKey(
         CategoriaProducto,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Categoría")
     )
 
     unidad_base = models.ForeignKey(
         "agro.Unidad",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Unidad base")
     )
 
     unidad_dosis = models.ForeignKey(
         "agro.Unidad",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Unidad base"),
         related_name='unidad_dosis',
     )
@@ -554,7 +587,7 @@ class Producto(models.Model):
         Cultivo,
         null=True,
         blank=True,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="productos_comerciales",
         verbose_name=_("Cultivo")
     )
@@ -563,7 +596,7 @@ class Producto(models.Model):
         Variedad,
         null=True,
         blank=True,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="productos_comerciales",
         verbose_name=_("Variedad")
     )
@@ -601,11 +634,11 @@ class Producto(models.Model):
 # =========================
 
 class PresentacionProducto(models.Model):
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, verbose_name=_("Producto"))
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, verbose_name=_("Producto"))
     nombre = models.CharField(max_length=100, verbose_name=_("Nombre presentación"))
     unidad_factura = models.CharField(max_length=20, verbose_name=_("Unidad factura"))
     contenido = models.DecimalField(max_digits=12, decimal_places=3, verbose_name=_("Contenido"))
-    unidad_contenido = models.ForeignKey("agro.Unidad", on_delete=models.PROTECT, verbose_name=_("Unidad contenido"))
+    unidad_contenido = models.ForeignKey("agro.Unidad", on_delete=models.CASCADE, verbose_name=_("Unidad contenido"))
 
     class Meta:
         verbose_name = _("Presentación de producto")
@@ -619,7 +652,7 @@ class PresentacionProducto(models.Model):
 # =========================
 
 class Proveedor_agro(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, verbose_name=_("Empresa"))
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
     razon_social = models.CharField(max_length=255, verbose_name=_("Razón social"))
     identificador = models.CharField(max_length=30, blank=True, null=True, verbose_name=_("CUIT / CNPJ"))
 
@@ -636,8 +669,8 @@ class Proveedor_agro(models.Model):
 # =========================
 
 class FacturaCompra(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, verbose_name=_("Empresa"))
-    proveedor = models.ForeignKey(Proveedor_agro, on_delete=models.PROTECT, verbose_name=_("Proveedor"))
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
+    proveedor = models.ForeignKey(Proveedor_agro, on_delete=models.CASCADE, verbose_name=_("Proveedor"))
     numero = models.CharField(max_length=50, verbose_name=_("Número factura"))
     fecha = models.DateField(verbose_name=_("Fecha"))
     total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Total"))
@@ -658,8 +691,8 @@ class FacturaCompra(models.Model):
 
 class FacturaCompraItem(models.Model):
     factura = models.ForeignKey(FacturaCompra, related_name="items", on_delete=models.CASCADE)
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
-    presentacion = models.ForeignKey(PresentacionProducto, on_delete=models.PROTECT)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    presentacion = models.ForeignKey(PresentacionProducto, on_delete=models.CASCADE)
     cantidad_facturada = models.DecimalField(max_digits=12, decimal_places=3)
     cantidad_base = models.DecimalField(max_digits=14, decimal_places=3)
     precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
@@ -679,12 +712,12 @@ class MovimientoStock(models.Model):
         SALIDA = "SALIDA", _("Salida")
         AJUSTE = "AJUSTE", _("Ajuste")
 
-    producto = models.ForeignKey(Producto, on_delete=models.PROTECT)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     tipo = models.CharField(max_length=10, choices=Tipo.choices)
     cantidad = models.DecimalField(max_digits=14, decimal_places=3)
 
     fecha = models.DateTimeField(default=timezone.now)
-    factura_item = models.ForeignKey(FacturaCompraItem, on_delete=models.PROTECT, null=True, blank=True)
+    factura_item = models.ForeignKey(FacturaCompraItem, on_delete=models.CASCADE, null=True, blank=True)
     actividad = models.ForeignKey(  
          "gestion_agro.ActividadProductiva",
         on_delete=models.SET_NULL, 

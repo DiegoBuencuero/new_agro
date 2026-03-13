@@ -5,7 +5,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad
-from gestion_agro.models import Campo, Campana, CicloAgricola, Cultivo
+from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva,
+                                 TipoActividad, SubTipoActividad )
 
 
 class BaseForm(ModelForm):
@@ -81,3 +82,73 @@ class CicloFiltroForm(BaseSimpleForm):
             self.fields["campo"].queryset = Campo.objects.filter(empresa=empresa).order_by("nombre")
 
         self.fields["cultivo"].queryset = Cultivo.objects.all().order_by("nombre")
+
+class ActividadProductivaForm(BaseForm):
+
+    class Meta:
+        model = ActividadProductiva
+        fields = [
+            "fecha",
+            "tipo",
+            "subtipo",
+            "observaciones",
+        ]
+        widgets = {
+            "fecha": forms.DateInput(attrs={"type": "date"}),
+            "observaciones": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["fecha"].label = _("Fecha")
+        self.fields["tipo"].label = _("Tipo")
+        self.fields["subtipo"].label = _("Subtipo")
+        self.fields["observaciones"].label = _("Observaciones")
+
+        # Tipos activos
+        self.fields["tipo"].queryset = (
+            TipoActividad.objects
+            .filter(activo=True)
+            .order_by("orden", "nombre")
+        )
+
+        # Subtipos vacíos al inicio
+        self.fields["subtipo"].queryset = SubTipoActividad.objects.none()
+        self.fields["subtipo"].required = False
+
+        tipo_id = None
+
+        # Si viene POST
+        if "tipo" in self.data:
+            try:
+                tipo_id = int(self.data.get("tipo"))
+            except (TypeError, ValueError):
+                tipo_id = None
+
+        # Si es edición
+        elif self.instance.pk and self.instance.tipo_id:
+            tipo_id = self.instance.tipo_id
+
+        # Cargar subtipos del tipo
+        if tipo_id:
+            self.fields["subtipo"].queryset = (
+                SubTipoActividad.objects
+                .filter(tipo_actividad_id=tipo_id, activo=True)
+                .order_by("nombre")
+            )
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        tipo = cleaned_data.get("tipo")
+        subtipo = cleaned_data.get("subtipo")
+
+        if tipo and subtipo:
+            if subtipo.tipo_actividad_id != tipo.id:
+                self.add_error(
+                    "subtipo",
+                    _("El subtipo no corresponde al tipo de actividad seleccionado.")
+                )
+
+        return cleaned_data

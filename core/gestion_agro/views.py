@@ -1,10 +1,14 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from django.http import JsonResponse
 from django.contrib import messages
-from gestion_agro.forms import CampoForm, CampanaForm, CicloForm, CicloFiltroForm
-from gestion_agro.models import Campo, Campana, CicloAgricola
+from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm,
+                                ActividadProductivaForm)
+from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad
+
+                                )
 
 
 @login_required
@@ -150,7 +154,11 @@ def vista_lista_ciclos(request):
 def ajax_get_ciclos_data(request):
     empresa = request.user.profile.empresa
 
-    ciclos = CicloAgricola.objects.filter( campo__empresa=empresa ).select_related("campo", "campana", "cultivo").order_by( "-fecha_inicio" )
+    ciclos = CicloAgricola.objects.filter(
+        campo__empresa=empresa
+    ).select_related(
+        "campo", "campana", "cultivo"
+    ).order_by("-fecha_inicio")
 
     campana_id = request.GET.get("campana")
     campo_id = request.GET.get("campo")
@@ -168,12 +176,8 @@ def ajax_get_ciclos_data(request):
 
     if estado == "activo":
         ciclos = ciclos.filter(activa=True)
-
     elif estado == "cerrado":
         ciclos = ciclos.filter(activa=False)
-
-    else:
-        ciclos = ciclos.filter(activa=True)
 
     lista_data = []
 
@@ -184,18 +188,18 @@ def ajax_get_ciclos_data(request):
             "campana": str(ciclo.campana) if ciclo.campana else "",
             "nombre_lote": ciclo.nombre_lote if ciclo.nombre_lote else "",
             "cultivo": str(ciclo.cultivo) if ciclo.cultivo else "",
-            "superficie_ha": float(ciclo.superficie_ha) if ciclo.superficie_ha is not None else "",
+            "superficie_ha": str(ciclo.superficie_ha) if ciclo.superficie_ha is not None else "",
             "fecha_inicio": ciclo.fecha_inicio.strftime("%d/%m/%Y") if ciclo.fecha_inicio else "",
-            "estado": "Cerrado" if ciclo.fecha_fin else "Activo",
+            "estado": "cerrado" if ciclo.fecha_fin else "activo",
+            "estado_label": "Cerrado" if ciclo.fecha_fin else "Activo",
+            "detalle_url": reverse("vista_detalle_ciclo", args=[ciclo.id])
         }
         lista_data.append(item)
 
-    data = {
-        "response": 0,
+    return JsonResponse({
+        "response": 1,
         "data": lista_data
-    }
-
-    return JsonResponse(data)
+    })
 
 @login_required
 def vista_crear_ciclo(request):
@@ -241,8 +245,6 @@ def vista_crear_ciclo(request):
 
     return render(request, "vista_crear_ciclo.html", context)
 
-from django.http import HttpResponse
-
 @login_required
 def vista_detalle_ciclo(request, id_ciclo):
     empresa = request.user.profile.empresa
@@ -255,164 +257,55 @@ def vista_detalle_ciclo(request, id_ciclo):
 
     return render(request, "vista_detalle_ciclo.html", context)
 
-
-# @login_required
-# def vista_detalle_ciclo(request, id):
-#     empresa = request.user.profile.empresa
-
-#     ciclo = get_object_or_404(
-#         CicloAgricola,
-#         id=id,
-#         campo__empresa=empresa
-#     )
-
-#     # ===============================
-#     # FASES
-#     # ===============================
-#     fases = list(
-#         FaseAgricola.objects
-#         .filter(ciclo=ciclo)
-#         .order_by("fecha_inicio")
-#     )
-#     fase_activa = next((f for f in fases if f.estado == "abierto"), None)
-
-#     # ===============================
-#     # ACTIVIDADES (una sola query)
-#     # ===============================
-#     actividades = list(
-#         ActividadProductiva.objects
-#         .filter(fase__ciclo=ciclo)
-#         .order_by("-fecha")
-#     )
-
-#     # ===============================
-#     # COSTOS POR ACTIVIDAD
-#     # ===============================
-#     costo_total_ciclo = Decimal("0")
-
-#     for act in actividades:
-#         total_act = (
-#             ConsumoStock.objects
-#             .filter(movimiento_salida__actividad=act)
-#             .aggregate(total=Sum("costo_total"))
-#             .get("total")
-#             or Decimal("0")
-#         )
-
-#         act.costo_total_actividad = total_act
-#         costo_total_ciclo += total_act
-
-
-#     # ===============================
-#     # COSTOS POR FASE
-#     # ===============================
-#     costos_por_fase = []
-
-#     for fase in fases:
-#         total_fase = sum(
-#             act.costo_total_actividad
-#             for act in actividades
-#             if act.fase_id == fase.id
-#         )
-
-#         costos_por_fase.append({
-#             "fase": fase,
-#             "fase_id": fase.id,
-#             "costo_total": total_fase
-#         })
-
-#     # ===============================
-#     # MÉTRICAS BASE
-#     # ===============================
-#     superficie = ciclo.superficie_ha or Decimal("1")
-
-#     costo_ha_ciclo = (
-#         costo_total_ciclo / superficie
-#         if superficie > 0
-#         else Decimal("0")
-#     )
-
-#     # ===============================
-#     # PRECIO (VIENE DEL DASHBOARD)
-#     # ===============================
-#     precio_saco = Decimal(
-#         request.session.get("precio_saco", 0)
-#     )
-
-#     # ===============================
-#     # MÉTRICAS EN SACOS
-#     # ===============================
-#     sacos_equilibrio_ha = (
-#         costo_ha_ciclo / precio_saco
-#         if precio_saco > 0
-#         else Decimal("0")
-#     )
-
-#     # ===============================
-#     # FECHA DE COSECHA (FIN REAL)
-#     # ===============================
-
-#     cosecha_principal = next(
-#         (
-#             a for a in actividades
-#             if a.tipo.lower() == "cosecha"
-#             and not a.es_desecado
-#         ),
-#         None
-#     )
-
-#     fecha_fin_real = cosecha_principal.fecha if cosecha_principal else None
-
-#     return render(
-#         request,
-#         "vista_detalle_ciclo.html",
-#         {
-#             # entidades
-#             "ciclo": ciclo,
-#             "fases": fases,
-#             "fase_activa": fase_activa,
-#             "actividades": actividades,
-
-#             # costos
-#             "costo_total_ciclo": costo_total_ciclo,
-#             "costo_ha_ciclo": costo_ha_ciclo,
-#             "costos_por_fase": costos_por_fase,
-
-#             # mercado
-#             "precio_saco": precio_saco,
-
-#             # métricas
-#             "sacos_equilibrio_ha": sacos_equilibrio_ha,
-
-#             # totales
-#             "total_actividades": len(actividades),
-#             "total_fases": len(fases),
-#             "fecha_fin_real": fecha_fin_real,
-#         }
-#     )
-
 def vista_editar_ciclo():
     pass
-
 
 @login_required
 def vista_agregar_actividad(request, id_ciclo):
     empresa = request.user.profile.empresa
-    ciclo = CicloAgricola.objects.filter(
-        id=id_ciclo,
-        campo__empresa=empresa
-    ).first()
 
-    if not ciclo:
-        messages.error(request, "El ciclo no existe o no pertenece a su empresa.")
-        return redirect("vista_lista_ciclos")
+    ciclo = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa )
 
     if not ciclo.activa:
         messages.error(request, "El ciclo está cerrado.")
         return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
 
+    fase_abierta = FaseAgricola.objects.filter(ciclo=ciclo, estado="abierto").first()
+    actividad_form = ActividadProductivaForm()
+
     context = {
         "ciclo": ciclo,
+        "fase_abierta": fase_abierta,
+        "actividad_form": actividad_form,
     }
 
     return render(request, "vista_agregar_actividad.html", context)
+
+@login_required
+def ajax_subtipos_tipo_actividad(request):
+    tipo_id = request.GET.get("tipo_id")
+
+    if not tipo_id:
+        return JsonResponse({
+            "ok": False,
+            "subtipos": []
+        })
+
+    subtipos = SubTipoActividad.objects.filter( tipo_actividad_id=tipo_id, activo=True).order_by("nombre")
+
+    data = [
+        {
+            "id": subtipo.id,
+            "nombre": subtipo.nombre
+        }
+        for subtipo in subtipos
+    ]
+
+    return JsonResponse({"ok": True, "subtipos": data })
+
+def vista_agregar_actividad(request, id_ciclo):
+    empresa = request.user.profile.empresa
+
+    ciclo = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa )
+
+    return render (request, "vista_detalle_ciclo.html")

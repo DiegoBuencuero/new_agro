@@ -118,6 +118,12 @@
                                 {{ form.estado }}
                             </div>
                         </div>
+                        <div class="text-end mt-2">
+                            <a href="#" id="btn-limpiar-filtros" class="small text-danger text-decoration-none">
+                                <i class="mdi mdi-filter-remove-outline me-1"></i>
+                                {% translate "Limpiar filtros" %}
+                            </a>
+                        </div>
                     </form>
 
                     <div id="contenedor-tabla-ciclos">
@@ -130,8 +136,8 @@
                                         <th>{% translate "Lote" %}</th>
                                         <th>{% translate "Cultivo" %}</th>
                                         <th>{% translate "Superficie (ha)" %}</th>
-                                        <th></i>{% translate "Inicio" %}</th>
-                                        <th></i>{% translate "Estado" %}</th>
+                                        <th>{% translate "Inicio" %}</th>
+                                        <th>{% translate "Estado" %}</th>
                                         <th class="text-center">{% translate "Acciones" %}</th>
                                     </tr>
                                 </thead>
@@ -181,5 +187,91 @@
         </div>
     </div>
 </div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("form-filtros-ciclos");
+    const tablaBody = document.getElementById("tabla_ciclos");
+    const filtros = form.querySelectorAll("select");
+    const btnLimpiar = document.getElementById("btn-limpiar-filtros");
 
+    function filtrarCiclosAjax() {
+        const formData = new FormData(form);
+        const params = new URLSearchParams(formData);
+
+        fetch("{% url 'ajax_get_ciclos_data' %}?" + params.toString())
+            .then(response => response.json())
+            .then(resultado => {
+
+                tablaBody.innerHTML = "";
+
+                if (resultado.data.length === 0) {
+                    tablaBody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">
+                                No hay ciclos agrícolas creados
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                resultado.data.forEach(ciclo => {
+
+                    let badgeEstado = "";
+
+                    if (ciclo.estado === "cerrado") {
+                        badgeEstado = `
+                            <span class="badge-estado-cerrado">
+                                <i class="mdi mdi-lock-outline"></i>
+                                ${ciclo.estado_label}
+                            </span>
+                        `;
+                    } else {
+                        badgeEstado = `
+                            <span class="badge-estado-activo">
+                                <i class="mdi mdi-check-circle-outline"></i>
+                                ${ciclo.estado_label}
+                            </span>
+                        `;
+                    }
+
+                    tablaBody.innerHTML += `
+                        <tr>
+                            <td>${ciclo.campo}</td>
+                            <td>${ciclo.campana}</td>
+                            <td>${ciclo.nombre_lote}</td>
+                            <td>${ciclo.cultivo}</td>
+                            <td>${ciclo.superficie_ha}</td>
+                            <td>${ciclo.fecha_inicio}</td>
+                            <td>${badgeEstado}</td>
+                            <td class="text-center">
+                                <a href="${ciclo.detalle_url}" class="btn btn-sm btn-outline-success btn-ver-ciclo">
+                                    <i class="mdi mdi-eye-outline me-1"></i>
+                                    Ver
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+    }
+
+    filtros.forEach(filtro => {
+        filtro.addEventListener("change", filtrarCiclosAjax);
+    });
+
+    if (btnLimpiar) {
+        btnLimpiar.addEventListener("click", function (e) {
+
+            e.preventDefault();
+            form.reset();
+            filtrarCiclosAjax();
+        });
+    }
+});
+</script>
 {% endblock %}
