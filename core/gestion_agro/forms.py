@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad
-from gestion_agro.models import Campo, Campana, CicloAgricola
+from gestion_agro.models import Campo, Campana, CicloAgricola, Cultivo
 
 
 class BaseForm(ModelForm):
@@ -20,7 +20,6 @@ class BaseSimpleForm(forms.Form):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
 
-
 class CampoForm(BaseForm):
     class Meta:
         model = Campo
@@ -29,7 +28,6 @@ class CampoForm(BaseForm):
             "descripcion": forms.Textarea(attrs={"rows": 2}),
             "observaciones": forms.Textarea(attrs={"rows": 2}),
         }
-
 
 class CampanaForm(BaseForm):
     class Meta:
@@ -40,10 +38,6 @@ class CampanaForm(BaseForm):
             "fecha_hasta": forms.DateInput(attrs={"type": "date"}),
             "observaciones": forms.Textarea(attrs={"rows": 2}),
         }
-
-
-from django import forms
-from django.utils import timezone
 
 class CicloForm(BaseForm):
     def __init__(self, *args, empresa=None, **kwargs):
@@ -71,3 +65,19 @@ class CicloForm(BaseForm):
             "fecha_inicio": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "fecha_fin": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
         }
+
+class CicloFiltroForm(BaseSimpleForm):
+    campana = forms.ModelChoiceField(queryset=None, required=False, empty_label="Todas", label="Campaña")
+    campo = forms.ModelChoiceField(queryset=None, required=False, empty_label="Todos", label="Campo" )
+    cultivo = forms.ModelChoiceField(queryset=None, required=False, empty_label="Todos", label="Cultivo")
+    estado = forms.ChoiceField(choices=[("", "Todos"), ("activo", "Activo"), ("cerrado", "Cerrado"), ], required=False, label="Estado" )
+
+    def __init__(self, *args, **kwargs):
+        empresa = kwargs.pop("empresa", None)
+        super().__init__(*args, **kwargs)
+
+        if empresa:
+            self.fields["campana"].queryset = Campana.objects.filter(empresa=empresa).order_by("-fecha_desde")
+            self.fields["campo"].queryset = Campo.objects.filter(empresa=empresa).order_by("nombre")
+
+        self.fields["cultivo"].queryset = Cultivo.objects.all().order_by("nombre")

@@ -25903,7 +25903,7 @@ select.tt-query,
 select.tt-hint, .select2-container--default .select2-selection--single select.select2-search__field, .select2-container--default select.select2-selection--single {
   padding: 0.4375rem 0.75rem;
   border: 0;
-  outline: 1px solid #dee2e6;
+  outline: 0.7px solid #dee2e6;
   color: #c9c8c8;
   appearance: none;
   background: url("../../images/arrow-down.svg");
@@ -30359,6 +30359,306 @@ dl li {
 .form-select:focus,
 select.form-control:focus {
 
-    border-color: #347a34;
-    box-shadow: 0 0 0 0.2rem rgba(52,122,52,0.25);
+    border: 1px solid #347a34;
+    box-shadow: 0 0 0 0.1rem rgba(52, 122, 52, 0.15);
+}
+
+/* VISTA DETALLE CICLO */
+
+.container-fluid {
+    margin: 0 auto;
+}
+
+/* ==============================
+   CABECERA / RESUMEN
+================================= */
+.resume-card {
+    background: #fff;
+    border: 1px solid var(--agro-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.05);
+    height: 100%;
+}
+
+.resume-card .card-body {
+    padding: 1.2rem 1.25rem;
+}
+
+.resume-label {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    color: #6c757d;
+    margin-bottom: .35rem;
+    font-weight: 600;
+}
+
+.resume-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--agro-text);
+}
+
+.resume-value.highlight {
+    color: var(--agro-primary);
+}
+
+.resume-value.success {
+    color: #198754;
+}
+
+.resume-value.warning {
+    color: #fd7e14;
+}
+
+.resume-value.danger {
+    color: #dc3545;
+}
+
+.kpi-card {
+    background: #fff;
+    border: 1px solid var(--agro-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.05);
+    height: 100%;
+    transition: all .2s ease;
+}
+
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(0,0,0,.08);
+}
+
+.kpi-card .card-body {
+    padding: 1rem;
+}
+
+.kpi-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(53, 122, 53, 0.10);
+    color: var(--agro-primary);
+    font-size: 1.1rem;
+    margin-bottom: .65rem;
+}
+
+.kpi-label {
+    font-size: .78rem;
+    text-transform: uppercase;
+    color: #6c757d;
+    font-weight: 600;
+    margin-bottom: .3rem;
+}
+
+.kpi-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--agro-text);
+}
+
+/* ==============================
+   TIMELINE NUEVA
+================================= */
+.timeline-wrapper {
+    position: relative;
+    padding-left: 0;
+}
+
+.timeline-list {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.timeline-list::before {
+    content: "";
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dbe3ea;
+}
+
+.timeline-entry {
+    position: relative;
+    padding-left: 48px;
+    margin-bottom: 1.4rem;
+}
+
+.timeline-dot {
+    position: absolute;
+    left: 7px;
+    top: 12px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--agro-primary);
+    z-index: 2;
+    box-shadow: 0 0 0 4px rgba(53, 122, 53, 0.08);
+}
+
+.timeline-dot.siembra { border-color: #2e7d32; }
+.timeline-dot.fertilizacion { border-color: #f59f00; }
+.timeline-dot.aplicacion { border-color: #0d6efd; }
+.timeline-dot.visitoria { border-color: #6f42c1; }
+.timeline-dot.cosecha { border-color: #795548; }
+.timeline-dot.ajuste { border-color: #6c757d; }
+
+.timeline-card {
+    background: #fff;
+    border: 1px solid var(--agro-border);
+    border-radius: 12px;
+    padding: 1rem 1rem;
+    box-shadow: 0 3px 10px rgba(0,0,0,.04);
+}
+
+.timeline-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.timeline-title {
+    font-size: .98rem;
+    font-weight: 700;
+    color: var(--agro-text);
+    margin: 0 0 .4rem 0;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    flex-wrap: wrap;
+}
+
+.timeline-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .6rem 1rem;
+    font-size: .85rem;
+    color: #6c757d;
+}
+
+.timeline-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+}
+
+.timeline-date {
+    font-size: .85rem;
+    color: #6c757d;
+    white-space: nowrap;
+}
+
+.timeline-note {
+    margin-top: .9rem;
+    padding: .75rem .9rem;
+    border-radius: 10px;
+    background: #f8f9fa;
+    border-left: 4px solid var(--agro-secondary);
+    color: #495057;
+    font-size: .92rem;
+}
+
+.timeline-section {
+    margin-top: 1rem;
+}
+
+.timeline-section-title {
+    font-size: .88rem;
+    font-weight: 700;
+    color: var(--agro-text);
+    margin-bottom: .75rem;
+}
+
+.phase-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    padding: .35rem .7rem;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.phase-chip.phase-open {
+    background: rgba(255, 193, 7, 0.15);
+    color: #946200;
+    border-color: rgba(255, 193, 7, 0.35);
+}
+
+.phase-chip.phase-closed {
+    background: rgba(25, 135, 84, 0.10);
+    color: #146c43;
+    border-color: rgba(25, 135, 84, 0.25);
+}
+
+.phase-separator {
+    position: relative;
+    margin: 1.8rem 0 1.3rem 48px;
+    padding-top: .25rem;
+}
+
+.phase-separator::before {
+    content: "";
+    position: absolute;
+    left: -33px;
+    top: 50%;
+    width: calc(100% + 10px);
+    height: 1px;
+    background: #e9ecef;
+    z-index: 1;
+}
+
+.phase-separator span {
+    position: relative;
+    z-index: 2;
+    background: #fff;
+    padding: 0 .75rem;
+    font-size: .75rem;
+    font-weight: 600;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+}
+
+.empty-state {
+    border: 1px dashed #ced4da;
+    border-radius: 12px;
+    background: #fafafa;
+    padding: 3rem 1.5rem;
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .timeline-entry {
+        padding-left: 42px;
+    }
+
+    .timeline-list::before {
+        left: 12px;
+    }
+
+    .timeline-dot {
+        left: 4px;
+        width: 16px;
+        height: 16px;
+    }
+
+    .phase-separator {
+        margin-left: 42px;
+    }
+
+    .phase-separator::before {
+        left: -30px;
+    }
 }

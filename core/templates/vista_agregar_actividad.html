@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block plugin_css %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi 
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+
+            <div>{{ message }}</div>
+
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-card">
+
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-leaf icon-agro"></i>
+                    {% translate "Agregar Actividad Agrícola" %}
+                </h3>
+                <div class="small text-muted">
+                    {{ ciclo.nombre_lote }} · {{ ciclo.campo }}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+<a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-outline-secondary">
+    <i class="mdi mdi-arrow-left me-1"></i>
+    {% translate "Volver" %}
+</a>
+            </div>
+        </div>
+
+        <div class="col-lg-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <p class="card-description">
+                        {% translate "Resumen del ciclo" %}
+                    </p>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="form-group row">
+                                <label class="col-sm-5 col-form-label">
+                                    {% translate "Superficie" %}
+                                </label>
+                                <div class="col-sm-7 pt-2">
+                                    {{ ciclo.superficie_ha }} ha
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group row">
+                                <label class="col-sm-5 col-form-label">
+                                    {% translate "Cultivo" %}
+                                </label>
+                                <div class="col-sm-7 pt-2">
+                                    {{ ciclo.cultivo }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group row">
+                                <label class="col-sm-5 col-form-label">
+                                    {% translate "Inicio" %}
+                                </label>
+                                <div class="col-sm-7 pt-2">
+                                    {{ ciclo.fecha_inicio|date:"d/m/Y" }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group row">
+                                <label class="col-sm-5 col-form-label">
+                                    {% translate "Estado" %}
+                                </label>
+                                <div class="col-sm-7 pt-2">
+                                    {% if ciclo.activa %}
+                                        <span class="badge bg-success">{% translate "Activo" %}</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">{% translate "Cerrado" %}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <form class="form-sample" method="post" id="actividadForm">
+                        {% csrf_token %}
+
+                        <p class="card-description">
+                            {% translate "Datos de la actividad" %}
+                        </p>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">
+                                        {% translate "Fecha" %}
+                                    </label>
+                                    <div class="col-sm-8">
+                                        {{ actividad_form.fecha }}
+                                        {{ actividad_form.fecha.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">
+                                        {% translate "Tipo" %}
+                                    </label>
+                                    <div class="col-sm-8">
+                                        {{ actividad_form.tipo }}
+                                        {{ actividad_form.tipo.errors }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4" id="siembraSubtipoContainer" style="display:none;">
+                                <div class="form-group row">
+                                    <label class="col-sm-4 col-form-label">
+                                        {% translate "Tipo de siembra" %}
+                                    </label>
+                                    <div class="col-sm-8">
+                                        {{ actividad_form.siembra_subtipo }}
+                                        {{ actividad_form.siembra_subtipo.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="desecadoContainer" style="display:none;" class="mt-2 mb-3">
+                            <div class="form-check">
+                                {{ actividad_form.es_desecado }}
+                                <label class="form-check-label">
+                                    {% translate "Desecado (cierra la fase)" %}
+                                </label>
+                            </div>
+                            {{ actividad_form.es_desecado.errors }}
+                        </div>
+
+                        <div id="cosechaSection" style="display:none;">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group row">
+                                        <label class="col-sm-4 col-form-label">
+                                            {% translate "Rendimiento" %}
+                                        </label>
+                                        <div class="col-sm-8">
+                                            {{ actividad_form.rendimiento }}
+                                            {{ actividad_form.rendimiento.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-8">
+                                    <div class="form-group row">
+                                        <label class="col-sm-3 col-form-label">
+                                            {% translate "Comentarios" %}
+                                        </label>
+                                        <div class="col-sm-9">
+                                            {{ actividad_form.comentarios_cosecha }}
+                                            {{ actividad_form.comentarios_cosecha.errors }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="productosSection" class="mt-4">
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-outline-success btn-sm" id="btnAgregarProducto">
+                                    <i class="mdi mdi-plus me-1"></i>
+                                    {% translate "Agregar producto" %}
+                                </button>
+                            </div>
+
+                            {{ producto_formset.management_form }}
+
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>{% translate "Producto" %}</th>
+                                            <th>{% translate "Dosis / ha" %}</th>
+                                            <th class="text-center">{% translate "Acciones" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="productosBody">
+                                        {% for form in producto_formset %}
+                                        <tr class="producto-row">
+                                            <td>
+                                                {{ form.producto }}
+                                                {{ form.producto.errors }}
+                                            </td>
+                                            <td>
+                                                {{ form.dosis }}
+                                                {{ form.dosis.errors }}
+                                            </td>
+                                            <td class="text-center">
+                                                {{ form.DELETE }}
+                                                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">
+                                                    <i class="mdi mdi-delete"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted">
+                                                {% translate "No hay productos cargados" %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                            <template id="empty-form-template">
+                                <tr class="producto-row">
+                                    <td>{{ producto_formset.empty_form.producto }}</td>
+                                    <td>{{ producto_formset.empty_form.dosis }}</td>
+                                    <td class="text-center">
+                                        {{ producto_formset.empty_form.DELETE }}
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-row">
+                                            <i class="mdi mdi-delete"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                {% translate "Guardar actividad" %}
+                            </button>
+
+                            <a href="#" class="btn btn-dark">
+                                {% translate "Cancelar" %}
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tipo = document.getElementById("id_actividad-tipo");
+    const productos = document.getElementById("productosSection");
+    const cosecha = document.getElementById("cosechaSection");
+    const desecado = document.getElementById("desecadoContainer");
+    const siembra = document.getElementById("siembraSubtipoContainer");
+
+    function toggleSecciones() {
+        if (!tipo) return;
+
+        const v = tipo.value;
+
+        productos.style.display = ["siembra", "fertilizacion", "aplicacion"].includes(v)
+            ? "block"
+            : "none";
+
+        cosecha.style.display = (v === "cosecha") ? "block" : "none";
+        desecado.style.display = (v === "aplicacion") ? "block" : "none";
+        siembra.style.display = (v === "siembra") ? "block" : "none";
+    }
+
+    if (tipo) {
+        tipo.addEventListener("change", toggleSecciones);
+        toggleSecciones();
+    }
+
+    const addBtn = document.getElementById("btnAgregarProducto");
+    const body = document.getElementById("productosBody");
+    const totalForms = document.querySelector('input[name="{{ producto_formset.prefix }}-TOTAL_FORMS"]');
+    const templateEl = document.getElementById("empty-form-template");
+
+    if (addBtn && body && totalForms && templateEl) {
+        addBtn.addEventListener("click", function () {
+            const index = parseInt(totalForms.value, 10);
+            const newRow = templateEl.innerHTML.replace(/__prefix__/g, index);
+            body.insertAdjacentHTML("beforeend", newRow);
+            totalForms.value = index + 1;
+        });
+
+        body.addEventListener("click", function (e) {
+            const btn = e.target.closest(".btn-remove-row");
+            if (!btn) return;
+
+            const row = btn.closest("tr");
+            const deleteInput = row.querySelector('input[type="checkbox"]');
+
+            if (deleteInput) {
+                deleteInput.checked = true;
+                row.style.display = "none";
+            } else {
+                row.remove();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

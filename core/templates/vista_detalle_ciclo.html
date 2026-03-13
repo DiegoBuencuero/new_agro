@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+{% include 'mensajes.html' %}
+
+{% block plugin_css %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="upload-card">
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-map icon-agro"></i>
+                    {{ ciclo.nombre_lote }}
+                </h3>
+                <div class="text-muted small">
+                    {{ ciclo.campo.nombre }} · {{ ciclo.campana }} · {{ ciclo.superficie_ha }} ha
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-2">
+                            {% translate "Cultivo" %}
+                        </h6>
+                        <div class="fw-semibold">
+                            {{ ciclo.cultivo.nombre }}
+                            {% if ciclo.cultivo.variedad %}
+                                - {{ ciclo.cultivo.variedad }}
+                            {% endif %}
+                        </div>
+
+                        {% if ciclo.cultivo.requerimiento_hidrico %}
+                            <div class="small text-muted mt-2">
+                                {% translate "Requerimiento hídrico" %}
+                            </div>
+                            <div>
+                                {{ ciclo.cultivo.requerimiento_hidrico }} mm
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-3">
+                            {% translate "Economía" %}
+                        </h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">
+                                {% translate "Costo total" %}
+                            </span>
+                            <span class="fw-semibold">
+                                R$ {{ costo_total_ciclo|floatformat:2 }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">
+                                {% translate "Costo/ha" %}
+                            </span>
+                            <span>
+                                R$ {{ costo_ha_ciclo|floatformat:2 }}
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">
+                                {% translate "Precio mercado" %}
+                            </span>
+                            <span class="fw-semibold text-success">
+                                R$ {{ precio_saco|floatformat:2 }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-3">
+                            {% translate "Objetivos" %}
+                        </h6>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">
+                                {% translate "Equilibrio" %}
+                            </span>
+                            <span class="fw-semibold">
+                                {{ sacos_equilibrio_ha|floatformat:2 }} sc/ha
+                            </span>
+                        </div>
+                        {% if rendimiento_esperado_sacos %}
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">
+                                    {% translate "Rendimiento esperado" %}
+                                </span>
+                                <span class="fw-semibold text-success">
+                                    {{ rendimiento_esperado_sacos|floatformat:1 }} sc/ha
+                                </span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="mdi mdi-vector-square fs-4 text-muted"></i>
+                        <div class="mt-2 small text-muted">
+                            {% translate "Superficie" %}
+                        </div>
+                        <div class="fw-semibold">
+                            {{ ciclo.superficie_ha }} ha
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="mdi mdi-calendar-plus fs-4 text-muted"></i>
+                        <div class="mt-2 small text-muted">
+                            {% translate "Inicio" %}
+                        </div>
+                        <div class="fw-semibold">
+                            {{ ciclo.fecha_inicio|date:"d/m/Y" }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="mdi mdi-calendar-check fs-4 text-muted"></i>
+                        <div class="mt-2 small text-muted">
+                            {% translate "Fin" %}
+                        </div>
+                        <div class="fw-semibold">
+                            {% if fecha_fin_real %}
+                                {{ fecha_fin_real|date:"d/m/Y" }}
+                            {% else %}
+                                {% translate "En curso" %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="mdi mdi-chart-line fs-4 text-muted"></i>
+                        <div class="mt-2 small text-muted">
+                            {% translate "Actividades" %}
+                        </div>
+                        <div class="fw-semibold">
+                            {{ actividades|length }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-outline-secondary">
+                <i class="mdi mdi-arrow-left me-1"></i>
+                {% translate "Volver" %}
+            </a>
+
+            {% if not ciclo.fecha_fin %}
+                <a href="{% url 'vista_agregar_actividad' id_ciclo=ciclo.id %}" class="btn btn-success">
+                    <i class="mdi mdi-plus-circle-outline me-1"></i>
+                    {% translate "Agregar actividad" %}
+                </a>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h5 class="fw-semibold mb-4">
+                    <i class="mdi mdi-timeline-clock-outline me-2"></i>
+                    {% translate "Línea de tiempo" %}
+                </h5>
+
+                {% if actividades %}
+                    <!-- timeline futura -->
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="mdi mdi-calendar-remove-outline display-6 text-muted mb-3"></i>
+                        <h5 class="mb-2">
+                            {% translate "No hay actividades registradas" %}
+                        </h5>
+                        <p class="text-muted">
+                            {% translate "Comienza agregando la primera actividad para este ciclo" %}
+                        </p>
+
+                        {% if not ciclo.fecha_fin %}
+                            <a href="{% url 'vista_agregar_actividad' id_ciclo=ciclo.id %}" class="btn btn-success mt-3">
+                                <i class="mdi mdi-plus-circle-outline me-1"></i>
+                                {% translate "Agregar primera actividad" %}
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -3,10 +3,46 @@
 {% load i18n %}
 
 {% block plugin_css %}
+<style>
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #4b5563;
+        white-space: nowrap;
+    }
+
+    .badge-estado-activo {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.45rem 0.7rem;
+        border-radius: 50rem;
+        background-color: rgba(40, 167, 69, 0.12);
+        color: #2e7d32;
+        border: 1px solid rgba(40, 167, 69, 0.25);
+        font-weight: 600;
+    }
+
+    .badge-estado-cerrado {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0.45rem 0.7rem;
+        border-radius: 50rem;
+        background-color: rgba(108, 117, 125, 0.12);
+        color: #5f6b73;
+        border: 1px solid rgba(108, 117, 125, 0.25);
+        font-weight: 600;
+    }
+
+    .btn-ver-ciclo {
+        border-radius: 50rem;
+        font-weight: 500;
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-
 <div class="container-fluid">
     {% if messages %}
     <div class="mb-4">
@@ -31,19 +67,19 @@
         <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
             <div>
                 <h3 class="mb-1">
-                    <i class="mdi mdi-view-list icon-agro me-0"></i>
-                    {% translate "Ciclos Productivos" %}
+                    <i class="mdi mdi-sprout-outline icon-agro me-1"></i>
+                    {% translate "Lotes Productivos" %}
                 </h3>
-                <div class="small">
+                <div class="small text-muted">
                     <h6 class="mb-1 mt-2">
-                        {% translate "Gestión de ciclos agrícolas por lote y campaña" %}
+                        {% translate "Gestión de lotes productivos" %}
                     </h6>
                 </div>
             </div>
 
             <div>
                 <a href="{% url 'vista_crear_ciclo' %}" class="btn btn-success">
-                    <i class="mdi mdi-plus-circle me-2"></i>
+                    <i class="mdi mdi-plus-circle-outline me-2"></i>
                     {% translate "Nuevo ciclo" %}
                 </a>
             </div>
@@ -52,83 +88,94 @@
         <div class="col-lg-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
-                    <h4 class="card-title">
-                        {% translate "Ciclos agrícolas registrados" %}
-                    </h4>
-                    <p class="card-description">
-                        {{ empresa.nombre }}
-                    </p>
-
-                    <form method="get" class="mb-4">
-                        <div class="row align-items-end">
-                            <div class="col-md-4 col-lg-3">
-                                <label for="id_campana" class="form-label">
-                                    {% translate "Campaña" %}
+                    <form id="form-filtros-ciclos" class="mb-4">
+                        <div class="row align-items-end g-3">
+                            <div class="col-md-6 col-lg-3">
+                                <label for="{{ form.campana.id_for_label }}" class="form-label">
+                                    {{ form.campana.label }}
                                 </label>
-                                <select name="campana" id="id_campana" class="form-control" onchange="this.form.submit()">
-                                    <option value="">{% translate "Todas" %}</option>
-                                    {% for campana in campanas %}
-                                        <option value="{{ campana.id }}"
-                                            {% if campana.id|stringformat:"s" == campana_seleccionada %}selected{% endif %}>
-                                            {{ campana.nombre }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
+                                {{ form.campana }}
+                            </div>
+
+                            <div class="col-md-6 col-lg-3">
+                                <label for="{{ form.campo.id_for_label }}" class="form-label">
+                                    {{ form.campo.label }}
+                                </label>
+                                {{ form.campo }}
+                            </div>
+
+                            <div class="col-md-6 col-lg-3">
+                                <label for="{{ form.cultivo.id_for_label }}" class="form-label">
+                                    {{ form.cultivo.label }}
+                                </label>
+                                {{ form.cultivo }}
+                            </div>
+
+                            <div class="col-md-6 col-lg-3">
+                                <label for="{{ form.estado.id_for_label }}" class="form-label">
+                                    {{ form.estado.label }}
+                                </label>
+                                {{ form.estado }}
                             </div>
                         </div>
                     </form>
 
-                    <div class="table-responsive">
-                        <table class="table table-striped ">
-                            <thead>
-                                <tr>
-                                    <th>{% translate "Campo" %}</th>
-                                    <th>{% translate "Campaña" %}</th>
-                                    <th>{% translate "Lote" %}</th>
-                                    <th>{% translate "Cultivo" %}</th>
-                                    <th>{% translate "Superficie (ha)" %}</th>
-                                    <th>{% translate "Inicio" %}</th>
-                                    <th>{% translate "Estado" %}</th>
-                                    <th>{% translate "Acciones" %}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for ciclo in ciclos %}
-                                <tr>
-                                    <td>{{ ciclo.campo.nombre }}</td>
-                                    <td>{{ ciclo.campana }}</td>
-                                    <td>{{ ciclo.nombre_lote }}</td>
-                                    <td>{{ ciclo.cultivo }}</td>
-                                    <td>{{ ciclo.superficie_ha }}</td>
-                                    <td>{{ ciclo.fecha_inicio }}</td>
-                                    <td>
-                                        {% if ciclo.fecha_fin %}
-                                            <span class="badge bg-secondary">
-                                                {% translate "Cerrado" %}
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-success">
-                                                {% translate "Activo" %}
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <a href="{% url 'vista_detalle_ciclo' ciclo.id %}"
-                                           class="btn btn-sm btn-outline-primary">
-                                            {% translate "Ver" %}
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted">
-                                        {% translate "No hay ciclos agrícolas creados" %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div id="contenedor-tabla-ciclos">
+                        <div class="table-responsive">
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>{% translate "Campo" %}</th>
+                                        <th>{% translate "Campaña" %}</th>
+                                        <th>{% translate "Lote" %}</th>
+                                        <th>{% translate "Cultivo" %}</th>
+                                        <th>{% translate "Superficie (ha)" %}</th>
+                                        <th></i>{% translate "Inicio" %}</th>
+                                        <th></i>{% translate "Estado" %}</th>
+                                        <th class="text-center">{% translate "Acciones" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tabla_ciclos">
+                                    {% for ciclo in ciclos %}
+                                    <tr>
+                                        <td>{{ ciclo.campo.nombre }}</td>
+                                        <td>{{ ciclo.campana }}</td>
+                                        <td>{{ ciclo.nombre_lote }}</td>
+                                        <td>{{ ciclo.cultivo }}</td>
+                                        <td>{{ ciclo.superficie_ha }}</td>
+                                        <td>{{ ciclo.fecha_inicio|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {% if ciclo.fecha_fin %}
+                                                <span class="badge-estado-cerrado">
+                                                    <i class="mdi mdi-lock-outline"></i>
+                                                    {% translate "Cerrado" %}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge-estado-activo">
+                                                    <i class="mdi mdi-check-circle-outline"></i>
+                                                    {% translate "Activo" %}
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-center">
+                                            <a href="{% url 'vista_detalle_ciclo' ciclo.id %}" class="btn btn-sm btn-outline-success btn-ver-ciclo">
+                                                <i class="mdi mdi-eye-outline me-1"></i>
+                                                {% translate "Ver" %}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted">
+                                            {% translate "No hay ciclos agrícolas creados" %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>

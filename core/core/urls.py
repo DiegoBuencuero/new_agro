@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from agro.views import index,login_page
 from gestion_agro.views import (vista_crear_campo, vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
-vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo                            
+vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo, ajax_get_ciclos_data, vista_agregar_actividad                  
 )
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -38,7 +38,8 @@ urlpatterns = [
 
     path('ciclos/', vista_lista_ciclos, name='vista_lista_ciclos'),
     path('ciclos/nuevo/', vista_crear_ciclo, name='vista_crear_ciclo'),
+    path("ajax/get_ciclos_data/", ajax_get_ciclos_data, name="ajax_get_ciclos_data"),
     path('ciclos/<int:id_ciclo>/', vista_detalle_ciclo, name='vista_detalle_ciclo'),
-    path('ciclos/<int:id_ciclo>/editar/', vista_editar_ciclo, name='vista_editar_ciclo'),
+    path("ciclo/<int:id_ciclo>/actividad/nueva/", vista_agregar_actividad, name="vista_agregar_actividad"),
 
 ]
