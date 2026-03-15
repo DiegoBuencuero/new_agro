@@ -4,10 +4,15 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import JsonResponse
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from .funciones_aux import (  obtener_fase_abierta, validar_reglas_basicas_actividad,   crear_fase_si_corresponde,
+                            actividad_debe_cerrar_fase,
+                            cerrar_fase,
+                            )
 from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm,
-                                ActividadProductivaForm)
-from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad
-
+                                ActividadProductivaForm, ActividadInsumoForm, ActividadInsumoFormSet)
+from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
+                                ActividadProductiva
                                 )
 
 
@@ -248,38 +253,21 @@ def vista_crear_ciclo(request):
 @login_required
 def vista_detalle_ciclo(request, id_ciclo):
     empresa = request.user.profile.empresa
-
     ciclo = CicloAgricola.objects.filter(campo__empresa=empresa, id=id_ciclo).first()
+    fases = FaseAgricola.objects.filter(ciclo=ciclo)
+    actividades = ActividadProductiva.objects.filter(fase__ciclo=ciclo).order_by("fecha")
 
     context = {
         "ciclo": ciclo,
+        "fases": fases,
+        "actividades": actividades,
     }
+
 
     return render(request, "vista_detalle_ciclo.html", context)
 
 def vista_editar_ciclo():
     pass
-
-@login_required
-def vista_agregar_actividad(request, id_ciclo):
-    empresa = request.user.profile.empresa
-
-    ciclo = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa )
-
-    if not ciclo.activa:
-        messages.error(request, "El ciclo está cerrado.")
-        return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
-
-    fase_abierta = FaseAgricola.objects.filter(ciclo=ciclo, estado="abierto").first()
-    actividad_form = ActividadProductivaForm()
-
-    context = {
-        "ciclo": ciclo,
-        "fase_abierta": fase_abierta,
-        "actividad_form": actividad_form,
-    }
-
-    return render(request, "vista_agregar_actividad.html", context)
 
 @login_required
 def ajax_subtipos_tipo_actividad(request):
@@ -303,9 +291,88 @@ def ajax_subtipos_tipo_actividad(request):
 
     return JsonResponse({"ok": True, "subtipos": data })
 
+@login_required
 def vista_agregar_actividad(request, id_ciclo):
     empresa = request.user.profile.empresa
+    ciclo = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa)
 
-    ciclo = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa )
+    if not ciclo.activa:
+        messages.error(request, _("El ciclo está cerrado."))
+        return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
 
-    return render (request, "vista_detalle_ciclo.html")
+    try:
+        fase = obtener_fase_abierta(ciclo)
+    except ValidationError as e:
+        messages.error(request, e.message)
+        return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
+
+    if request.method == "POST":
+        actividad_form = ActividadProductivaForm(request.POST)
+        insumo_formset = ActividadInsumoFormSet(request.POST, prefix="insumos")
+
+        if actividad_form.is_valid() and insumo_formset.is_valid():
+            tipo_actividad = actividad_form.cleaned_data["tipo"]
+            subtipo = actividad_form.cleaned_data["subtipo"]
+            fecha = actividad_form.cleaned_data["fecha"]
+
+            try:
+                if fase:
+                    validar_reglas_basicas_actividad(
+                        ciclo=ciclo,
+                        fase=fase,
+                        tipo_actividad=tipo_actividad,
+                        subtipo=subtipo,
+                        fecha=fecha,
+                    )
+                else:
+                    validar_reglas_basicas_actividad(
+                        ciclo=ciclo,
+                        fase=None,
+                        tipo_actividad=tipo_actividad,
+                        subtipo=subtipo,
+                        fecha=fecha,
+                    )
+                    fase = crear_fase_si_corresponde(
+                        ciclo=ciclo,
+                        tipo_actividad=tipo_actividad,
+                        subtipo=subtipo,
+                        fecha=fecha,
+                    )
+
+                actividad = actividad_form.save(commit=False)
+                actividad.fase = fase
+                actividad.save()
+
+                insumo_formset.instance = actividad
+                insumo_formset.save()
+
+                if actividad_debe_cerrar_fase(
+                    fase=fase,
+                    tipo_actividad=tipo_actividad,
+                    subtipo=subtipo,
+                ):
+                    cerrar_fase(fase, fecha)
+
+            except ValidationError as e:
+                messages.error(request, e.message)
+                context = {
+                    "ciclo": ciclo,
+                    "actividad_form": actividad_form,
+                    "insumo_formset": insumo_formset,
+                }
+                return render(request, "vista_agregar_actividad.html", context)
+
+            messages.success(request, _("Actividad registrada correctamente."))
+            return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
+
+    else:
+        actividad_form = ActividadProductivaForm()
+        insumo_formset = ActividadInsumoFormSet(prefix="insumos")
+
+    context = {
+        "ciclo": ciclo,
+        "actividad_form": actividad_form,
+        "insumo_formset": insumo_formset,
+    }
+
+    return render(request, "vista_agregar_actividad.html", context)

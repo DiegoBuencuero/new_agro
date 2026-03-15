@@ -119,71 +119,178 @@
                 </div>
             </div>
         </div>
+<div class="grid-margin stretch-card">
+    <div class="card">
+        <div class="card-body">
+            <form method="post" id="actividadForm">
+                {% csrf_token %}
 
-        <div class="grid-margin stretch-card">
-            <div class="card">
-                <div class="card-body">
-                    <form method="post" id="actividadForm">
-                        {% csrf_token %}
+                {% if actividad_form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ actividad_form.non_field_errors }}
+                    </div>
+                {% endif %}
 
-                        <p class="card-description mb-4">
-                            {% translate "Datos de la actividad" %}
-                        </p>
+                <p class="card-description mb-4">
+                    {% translate "Datos de la actividad" %}
+                </p>
 
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label for="{{ actividad_form.fecha.id_for_label }}" class="form-label">
-                                    {% translate "Fecha" %}
-                                </label>
-                                {{ actividad_form.fecha }}
-                                {{ actividad_form.fecha.errors }}
-                            </div>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label for="{{ actividad_form.fecha.id_for_label }}" class="form-label">
+                            {% translate "Fecha" %}
+                        </label>
+                        {{ actividad_form.fecha }}
+                        {{ actividad_form.fecha.errors }}
+                    </div>
 
-                            <div class="col-md-4">
-                                <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">
-                                    {% translate "Tipo" %}
-                                </label>
-                                {{ actividad_form.tipo }}
-                                {{ actividad_form.tipo.errors }}
-                            </div>
+                    <div class="col-md-4">
+                        <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">
+                            {% translate "Tipo" %}
+                        </label>
+                        {{ actividad_form.tipo }}
+                        {{ actividad_form.tipo.errors }}
+                    </div>
 
-                            <div class="col-md-4" id="subtipoContainer" style="display: none;">
-                                <label for="{{ actividad_form.subtipo.id_for_label }}" class="form-label">
-                                    {% translate "Subtipo" %}
-                                </label>
-                                {{ actividad_form.subtipo }}
-                                {{ actividad_form.subtipo.errors }}
-                            </div>
-                        </div>
-
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <label for="{{ actividad_form.observaciones.id_for_label }}" class="form-label">
-                                    {% translate "Observaciones" %}
-                                </label>
-                                {{ actividad_form.observaciones }}
-                                {{ actividad_form.observaciones.errors }}
-                            </div>
-                        </div>
-
-                        <div class="mt-4 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                {% translate "Guardar actividad" %}
-                            </button>
-
-                            <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">
-                                {% translate "Cancelar" %}
-                            </a>
-                        </div>
-                    </form>
+                    <div class="col-md-4" id="subtipoContainer" style="display: none;">
+                        <label for="{{ actividad_form.subtipo.id_for_label }}" class="form-label">
+                            {% translate "Subtipo" %}
+                        </label>
+                        {{ actividad_form.subtipo }}
+                        {{ actividad_form.subtipo.errors }}
+                    </div>
                 </div>
-            </div>
-        </div>
 
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label for="{{ actividad_form.observaciones.id_for_label }}" class="form-label">
+                            {% translate "Observaciones" %}
+                        </label>
+                        {{ actividad_form.observaciones }}
+                        {{ actividad_form.observaciones.errors }}
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="card mb-4" id="insumosSection">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>{% translate "Insumos utilizados" %}</strong>
+
+                        <button type="button" class="btn btn-success btn-sm" id="btnAgregarInsumo">
+                            <i class="mdi mdi-plus"></i>
+                            {% translate "Agregar insumo" %}
+                        </button>
+                    </div>
+
+                    <div class="card-body p-0">
+                        {{ insumo_formset.management_form }}
+
+                        {% if insumo_formset.non_form_errors %}
+                            <div class="alert alert-danger m-3">
+                                {{ insumo_formset.non_form_errors }}
+                            </div>
+                        {% endif %}
+
+                        <div class="table-responsive">
+                            <table class="table mb-0 align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>{% translate "Producto" %}</th>
+                                        <th>{% translate "Dosis" %}</th>
+                                        <th>{% translate "Unidad" %}</th>
+                                        <th class="text-center">{% translate "Acción" %}</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody id="insumosBody">
+                                    {% for form_insumo in insumo_formset %}
+                                        <tr class="insumo-row">
+                                            {% for hidden in form_insumo.hidden_fields %}
+                                                {{ hidden }}
+                                            {% endfor %}
+
+                                            <td>
+                                                {{ form_insumo.producto }}
+                                                {{ form_insumo.producto.errors }}
+                                            </td>
+
+                                            <td>
+                                                {{ form_insumo.dosis }}
+                                                {{ form_insumo.dosis.errors }}
+                                            </td>
+
+                                            <td>
+                                                {{ form_insumo.um }}
+                                                {{ form_insumo.um.errors }}
+                                            </td>
+
+                                            <td class="text-center">
+                                                <div class="d-none">
+                                                    {{ form_insumo.DELETE }}
+                                                </div>
+
+                                                <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
+                                                    <i class="mdi mdi-delete"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <template id="empty-form-template">
+                            <tr class="insumo-row">
+                                {% for hidden in insumo_formset.empty_form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+
+                                <td>
+                                    {{ insumo_formset.empty_form.producto }}
+                                </td>
+
+                                <td>
+                                    {{ insumo_formset.empty_form.dosis }}
+                                </td>
+
+                                <td>
+                                    {{ insumo_formset.empty_form.um }}
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="d-none">
+                                        {{ insumo_formset.empty_form.DELETE }}
+                                    </div>
+
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
+                                        <i class="mdi mdi-delete"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        {% translate "Guardar actividad" %}
+                    </button>
+
+                    <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">
+                        {% translate "Cancelar" %}
+                    </a>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
+</div>
+</div>
+
 {% endblock %}
+
 {% block custom_js %}
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -192,7 +299,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const subtipoContainer = document.getElementById("subtipoContainer");
 
     function limpiarSubtipos() {
+        if (!subtipoSelect) return;
+
         subtipoSelect.innerHTML = "";
+
         const opcionVacia = document.createElement("option");
         opcionVacia.value = "";
         opcionVacia.textContent = "---------";
@@ -200,6 +310,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function ocultarSubtipo() {
+        if (!subtipoContainer) return;
+
         limpiarSubtipos();
         subtipoContainer.style.display = "none";
     }
@@ -247,6 +359,38 @@ document.addEventListener("DOMContentLoaded", function () {
         } else {
             ocultarSubtipo();
         }
+    }
+
+    const addBtn = document.getElementById("btnAgregarInsumo");
+    const body = document.getElementById("insumosBody");
+    const totalForms = document.getElementById("id_insumos-TOTAL_FORMS");
+    const templateElement = document.getElementById("empty-form-template");
+
+    if (addBtn && body && totalForms && templateElement) {
+        addBtn.addEventListener("click", function () {
+            const index = parseInt(totalForms.value, 10);
+            const html = templateElement.innerHTML.replace(/__prefix__/g, index);
+
+            body.insertAdjacentHTML("beforeend", html);
+            totalForms.value = index + 1;
+        });
+
+        body.addEventListener("click", function (event) {
+            const btn = event.target.closest(".btn-remove-row");
+            if (!btn) return;
+
+            const row = btn.closest(".insumo-row");
+            if (!row) return;
+
+            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+
+            if (deleteInput) {
+                deleteInput.checked = true;
+                row.style.display = "none";
+            } else {
+                row.remove();
+            }
+        });
     }
 });
 </script>

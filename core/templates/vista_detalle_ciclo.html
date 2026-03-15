@@ -4,8 +4,8 @@
 {% include 'mensajes.html' %}
 
 {% block plugin_css %}
+<link rel="stylesheet" href="{% static 'css/detalleCiclo.css' %}">
 {% endblock %}
-
 {% block content %}
 <div class="container-fluid">
     <div class="upload-card">
@@ -186,33 +186,160 @@
             {% endif %}
         </div>
 
-        <div class="card">
-            <div class="card-body">
-                <h5 class="fw-semibold mb-4">
-                    <i class="mdi mdi-timeline-clock-outline me-2"></i>
-                    {% translate "Línea de tiempo" %}
-                </h5>
+        <div class="row">
+            <div class="col-lg-12">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-white border-0 mt-4 pb-2">
+                                    <div>
+                                        <h5 class="fw-bold mb-1">
+                                            <i class="mdi mdi-timeline-clock-outline text-success me-1"></i>
+                                            {% translate "Línea de tiempo de actividades" %}
+                                        </h5>
+                                        <p class="text-muted small mb-0">
+                                            {% translate "Historial cronológico con separación por fases" %}
+                                        </p>
+                                    </div>
+                                </div>
 
-                {% if actividades %}
-                    <!-- timeline futura -->
-                {% else %}
-                    <div class="text-center py-5">
-                        <i class="mdi mdi-calendar-remove-outline display-6 text-muted mb-3"></i>
-                        <h5 class="mb-2">
-                            {% translate "No hay actividades registradas" %}
-                        </h5>
-                        <p class="text-muted">
-                            {% translate "Comienza agregando la primera actividad para este ciclo" %}
-                        </p>
+                                <div class="card-body">
+                                    {% if actividades %}
+                                        <div class="timeline-container">
+                                            <div class="timeline-vertical-line"></div>
 
-                        {% if not ciclo.fecha_fin %}
-                            <a href="{% url 'vista_agregar_actividad' id_ciclo=ciclo.id %}" class="btn btn-success mt-3">
-                                <i class="mdi mdi-plus-circle-outline me-1"></i>
-                                {% translate "Agregar primera actividad" %}
-                            </a>
-                        {% endif %}
+                                            {% regroup actividades by fase as actividades_por_fase %}
+
+                                            {% for fase_group in actividades_por_fase %}
+                                                {% with fase=fase_group.grouper %}
+
+                                                    <!-- INICIO DE FASE -->
+                                                    <div class="timeline-phase-header">
+                                                        <div class="phase-flag-icon">
+                                                            <i class="mdi mdi-flag-variant"></i>
+                                                        </div>
+
+                                                        <div class="phase-label">
+                                                            {% translate "Inicio de fase" %}
+                                                            <span class="badge bg-success-subtle text-success border">
+                                                                {{ fase.get_tipo_display|upper }}
+                                                            </span>
+                                                            <span class="phase-date">
+                                                                <i class="mdi mdi-calendar me-1"></i>
+                                                                {{ fase.fecha_inicio|date:"d/m/Y" }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- ACTIVIDADES -->
+                                                    {% for act in fase_group.list %}
+                                                        <div class="timeline-item">
+                                                            <div class="activity-icon {{ act.tipo.nombre|slugify }}">
+                                                                {% if act.tipo.nombre|lower == "siembra" %}
+                                                                    <i class="mdi mdi-sprout"></i>
+                                                                {% elif act.tipo.nombre|lower == "aplicación" or act.tipo.nombre|lower == "aplicacion" %}
+                                                                    <i class="mdi mdi-water"></i>
+                                                                {% elif act.tipo.nombre|lower == "fertilización" or act.tipo.nombre|lower == "fertilizacion" %}
+                                                                    <i class="mdi mdi-leaf"></i>
+                                                                {% elif act.tipo.nombre|lower == "cosecha" %}
+                                                                    <i class="mdi mdi-basket-fill"></i>
+                                                                {% elif act.tipo.nombre|lower == "visitoría" or act.tipo.nombre|lower == "vistoria" %}
+                                                                    <i class="mdi mdi-eye-outline"></i>
+                                                                {% else %}
+                                                                    <i class="mdi mdi-chart-line"></i>
+                                                                {% endif %}
+                                                            </div>
+
+                                                            <div class="activity-card {{ act.tipo.nombre|slugify }}">
+                                                                <div class="activity-header">
+                                                                    <div>
+                                                                        <div class="activity-type">
+                                                                            {{ act.tipo.nombre }}
+                                                                            {% if act.subtipo %}
+                                                                                <span class="activity-subtype">· {{ act.subtipo.nombre }}</span>
+                                                                            {% endif %}
+                                                                        </div>
+                                                                    </div>
+
+                                                                    <div class="activity-date">
+                                                                        {{ act.fecha|date:"d/m/Y" }}
+                                                                    </div>
+                                                                </div>
+                                                                {% if act.observaciones %}
+                                                                    <div class="activity-obs">
+                                                                        <strong>{% translate "Observaciones" %}:</strong>
+                                                                        {{ act.observaciones }}
+                                                                    </div>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    {% endfor %}
+
+                                                    <!-- FIN DE FASE -->
+                                                    {% if fase.estado == "cerrado" and fase.fecha_fin %}
+                                                        <div class="timeline-phase-footer">
+                                                            <div class="phase-checkered-icon">
+                                                                <i class="mdi mdi-flag-checkered"></i>
+                                                            </div>
+
+                                                            <div class="phase-label ">
+                                                                {% translate "Fin de fase" %}
+                                                                <span class="badge badge-fase-agro-secondary">
+                                                                    {{ fase.get_tipo_display|upper }}
+                                                                </span>
+                                                                <span class="phase-date">
+                                                                    <i class="mdi mdi-calendar-check me-1"></i>
+                                                                    {{ fase.fecha_fin|date:"d/m/Y" }}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="timeline-phase-footer">
+                                                            <div class="phase-checkered-icon">
+                                                                <i class="mdi mdi-hourglass"></i>
+                                                            </div>
+
+                                                            <div class="phase-label phase-label-agro">
+                                                                {% translate "Fase en curso" %}
+                                                                <span class="badge badge-fase-agro">
+                                                                    {{ fase.get_tipo_display|upper }}
+                                                                </span>
+                                                                <span class="phase-date">
+                                                                    {{ fase_group.list|length }}
+                                                                    {% if fase_group.list|length == 1 %}
+                                                                        {% translate "actividad" %}
+                                                                    {% else %}
+                                                                        {% translate "actividades" %}
+                                                                    {% endif %}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+
+                                                {% endwith %}
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <div class="text-center py-5">
+                                            <i class="mdi mdi-calendar-remove-outline display-4 text-muted mb-3"></i>
+                                            <h5 class="mb-3">{% translate "No hay actividades registradas" %}</h5>
+                                            <p class="text-muted mb-4">
+                                                {% translate "Comienza agregando la primera actividad para este ciclo productivo" %}
+                                            </p>
+                                            {% if not ciclo.fecha_fin %}
+                                                <a href="{% url 'vista_agregar_actividad' id_ciclo=ciclo.id %}" class="btn btn-success">
+                                                    <i class="mdi mdi-plus-circle-outline me-1"></i>
+                                                    {% translate "Agregar primera actividad" %}
+                                                </a>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                {% endif %}
+                </div>
             </div>
         </div>
     </div>

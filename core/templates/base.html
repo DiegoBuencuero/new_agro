@@ -20,7 +20,6 @@
     <link rel="stylesheet" href="{% static 'vendors/bootstrap-datepicker/bootstrap-datepicker.min.css' %}">
     <link rel="stylesheet" href="{% static 'vendors/flag-icon-css/css/flag-icon.min.css' %}">
 
-
     <!-- endinject -->
 
     <!-- Plugin css for this page -->
@@ -53,10 +52,26 @@
   align-items: center;
   margin: 0;
 }
+@media (min-width: 992px) {
+    .sidebar.sidebar-offcanvas {
+        position: fixed;
+        top: 100px;
+        left: 0;
+        width: 244px;
+        height: calc(100vh - 70px);
+        overflow-y: auto;
+        z-index: 1020;
+    }
 
+    .main-panel {
+        margin-left: 244px;
+        width: calc(100% - 244px);
+    }
 
-
-
+    .page-body-wrapper {
+        position: relative;
+    }
+}
 
 </style>
 </head>

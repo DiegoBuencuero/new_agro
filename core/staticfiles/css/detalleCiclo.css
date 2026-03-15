@@ -1,0 +1,200 @@
+/* Container & Core Line */
+
+.timeline-container {
+    position: relative;
+    padding: 10px 0 40px 0;
+    width: 100%;
+    max-width: 100%;
+}
+.timeline-vertical-line {
+    position: absolute;
+    left: 20px; /* Aligned with icon center */
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e5e7eb; /* Subtle gray line */
+    z-index: 1;
+}
+
+/* Phase Markers (Structural) */
+.timeline-phase-header {
+    position: relative;
+    padding-left: 50px;
+    margin: 40px 0 20px 0;
+    z-index: 2;
+}
+
+.timeline-phase-header:first-child { margin-top: 0; }
+
+.phase-flag-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 28px;
+    height: 28px;
+    background: #f0fdf4; /* Very light green */
+    border: 2px solid #22c55e;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #16a34a;
+    font-size: 14px;
+}
+
+.phase-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #353535 !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.phase-date {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+/* Activity Items */
+.timeline-item {
+    position: relative;
+    padding-left: 60px;
+    margin-bottom: 16px;
+    z-index: 2;
+}
+
+.activity-icon {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    z-index: 3;
+}
+
+/* Activity Card Styling */
+.activity-card {
+    background: white;
+    border: 0.5px solid #e2e8f0;
+    /*border-left: 4px solid #cbd5e1;  Default accent */
+    border-radius: 12px;
+    padding: 16px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.activity-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transform: translateY(-1px);
+}
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 4px;
+}
+
+.activity-type {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.95rem;
+}
+
+.activity-subtype {
+    color: #64748b;
+    font-weight: 400;
+}
+
+.activity-date {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.activity-tags {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.tag {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.activity-obs {
+    margin-top: 12px;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #64748b;
+    border: 1px dashed #e2e8f0;
+}
+
+/* Color System Mapping */
+.siembra { border-left-color: #22c55e !important; color: #16a34a; }
+.aplicacion { border-left-color: #3b82f6 !important; color: #2563eb; }
+.fertilizacion { border-left-color: #0bf588 !important; color: #06d965; }
+.cosecha { border-left-color: #a855f7 !important; color: #9333ea; }
+.vistoria { border-left-color: #94a3b8 !important; color: #475569; }
+
+/* End of Phase Marker */
+.timeline-phase-footer {
+    position: relative;
+    padding-left: 50px;
+    margin: 20px 0 40px 0;
+}
+
+.phase-checkered-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #64748b;
+    font-size: 12px;
+}
+
+.badge-fase-agro {
+    background: #e8f5e9 !important;
+    color: #2e7d32 !important;
+    border: 1px solid #c8e6c9 !important;
+    font-weight: 600;
+}
+
+.badge-fase-agro-secondary {
+    background: #f3f4f6 !important;
+    color: #353535 !important;
+    border: 1px solid #d1d5db !important;
+    font-weight: 600;
+}
+
+.phase-label-agro {
+    color: #2e7d32 !important;
+}
+

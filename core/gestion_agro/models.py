@@ -127,38 +127,17 @@ class CicloAgricola(models.Model):
 class FaseAgricola(models.Model):
 
     TIPO_FASE_CHOICES = [
-        ('implantacion', 'Implantación'),
-        ('desarrollo', 'Desarrollo'),
-        ('reproduccion', 'Reproducción'),
-        ('maduracion', 'Maduración'),
-        ('cosecha', 'Cosecha'),
+        ('COB', 'Cobertura'),
+        ('PRI', 'Cultivo principal'),
     ]
+        
+    ESTADO_FASE_CHOICES = [('abierto','Abierto'),('cerrado','Cerrado')]
     
-    ESTADO_FASE_CHOICES = [
-        ('abierto', 'Abierto'),
-        ('cerrado', 'Cerrado'),
-    ]
-    
-    ciclo = models.ForeignKey(
-        CicloAgricola,
-        on_delete=models.CASCADE,
-        related_name='fases'
-    )
-
-    tipo = models.CharField(
-        max_length=20,
-        choices=TIPO_FASE_CHOICES,
-        default='desarrollo'
-    )
-
+    ciclo = models.ForeignKey(CicloAgricola, on_delete=models.CASCADE, related_name='fases')
+    tipo = models.CharField(max_length=20, choices=TIPO_FASE_CHOICES, default='COB')
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(null=True, blank=True)
-
-    estado = models.CharField(
-        max_length=10,
-        choices=ESTADO_FASE_CHOICES,
-        default='abierto'
-    )
+    estado = models.CharField(max_length=10, choices=ESTADO_FASE_CHOICES, default='abierto')
 
     class Meta:
         ordering = ['fecha_inicio']
@@ -221,17 +200,14 @@ class TipoActividadCaracteristica(models.Model):
 
 
 class SubTipoActividad(models.Model):
-    tipo_actividad = models.ForeignKey(
-        TipoActividad,
-        on_delete=models.CASCADE,
-        related_name='subtipos'
-    )
+    tipo_actividad = models.ForeignKey(TipoActividad, on_delete=models.CASCADE, related_name='subtipos')
+    codigo = models.CharField(max_length=3)
     nombre = models.CharField(max_length=50)
     descripcion = models.CharField(max_length=150, blank=True, null=True)
     activo = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ('tipo_actividad', 'nombre')
+        unique_together = ('tipo_actividad', 'codigo')
 
     def __str__(self):
         return f"{self.tipo_actividad.nombre} - {self.nombre}"

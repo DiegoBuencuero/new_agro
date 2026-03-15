@@ -1,12 +1,13 @@
 from django import forms
 from django.utils.translation import gettext as _
+from django.forms import inlineformset_factory
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User  
 from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad
 from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva,
-                                 TipoActividad, SubTipoActividad )
+                                 TipoActividad, SubTipoActividad, ActividadInsumo )
 
 
 class BaseForm(ModelForm):
@@ -152,3 +153,58 @@ class ActividadProductivaForm(BaseForm):
                 )
 
         return cleaned_data
+    
+class ActividadInsumoForm(BaseForm):
+    class Meta:
+        model = ActividadInsumo
+        fields = ["producto", "dosis", "um"]
+        widgets = {
+            "producto": forms.Select(),
+            "dosis": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+            "um": forms.Select(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["producto"].label = _("Producto")
+        self.fields["dosis"].label = _("Dosis")
+        self.fields["um"].label = _("Unidad")
+
+        self.fields["producto"].required = False
+        self.fields["dosis"].required = False
+        self.fields["um"].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        producto = cleaned_data.get("producto")
+        dosis = cleaned_data.get("dosis")
+        um = cleaned_data.get("um")
+
+        if self.cleaned_data.get("DELETE"):
+            return cleaned_data
+
+        hay_datos = bool(producto or dosis or um)
+
+        if not hay_datos:
+            return cleaned_data
+
+        if not producto:
+            self.add_error("producto", _("Debe seleccionar un producto."))
+
+        if dosis in (None, ""):
+            self.add_error("dosis", _("Debe ingresar la dosis."))
+
+        if not um:
+            self.add_error("um", _("Debe seleccionar la unidad."))
+
+        return cleaned_data
+    
+ActividadInsumoFormSet = inlineformset_factory(
+    ActividadProductiva,
+    ActividadInsumo,
+    form=ActividadInsumoForm,
+    extra=1,
+    can_delete=True
+)
