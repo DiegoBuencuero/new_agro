@@ -6,6 +6,7 @@ import re
 from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
+from agro.models import Empresa, Unidad
 
 
 class Campo(models.Model):
@@ -212,7 +213,7 @@ class SubTipoActividad(models.Model):
     def __str__(self):
         return f"{self.tipo_actividad.nombre} - {self.nombre}"
 
-
+    
 class ActividadProductiva(models.Model):
     fase = models.ForeignKey( FaseAgricola, on_delete=models.CASCADE, related_name='actividades')
     fecha = models.DateField()
@@ -255,41 +256,96 @@ class CamposCosecha(models.Model):
         help_text=_("Observaciones generales de la actividad"),
     )
 
+class CategoriaProducto(models.Model):
+    codigo = models.CharField(max_length=10, unique=True, verbose_name=_("Código"))
+    nombre = models.CharField(max_length=100, verbose_name=_("Nombre"))
+
+    class Meta:
+        verbose_name = _("Categoría de producto")
+        verbose_name_plural = _("Categorías de producto")
+
+    def __str__(self):
+        return self.nombre
+
+class Producto(models.Model):
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="productos")
+    codigo = models.CharField(max_length=50, verbose_name=_("Código"))
+    nombre = models.CharField(max_length=255, verbose_name=_("Nombre"))
+    categoria = models.ForeignKey(CategoriaProducto, on_delete=models.PROTECT, related_name="productos", verbose_name=_("Categoría"))
+    unidad_base = models.ForeignKey(Unidad, on_delete=models.PROTECT, related_name="productos_unidad_base", verbose_name=_("Unidad base"))
+    maneja_stock = models.BooleanField(default=True, verbose_name=_("Maneja stock"))
+    activo = models.BooleanField(default=True, verbose_name=_("Activo"))
+
+    class Meta:
+        verbose_name = _("Producto")
+        verbose_name_plural = _("Productos")
+        ordering = ["nombre"]
+        constraints = [
+            models.UniqueConstraint(fields=["empresa", "codigo"], name="uq_producto_empresa_codigo")
+        ]
+
+    def __str__(self):
+        return self.nombre
+
+
+class ProductoSemilla(models.Model):
+
+    producto = models.OneToOneField(Producto, on_delete=models.CASCADE, related_name="datos_semilla", verbose_name=_("Producto"))
+    cultivo = models.ForeignKey(Cultivo, on_delete=models.PROTECT, related_name="productos_semilla", verbose_name=_("Cultivo"))
+    variedad = models.ForeignKey(Variedad, on_delete=models.PROTECT, related_name="productos_semilla", verbose_name=_("Variedad"))
+
+    class Meta:
+        verbose_name = _("Producto semilla")
+        verbose_name_plural = _("Productos semilla")
+
+    def __str__(self):
+        return f"{self.producto.nombre} - {self.cultivo} - {self.variedad}"
+
+    def clean(self):
+        if self.variedad and self.variedad.cultivo_id != self.cultivo_id:
+            raise ValidationError({"variedad": _("La variedad no pertenece al cultivo seleccionado.")})
+
+        if getattr(self.producto.categoria, "codigo", None) != "SEM":
+            raise ValidationError({"producto": _("Solo los productos de categoría semilla pueden tener datos de semilla.")})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
 
 class ActividadInsumo(models.Model):
 
-    actividad = models.ForeignKey(
-        "ActividadProductiva",
-        on_delete=models.CASCADE,
-        related_name="insumos"
-    )
-
-    producto = models.ForeignKey(
-        "gestion_agro.Producto",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True
-    )
-
+    actividad = models.ForeignKey("ActividadProductiva", on_delete=models.CASCADE, related_name="insumos")
+    producto = models.ForeignKey("gestion_agro.Producto", on_delete=models.CASCADE, null=True, blank=True)
     dosis = models.DecimalField(max_digits=10, decimal_places=2)
-
     um = models.ForeignKey("agro.Unidad", on_delete=models.CASCADE, related_name="dosis_insumos")
+    cantidad_real = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    costo_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    costo_ha = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
-    cantidad_real = models.DecimalField(max_digits=12, decimal_places=2)
 
-    costo_total = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        null=True,
-        blank=True
-    )
+class TipoActividadCategoriaProducto(models.Model):
+    tipo_actividad = models.ForeignKey(TipoActividad, on_delete=models.CASCADE, related_name="categorias_producto")
+    subtipo_actividad = models.ForeignKey(SubTipoActividad, on_delete=models.CASCADE, null=True, blank=True, related_name="categorias_producto")
+    categoria_producto = models.ForeignKey(CategoriaProducto, on_delete=models.CASCADE, related_name="tipos_actividad")
+    activo = models.BooleanField(default=True)
 
-    costo_ha = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        null=True,
-        blank=True
-    )
+    class Meta:
+        unique_together = ("tipo_actividad", "subtipo_actividad", "categoria_producto")
+
+    def __str__(self):
+        if self.subtipo_actividad:
+            return f"{self.tipo_actividad} / {self.subtipo_actividad} → {self.categoria_producto}"
+        return f"{self.tipo_actividad} → {self.categoria_producto}"
+
+
+
+
+
+
+
+
 
 class ProductoNormalizado(models.Model):
     """Productos extraídos y normalizados de facturas"""
@@ -510,100 +566,36 @@ class ProductoExtractor:
 
 
 
-# =========================
-# CATEGORÍAS
-# =========================
 
-class CategoriaProducto(models.Model):
-    nombre = models.CharField(max_length=100, verbose_name=_("Nombre"))
 
-    class Meta:
-        verbose_name = _("Categoría de producto")
-        verbose_name_plural = _("Categorías de producto")
 
-    def __str__(self):
-        return self.nombre
 
-# =========================
-# PRODUCTOS
-# =========================
-class Producto(models.Model):
-    empresa = models.ForeignKey(
-        Empresa,
-        on_delete=models.CASCADE,
-        related_name="productos_agro",
-        verbose_name=_("Empresa")
-    )
 
-    nombre_comercial = models.CharField(
-        max_length=255,
-        verbose_name=_("Nombre comercial")
-    )
 
-    categoria = models.ForeignKey(
-        CategoriaProducto,
-        on_delete=models.CASCADE,
-        verbose_name=_("Categoría")
-    )
 
-    unidad_base = models.ForeignKey(
-        "agro.Unidad",
-        on_delete=models.CASCADE,
-        verbose_name=_("Unidad base")
-    )
 
-    unidad_dosis = models.ForeignKey(
-        "agro.Unidad",
-        on_delete=models.CASCADE,
-        verbose_name=_("Unidad base"),
-        related_name='unidad_dosis',
-    )
 
-    cultivo = models.ForeignKey(
-        Cultivo,
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE,
-        related_name="productos_comerciales",
-        verbose_name=_("Cultivo")
-    )
 
-    variedad = models.ForeignKey(
-        Variedad,
-        null=True,
-        blank=True,
-        on_delete=models.CASCADE,
-        related_name="productos_comerciales",
-        verbose_name=_("Variedad")
-    )
 
-    activo = models.BooleanField(
-        default=True,
-        verbose_name=_("Activo")
-    )
 
-    producto_normalizado = models.ForeignKey(
-        ProductoNormalizado,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        verbose_name=_("Producto normalizado")
-    )
 
-    class Meta:
-        verbose_name = _("Producto")
-        verbose_name_plural = _("Productos")
-        unique_together = ("empresa", "nombre_comercial")
 
-    def __str__(self):
-        return self.nombre_comercial
-    def clean(self):
-        if self.categoria.nombre.lower() == "semilla":
-            if not self.cultivo or not self.variedad:
-                raise ValidationError("Los productos de tipo semilla deben tener cultivo y variedad.")
-        else:
-            if self.cultivo or self.variedad:
-                raise ValidationError("Solo los productos de tipo semilla pueden tener cultivo y variedad.")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # =========================
 # PRESENTACIONES
@@ -622,6 +614,25 @@ class PresentacionProducto(models.Model):
 
     def __str__(self):
         return f"{self.producto} - {self.nombre}"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # =========================
 # PROVEEDORES

@@ -9,6 +9,41 @@ from django.db.models import Sum, F
 from django.utils.translation import gettext_lazy as _
 from django.db.models.functions import Coalesce
 
+
+class Profile(models.Model):
+    class Meta:
+        pass
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    empresa = models.ForeignKey("Empresa", on_delete=models.CASCADE, null=True, blank=True)
+    image = models.ImageField(default='default.jpg', upload_to='profile_pics')
+    tipo = models.CharField(max_length=1, default='A') 
+    direccion = models.CharField(max_length=100, default='')
+    direccion2 = models.CharField(max_length=100, default='')
+    pais = models.ForeignKey("Pais", on_delete=models.CASCADE, null=True, blank=True)
+    provincia = models.ForeignKey("Provincia", verbose_name=("Provincia"), on_delete=models.CASCADE, null=True, blank=True)
+    ciudad = models.ForeignKey("Ciudad", verbose_name=("Ciudad"), on_delete=models.CASCADE, null=True, blank=True)
+    cp = models.CharField(max_length=10, default='')
+    telefono = models.CharField(max_length=30, default='', null=True, blank=True)
+    celular = models.CharField(max_length=30, default='', null=True, blank=True)
+    nacionalidad = models.ForeignKey("Nacionalidad", verbose_name=("Nacionalidad"), on_delete=models.CASCADE, null=True, blank=True)
+    genero = models.ForeignKey("Genero", verbose_name=("Genero"), on_delete=models.CASCADE, null=True, blank=True)
+    tipodoc = models.ForeignKey("Tipodoc", verbose_name=("Tipo documento"), on_delete=models.CASCADE, null=True, blank=True)
+    documento = models.CharField(max_length=50, default='')
+    fecha_nacimiento = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=1, choices=[('N', 'Ingresado'), ('A', 'Aprobado'), ('S', 'Suspendido'), ], default='N')
+    observaciones = models.CharField(null=True, blank=True, max_length=1000)
+    add_date = models.DateTimeField(default=timezone.now)
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
+
+
 class Moneda(models.Model):
     def __str__(self):
         return self.nombre
@@ -78,43 +113,7 @@ class Empresa(models.Model):
     status = models.CharField(max_length=1, choices=[('O', 'Ok'), ('B', 'Baja'), ('S', 'Suspendido'), ], default='O')
     add_date = models.DateTimeField(default=timezone.now)
     moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
-    
-class Profile(models.Model):
-    class Meta:
-        pass
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    empresa = models.ForeignKey("Empresa", on_delete=models.CASCADE, null=True, blank=True)
-    image = models.ImageField(default='default.jpg', upload_to='profile_pics')
-    tipo = models.CharField(max_length=1, default='A') 
-    direccion = models.CharField(max_length=100, default='')
-    direccion2 = models.CharField(max_length=100, default='')
-    pais = models.ForeignKey("Pais", on_delete=models.CASCADE, null=True, blank=True)
-    provincia = models.ForeignKey("Provincia", verbose_name=("Provincia"), on_delete=models.CASCADE, null=True, blank=True)
-    ciudad = models.ForeignKey("Ciudad", verbose_name=("Ciudad"), on_delete=models.CASCADE, null=True, blank=True)
-    cp = models.CharField(max_length=10, default='')
-    telefono = models.CharField(max_length=30, default='', null=True, blank=True)
-    celular = models.CharField(max_length=30, default='', null=True, blank=True)
-    nacionalidad = models.ForeignKey("Nacionalidad", verbose_name=("Nacionalidad"), on_delete=models.CASCADE, null=True, blank=True)
-    genero = models.ForeignKey("Genero", verbose_name=("Genero"), on_delete=models.CASCADE, null=True, blank=True)
-    tipodoc = models.ForeignKey("Tipodoc", verbose_name=("Tipo documento"), on_delete=models.CASCADE, null=True, blank=True)
-    documento = models.CharField(max_length=50, default='')
-    fecha_nacimiento = models.DateField(null=True, blank=True)
-    status = models.CharField(max_length=1, choices=[('N', 'Ingresado'), ('A', 'Aprobado'), ('S', 'Suspendido'), ], default='N')
-    observaciones = models.CharField(null=True, blank=True, max_length=1000)
-    add_date = models.DateTimeField(default=timezone.now)
 
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
-
-# =========================
-# UNIDADES
-# =========================
 
 class Unidad(models.Model):
     nombre = models.CharField(max_length=50, verbose_name=_("Nombre"))
@@ -128,9 +127,20 @@ class Unidad(models.Model):
     def __str__(self):
         return self.abreviatura
 
+
 class ConversionUM(models.Model):
-    um_origen = models.ForeignKey(Unidad, on_delete=models.CASCADE)
-    um_destino = models.ForeignKey(Unidad, on_delete=models.CASCADE, related_name='conversion_um_dest')
-    factor = models.DecimalField(max_digits=10, decimal_places=5)
+    um_origen = models.ForeignKey(Unidad, on_delete=models.CASCADE, related_name="conversiones_origen")
+    um_destino = models.ForeignKey(Unidad, on_delete=models.CASCADE, related_name="conversiones_destino")
+    factor = models.DecimalField(max_digits=10, decimal_places=6, verbose_name=_("Factor de conversión"))
 
+    class Meta:
+        verbose_name = _("Conversión de unidad")
+        verbose_name_plural = _("Conversiones de unidades")
+        constraints = [
+            models.UniqueConstraint(fields=["um_origen", "um_destino"], name="uq_conversion_um_origen_destino")
+        ]
 
+    def __str__(self):
+        return f"{self.um_origen} → {self.um_destino} ({self.factor})"
+
+    

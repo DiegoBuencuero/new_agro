@@ -298,15 +298,29 @@ document.addEventListener("DOMContentLoaded", function () {
     const subtipoSelect = document.getElementById("id_subtipo");
     const subtipoContainer = document.getElementById("subtipoContainer");
 
+    const addBtn = document.getElementById("btnAgregarInsumo");
+    const body = document.getElementById("insumosBody");
+    const totalForms = document.getElementById("id_insumos-TOTAL_FORMS");
+    const templateElement = document.getElementById("empty-form-template");
+
+    let productosActuales = [];
+
+    function crearOpcionVacia(texto = "---------") {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = texto;
+        return option;
+    }
+
+    function obtenerSelectsProducto() {
+        return body.querySelectorAll('select[name$="-producto"]');
+    }
+
     function limpiarSubtipos() {
         if (!subtipoSelect) return;
 
         subtipoSelect.innerHTML = "";
-
-        const opcionVacia = document.createElement("option");
-        opcionVacia.value = "";
-        opcionVacia.textContent = "---------";
-        subtipoSelect.appendChild(opcionVacia);
+        subtipoSelect.appendChild(crearOpcionVacia());
     }
 
     function ocultarSubtipo() {
@@ -316,9 +330,76 @@ document.addEventListener("DOMContentLoaded", function () {
         subtipoContainer.style.display = "none";
     }
 
+    function limpiarProductos() {
+        productosActuales = [];
+
+        const selectsProducto = obtenerSelectsProducto();
+
+        selectsProducto.forEach(function (select) {
+            select.innerHTML = "";
+            select.appendChild(crearOpcionVacia());
+        });
+    }
+
+    function actualizarSelectsProducto(productos) {
+        productosActuales = productos || [];
+
+        const selectsProducto = obtenerSelectsProducto();
+
+        selectsProducto.forEach(function (select) {
+            const valorActual = select.value;
+
+            select.innerHTML = "";
+            select.appendChild(crearOpcionVacia());
+
+            productosActuales.forEach(function (producto) {
+                const option = document.createElement("option");
+                option.value = producto.id;
+                option.textContent = producto.nombre;
+                select.appendChild(option);
+            });
+
+            if (valorActual && productosActuales.some(p => String(p.id) === String(valorActual))) {
+                select.value = valorActual;
+            }
+        });
+    }
+
+    function cargarProductos(tipoId, subtipoId = "") {
+        if (!tipoId) {
+            limpiarProductos();
+            return;
+        }
+
+        const url = new URL("{% url 'ajax_productos_por_actividad' %}", window.location.origin);
+        url.searchParams.append("tipo_id", tipoId);
+
+        if (subtipoId) {
+            url.searchParams.append("subtipo_id", subtipoId);
+        }
+
+        fetch(url)
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (!data.ok) {
+                    limpiarProductos();
+                    return;
+                }
+
+                actualizarSelectsProducto(data.productos);
+            })
+            .catch(function (error) {
+                console.error("Error al cargar productos:", error);
+                limpiarProductos();
+            });
+    }
+
     function cargarSubtipos(tipoId) {
         if (!tipoId) {
             ocultarSubtipo();
+            limpiarProductos();
             return;
         }
 
@@ -331,6 +412,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 if (!data.ok || data.subtipos.length === 0) {
                     subtipoContainer.style.display = "none";
+                    cargarProductos(tipoId, "");
                     return;
                 }
 
@@ -342,10 +424,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 });
 
                 subtipoContainer.style.display = "block";
+
+                cargarProductos(tipoId, subtipoSelect.value);
             })
             .catch(function (error) {
                 console.error("Error al cargar subtipos:", error);
                 ocultarSubtipo();
+                limpiarProductos();
             });
     }
 
@@ -358,13 +443,16 @@ document.addEventListener("DOMContentLoaded", function () {
             cargarSubtipos(tipoSelect.value);
         } else {
             ocultarSubtipo();
+            limpiarProductos();
         }
     }
 
-    const addBtn = document.getElementById("btnAgregarInsumo");
-    const body = document.getElementById("insumosBody");
-    const totalForms = document.getElementById("id_insumos-TOTAL_FORMS");
-    const templateElement = document.getElementById("empty-form-template");
+    if (subtipoSelect) {
+        subtipoSelect.addEventListener("change", function () {
+            const tipoId = tipoSelect ? tipoSelect.value : "";
+            cargarProductos(tipoId, this.value);
+        });
+    }
 
     if (addBtn && body && totalForms && templateElement) {
         addBtn.addEventListener("click", function () {
@@ -373,6 +461,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
             body.insertAdjacentHTML("beforeend", html);
             totalForms.value = index + 1;
+
+            actualizarSelectsProducto(productosActuales);
         });
 
         body.addEventListener("click", function (event) {

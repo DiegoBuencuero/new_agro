@@ -12,7 +12,7 @@ from .funciones_aux import (  obtener_fase_abierta, validar_reglas_basicas_activ
 from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm,
                                 ActividadProductivaForm, ActividadInsumoForm, ActividadInsumoFormSet)
 from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
-                                ActividadProductiva
+                                ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto
                                 )
 
 
@@ -310,60 +310,67 @@ def vista_agregar_actividad(request, id_ciclo):
         actividad_form = ActividadProductivaForm(request.POST)
         insumo_formset = ActividadInsumoFormSet(request.POST, prefix="insumos")
 
-        if actividad_form.is_valid() and insumo_formset.is_valid():
+        if actividad_form.is_valid():
             tipo_actividad = actividad_form.cleaned_data["tipo"]
             subtipo = actividad_form.cleaned_data["subtipo"]
             fecha = actividad_form.cleaned_data["fecha"]
 
-            try:
-                if fase:
-                    validar_reglas_basicas_actividad(
-                        ciclo=ciclo,
+            usa_insumos = tipo_actividad.tiene_caracteristica("usa_insumos")
+
+            if not usa_insumos:
+                insumo_formset = ActividadInsumoFormSet(prefix="insumos")
+
+            if (usa_insumos and insumo_formset.is_valid()) or not usa_insumos:
+                try:
+                    if fase:
+                        validar_reglas_basicas_actividad(
+                            ciclo=ciclo,
+                            fase=fase,
+                            tipo_actividad=tipo_actividad,
+                            subtipo=subtipo,
+                            fecha=fecha,
+                        )
+                    else:
+                        validar_reglas_basicas_actividad(
+                            ciclo=ciclo,
+                            fase=None,
+                            tipo_actividad=tipo_actividad,
+                            subtipo=subtipo,
+                            fecha=fecha,
+                        )
+                        fase = crear_fase_si_corresponde(
+                            ciclo=ciclo,
+                            tipo_actividad=tipo_actividad,
+                            subtipo=subtipo,
+                            fecha=fecha,
+                        )
+
+                    actividad = actividad_form.save(commit=False)
+                    actividad.fase = fase
+                    actividad.save()
+
+                    if usa_insumos:
+                        insumo_formset.instance = actividad
+                        insumo_formset.save()
+
+                    if actividad_debe_cerrar_fase(
                         fase=fase,
                         tipo_actividad=tipo_actividad,
                         subtipo=subtipo,
-                        fecha=fecha,
-                    )
-                else:
-                    validar_reglas_basicas_actividad(
-                        ciclo=ciclo,
-                        fase=None,
-                        tipo_actividad=tipo_actividad,
-                        subtipo=subtipo,
-                        fecha=fecha,
-                    )
-                    fase = crear_fase_si_corresponde(
-                        ciclo=ciclo,
-                        tipo_actividad=tipo_actividad,
-                        subtipo=subtipo,
-                        fecha=fecha,
-                    )
+                    ):
+                        cerrar_fase(fase, fecha)
 
-                actividad = actividad_form.save(commit=False)
-                actividad.fase = fase
-                actividad.save()
+                except ValidationError as e:
+                    messages.error(request, e.message)
+                    context = {
+                        "ciclo": ciclo,
+                        "actividad_form": actividad_form,
+                        "insumo_formset": insumo_formset,
+                    }
+                    return render(request, "vista_agregar_actividad.html", context)
 
-                insumo_formset.instance = actividad
-                insumo_formset.save()
-
-                if actividad_debe_cerrar_fase(
-                    fase=fase,
-                    tipo_actividad=tipo_actividad,
-                    subtipo=subtipo,
-                ):
-                    cerrar_fase(fase, fecha)
-
-            except ValidationError as e:
-                messages.error(request, e.message)
-                context = {
-                    "ciclo": ciclo,
-                    "actividad_form": actividad_form,
-                    "insumo_formset": insumo_formset,
-                }
-                return render(request, "vista_agregar_actividad.html", context)
-
-            messages.success(request, _("Actividad registrada correctamente."))
-            return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
+                messages.success(request, _("Actividad registrada correctamente."))
+                return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
 
     else:
         actividad_form = ActividadProductivaForm()
@@ -376,3 +383,54 @@ def vista_agregar_actividad(request, id_ciclo):
     }
 
     return render(request, "vista_agregar_actividad.html", context)
+
+@login_required
+def ajax_productos_por_actividad(request):
+    tipo_id = request.GET.get("tipo_id")
+    subtipo_id = request.GET.get("subtipo_id")
+
+    if not tipo_id:
+        return JsonResponse({"ok": False, "productos": []})
+
+    empresa = request.user.profile.empresa
+
+    try:
+        tipo = TipoActividad.objects.get(id=tipo_id, activo=True)
+    except TipoActividad.DoesNotExist:
+        return JsonResponse({"ok": False, "productos": []})
+
+    configuraciones = TipoActividadCategoriaProducto.objects.filter(
+        tipo_actividad=tipo,
+        activo=True
+    )
+
+    if subtipo_id:
+        configuraciones_subtipo = configuraciones.filter(subtipo_actividad_id=subtipo_id)
+
+        if configuraciones_subtipo.exists():
+            configuraciones = configuraciones_subtipo
+        else:
+            configuraciones = configuraciones.filter(subtipo_actividad__isnull=True)
+    else:
+        configuraciones = configuraciones.filter(subtipo_actividad__isnull=True)
+
+    categoria_ids = configuraciones.values_list("categoria_producto_id", flat=True)
+
+    productos = Producto.objects.filter(
+        empresa=empresa,
+        activo=True,
+        categoria_id__in=categoria_ids
+    ).order_by("nombre")
+
+    data = [
+        {
+            "id": producto.id,
+            "nombre": producto.nombre
+        }
+        for producto in productos
+    ]
+
+    return JsonResponse({
+        "ok": True,
+        "productos": data
+    })
