@@ -3,184 +3,17 @@
 {% load i18n %}
 
 {% block plugin_css %}
-<style>
-    .label-bovino {
-        font-weight: 700 !important;
-        font-size: 0.95rem !important;
-        color: #374151 !important;
-    }
-
-    .detalle-bovino-card {
-        border-radius: 14px;
-        overflow: hidden;
-    }
-
-    .foto-bovino-box {
-        width: 100%;
-        min-height: 280px;
-        max-height: 320px;
-        border-radius: 12px;
-        background: #f3f4f6;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        border: 1px solid #e5e7eb;
-    }
-
-    .foto-bovino-box img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .foto-placeholder {
-        color: #9ca3af;
-        font-size: 0.95rem;
-    }
-
-    .bovino-titulo-principal {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #111827;
-        margin-bottom: 0.25rem;
-    }
-
-    .bovino-subtitulo {
-        color: #6b7280;
-        font-size: 0.95rem;
-    }
-
-    .badge-bovino {
-        font-size: 0.78rem;
-        padding: 0.5em 0.85em;
-        border-radius: 999px;
-        font-weight: 600;
-    }
-
-    .badge-activo-custom {
-        background: #e8f5e9;
-        color: #2e7d32;
-    }
-
-    .detalle-icon-box {
-        width: 42px;
-        height: 42px;
-        border-radius: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.15rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .icon-verde {
-        background: rgba(46, 125, 50, 0.12);
-        color: #2e7d32;
-    }
-
-    .icon-azul {
-        background: rgba(25, 118, 210, 0.12);
-        color: #1976d2;
-    }
-
-    .icon-naranja {
-        background: rgba(245, 124, 0, 0.12);
-        color: #f57c00;
-    }
-
-    .icon-violeta {
-        background: rgba(123, 31, 162, 0.12);
-        color: #7b1fa2;
-    }
-
-    .icon-rojo {
-        background: rgba(198, 40, 40, 0.12);
-        color: #c62828;
-    }
-
-    .icon-agua {
-        background: rgba(0, 121, 107, 0.12);
-        color: #00796b;
-    }
-
-    .card-resumen-bovino {
-        border-radius: 12px;
-        border: 1px solid #e5e7eb;
-        background: #fff;
-        height: 100%;
-        text-align: center;
-        padding: 1rem;
-    }
-
-    .card-resumen-bovino .titulo {
-        font-size: 0.8rem;
-        color: #6b7280;
-        margin-bottom: 0.35rem;
-        text-transform: uppercase;
-        letter-spacing: 0.4px;
-    }
-
-    .card-resumen-bovino .valor {
-        font-size: 1.05rem;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .nav-pills .nav-link {
-        border-radius: 10px;
-        border: 1px solid #d1d5db;
-        background: #fff;
-        color: #374151;
-        font-weight: 500;
-        padding: 0.65rem 1rem;
-    }
-
-    .nav-pills .nav-link.active {
-        background-color: #1f4d2b;
-        color: #fff;
-        border-color: #1f4d2b;
-    }
-
-    .nav-pills .nav-link:hover:not(.active) {
-        background: #f9fafb;
-    }
-
-    .tabla-detalle thead th {
-        background: #f9fafb;
-        font-size: 0.82rem;
-        color: #374151;
-        font-weight: 700;
-        border-bottom: 1px solid #e5e7eb;
-        white-space: nowrap;
-    }
-
-    .tabla-detalle td {
-        vertical-align: middle;
-    }
-
-    .bloque-suave {
-        background: #f9fafb;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        padding: 1rem;
-    }
-
-    .mini-label {
-        font-size: 0.82rem;
-        color: #6b7280;
-        margin-bottom: 0.15rem;
-    }
-
-    .mini-valor {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #111827;
-    }
-</style>
 {% endblock %}
 
 {% block content %}
+<style>
+    .label-ciclo {
+        font-weight: 700 !important;
+        font-size: 1rem !important;
+        color: #374151 !important;
+    }
+</style>
+
 <div class="container-fluid">
 
     {% if messages %}
@@ -202,415 +35,453 @@
 
     <div class="upload-card">
 
-        <!-- Header -->
         <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
             <div>
                 <h3 class="mb-1">
-                    <i class="mdi mdi-cow icon-agro"></i>
-                    {% translate "Detalle de Bovino" %}
+                    <i class="mdi mdi-leaf icon-agro"></i>
+                    {% translate "Agregar Actividad Agrícola" %}
                 </h3>
                 <div class="small text-muted">
-                    {{ bovino.numero_interno }} · {{ bovino.establecimiento_actual }}
+                    {{ ciclo.nombre_lote }} · {{ ciclo.campo }}
                 </div>
             </div>
 
-            <div class="d-flex gap-2 flex-wrap">
-                <a href="{% url 'vista_lista_bovinos' %}" class="btn btn-outline-secondary">
+            <div>
+                <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-outline-secondary">
                     <i class="mdi mdi-arrow-left me-1"></i>
                     {% translate "Volver" %}
                 </a>
-
-                <a href="{% url 'vista_editar_bovino' bovino.id %}" class="btn btn-outline-primary">
-                    <i class="mdi mdi-pencil-outline me-1"></i>
-                    {% translate "Editar" %}
-                </a>
-
-                <a href="#" class="btn btn-outline-success">
-                    <i class="mdi mdi-scale-balance me-1"></i>
-                    {% translate "+ Medición" %}
-                </a>
-
-                <a href="#" class="btn btn-outline-dark">
-                    <i class="mdi mdi-medical-bag me-1"></i>
-                    {% translate "+ Sanidad" %}
-                </a>
-
-                <a href="#" class="btn btn-success">
-                    <i class="mdi mdi-silo-outline me-1"></i>
-                    {% translate "+ Alimentación" %}
-                </a>
             </div>
         </div>
 
-        <!-- Ficha principal -->
-        <div class="card detalle-bovino-card mb-4">
-            <div class="card-body">
-                <div class="row g-4 align-items-center">
-
-                    <div class="col-lg-3">
-                        <div class="foto-bovino-box">
-                            {% if bovino.foto %}
-                                <img src="{{ bovino.foto.url }}" alt="{{ bovino.nombre_apodo|default:bovino.numero_interno }}">
-                            {% else %}
-                                <div class="foto-placeholder">
-                                    <i class="mdi mdi-image-off-outline fs-2 d-block text-center mb-2"></i>
-                                    {% translate "Sin foto" %}
-                                </div>
-                            {% endif %}
+        <div class="row g-3 mb-4">
+            <div class="col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label label-ciclo">
+                                {% translate "Superficie" %}
+                            </label>
+                            <div class="col-sm-7 pt-2">
+                                {{ ciclo.superficie_ha }} ha
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="col-lg-9">
-                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-                            <div>
-                                <div class="text-uppercase small text-muted fw-bold mb-1">
-                                    {{ bovino.raza }}{% if bovino.subtipo %} · {{ bovino.subtipo }}{% endif %}
-                                </div>
-                                <div class="bovino-titulo-principal">
-                                    {{ bovino.nombre_apodo|default:"Sin apodo" }}
-                                </div>
-                                <div class="bovino-subtitulo">
-                                    <i class="mdi mdi-map-marker-outline me-1"></i>
-                                    {{ bovino.establecimiento_actual }}
-                                </div>
+            <div class="col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label label-ciclo">
+                                {% translate "Cultivo" %}
+                            </label>
+                            <div class="col-sm-7 pt-2">
+                                {{ ciclo.cultivo }}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-                            <div>
-                                {% if bovino.activo %}
-                                    <span class="badge badge-bovino badge-activo-custom">
-                                        <i class="mdi mdi-check-circle me-1"></i>{% translate "Activo" %}
-                                    </span>
+            <div class="col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label label-ciclo">
+                                {% translate "Inicio" %}
+                            </label>
+                            <div class="col-sm-7 pt-2">
+                                {{ ciclo.fecha_inicio|date:"d/m/Y" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="form-group row">
+                            <label class="col-sm-5 col-form-label label-ciclo">
+                                {% translate "Estado" %}
+                            </label>
+                            <div class="col-sm-7 pt-2">
+                                {% if ciclo.activa %}
+                                    <span class="badge bg-success">{% translate "Activo" %}</span>
                                 {% else %}
-                                    <span class="badge bg-secondary badge-bovino">
-                                        <i class="mdi mdi-close-circle-outline me-1"></i>{% translate "Inactivo" %}
-                                    </span>
+                                    <span class="badge bg-secondary">{% translate "Cerrado" %}</span>
                                 {% endif %}
                             </div>
                         </div>
-
-                        <div class="row g-3 mt-3">
-                            <div class="col-md-3">
-                                <div class="bloque-suave">
-                                    <div class="mini-label">{% translate "Número interno" %}</div>
-                                    <div class="mini-valor">{{ bovino.numero_interno }}</div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3">
-                                <div class="bloque-suave">
-                                    <div class="mini-label">{% translate "Sexo" %}</div>
-                                    <div class="mini-valor">{{ bovino.get_sexo_display }}</div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3">
-                                <div class="bloque-suave">
-                                    <div class="mini-label">{% translate "Categoría" %}</div>
-                                    <div class="mini-valor">{{ bovino.categoria_actual }}</div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3">
-                                <div class="bloque-suave">
-                                    <div class="mini-label">{% translate "Destino" %}</div>
-                                    <div class="mini-valor">{{ bovino.destino_productivo_actual }}</div>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
             </div>
         </div>
+<div class="grid-margin stretch-card">
+    <div class="card">
+        <div class="card-body">
+            <form method="post" id="actividadForm">
+                {% csrf_token %}
 
-        <!-- Cards resumen -->
-        <div class="row g-3 mb-4">
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-verde">
-                        <i class="mdi mdi-calendar-cake"></i>
+                {% if actividad_form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ actividad_form.non_field_errors }}
                     </div>
-                    <div class="titulo">{% translate "Nacimiento" %}</div>
-                    <div class="valor">{{ bovino.fecha_nacimiento|date:"d/m/Y" }}</div>
-                </div>
-            </div>
+                {% endif %}
 
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-azul">
-                        <i class="mdi mdi-tag-outline"></i>
-                    </div>
-                    <div class="titulo">{% translate "C. SENASA" %}</div>
-                    <div class="valor">{{ bovino.caravana_senasa|default:"-" }}</div>
-                </div>
-            </div>
+                <p class="card-description mb-4">
+                    {% translate "Datos de la actividad" %}
+                </p>
 
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-naranja">
-                        <i class="mdi mdi-identifier"></i>
-                    </div>
-                    <div class="titulo">{% translate "Tatuaje" %}</div>
-                    <div class="valor">{{ bovino.tatuaje|default:"-" }}</div>
-                </div>
-            </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-violeta">
-                        <i class="mdi mdi-scale-balance"></i>
-                    </div>
-                    <div class="titulo">{% translate "Últ. medición" %}</div>
-                    <div class="valor">
-                        {% if ultima_medicion %}
-                            {{ ultima_medicion.valor }} {{ ultima_medicion.unidad|default:"" }}
-                        {% else %}
-                            -
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-rojo">
-                        <i class="mdi mdi-medical-bag"></i>
-                    </div>
-                    <div class="titulo">{% translate "Sanidad" %}</div>
-                    <div class="valor">{{ sanitarios|length }}</div>
-                </div>
-            </div>
-
-            <div class="col-6 col-md-4 col-xl-2">
-                <div class="card-resumen-bovino">
-                    <div class="detalle-icon-box icon-agua">
-                        <i class="mdi mdi-silo-outline"></i>
-                    </div>
-                    <div class="titulo">{% translate "Alimentación" %}</div>
-                    <div class="valor">{{ alimentacion|length }}</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tabs -->
-        <ul class="nav nav-pills mb-4" id="animalTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="resumen-tab" data-bs-toggle="pill" data-bs-target="#resumen" type="button">{% translate "Resumen" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="genealogia-tab" data-bs-toggle="pill" data-bs-target="#genealogia" type="button">{% translate "Genealogía" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="mediciones-tab" data-bs-toggle="pill" data-bs-target="#mediciones" type="button">{% translate "Mediciones" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="sanidad-tab" data-bs-toggle="pill" data-bs-target="#sanidad" type="button">{% translate "Sanidad" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="alimentacion-tab" data-bs-toggle="pill" data-bs-target="#alimentacion" type="button">{% translate "Alimentación" %}</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="breedplan-tab" data-bs-toggle="pill" data-bs-target="#breedplan" type="button">{% translate "Breedplan" %}</button>
-            </li>
-        </ul>
-
-        <!-- Contenido -->
-        <div class="tab-content" id="animalTabContent">
-
-            <div class="tab-pane fade show active" id="resumen" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Datos generales y observaciones" %}</h5>
-                        <div class="bloque-suave">
-                            {{ bovino.observaciones|default:"Sin observaciones registradas." }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="genealogia" role="tabpanel">
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body d-flex align-items-center gap-3">
-                                <div class="detalle-icon-box icon-azul mb-0">
-                                    <i class="mdi mdi-gender-female"></i>
-                                </div>
-                                <div>
-                                    <div class="mini-label">{% translate "Madre" %}</div>
-                                    <div class="mini-valor">{{ bovino.madre|default:"Desconocida" }}</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-4">
+                        <label for="{{ actividad_form.fecha.id_for_label }}" class="form-label">
+                            {% translate "Fecha" %}
+                        </label>
+                        {{ actividad_form.fecha }}
+                        {{ actividad_form.fecha.errors }}
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body d-flex align-items-center gap-3">
-                                <div class="detalle-icon-box icon-verde mb-0">
-                                    <i class="mdi mdi-gender-male"></i>
-                                </div>
-                                <div>
-                                    <div class="mini-label">{% translate "Padre" %}</div>
-                                    <div class="mini-valor">{{ bovino.padre|default:"Desconocido" }}</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="col-md-4">
+                        <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">
+                            {% translate "Tipo" %}
+                        </label>
+                        {{ actividad_form.tipo }}
+                        {{ actividad_form.tipo.errors }}
+                    </div>
+
+                    <div class="col-md-4" id="subtipoContainer" style="display: none;">
+                        <label for="{{ actividad_form.subtipo.id_for_label }}" class="form-label">
+                            {% translate "Subtipo" %}
+                        </label>
+                        {{ actividad_form.subtipo }}
+                        {{ actividad_form.subtipo.errors }}
                     </div>
                 </div>
-            </div>
 
-            <div class="tab-pane fade" id="mediciones" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Mediciones" %}</h5>
-                        <div class="table-responsive">
-                            <table class="table tabla-detalle align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Fecha" %}</th>
-                                        <th>{% translate "Tipo" %}</th>
-                                        <th>{% translate "Valor" %}</th>
-                                        <th>{% translate "Unidad" %}</th>
-                                        <th>{% translate "Observación" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for medicion in mediciones %}
-                                    <tr>
-                                        <td>{{ medicion.fecha_medicion|date:"d/m/Y" }}</td>
-                                        <td>{{ medicion.tipo_medicion }}</td>
-                                        <td class="fw-bold">{{ medicion.valor }}</td>
-                                        <td>{{ medicion.unidad|default:"-" }}</td>
-                                        <td>{{ medicion.observacion|default:"-" }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">{% translate "No hay registros de mediciones." %}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <label for="{{ actividad_form.observaciones.id_for_label }}" class="form-label">
+                            {% translate "Observaciones" %}
+                        </label>
+                        {{ actividad_form.observaciones }}
+                        {{ actividad_form.observaciones.errors }}
                     </div>
                 </div>
-            </div>
 
-            <div class="tab-pane fade" id="sanidad" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Sanidad" %}</h5>
+                <hr class="my-4">
+
+                <div class="card mb-4" id="insumosSection">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>{% translate "Insumos utilizados" %}</strong>
+
+                        <button type="button" class="btn btn-success btn-sm" id="btnAgregarInsumo">
+                            <i class="mdi mdi-plus"></i>
+                            {% translate "Agregar insumo" %}
+                        </button>
+                    </div>
+
+                    <div class="card-body p-0">
+                        {{ insumo_formset.management_form }}
+
+                        {% if insumo_formset.non_form_errors %}
+                            <div class="alert alert-danger m-3">
+                                {{ insumo_formset.non_form_errors }}
+                            </div>
+                        {% endif %}
+
                         <div class="table-responsive">
-                            <table class="table tabla-detalle align-middle">
+                            <table class="table mb-0 align-middle">
                                 <thead>
                                     <tr>
-                                        <th>{% translate "Fecha" %}</th>
-                                        <th>{% translate "Evento / Tratamiento" %}</th>
-                                        <th>{% translate "Medicamento / Insumo" %}</th>
+                                        <th>{% translate "Producto" %}</th>
                                         <th>{% translate "Dosis" %}</th>
-                                        <th>{% translate "Próx. refuerzo" %}</th>
+                                        <th>{% translate "Unidad" %}</th>
+                                        <th class="text-center">{% translate "Acción" %}</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    {% for item in sanitarios %}
-                                    <tr>
-                                        <td>{{ item.fecha|date:"d/m/Y" }}</td>
-                                        <td>{{ item.tipo_evento }}</td>
-                                        <td>{{ item.medicamento|default:"-" }}</td>
-                                        <td>{{ item.dosis|default:"-" }}</td>
-                                        <td>{{ item.fecha_refuerzo|date:"d/m/Y"|default:"-" }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">{% translate "No hay registros sanitarios." %}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <div class="tab-pane fade" id="alimentacion" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Alimentación" %}</h5>
-                        <div class="table-responsive">
-                            <table class="table tabla-detalle align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Fecha" %}</th>
-                                        <th>{% translate "Ración / Alimento" %}</th>
-                                        <th>{% translate "Cantidad" %}</th>
-                                        <th>{% translate "Lote" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in alimentacion %}
-                                    <tr>
-                                        <td>{{ item.fecha|date:"d/m/Y" }}</td>
-                                        <td>{{ item.alimento }}</td>
-                                        <td>{{ item.cantidad }} {{ item.unidad }}</td>
-                                        <td>{{ item.lote_codigo|default:"-" }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">{% translate "No hay registros de alimentación." %}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+                                <tbody id="insumosBody">
+                                    {% for form_insumo in insumo_formset %}
+                                        <tr class="insumo-row">
+                                            {% for hidden in form_insumo.hidden_fields %}
+                                                {{ hidden }}
+                                            {% endfor %}
 
-            <div class="tab-pane fade" id="breedplan" role="tabpanel">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="mb-3">{% translate "Índices Genéticos (EBVs)" %}</h5>
-                        <div class="table-responsive">
-                            <table class="table tabla-detalle align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Rasgo" %}</th>
-                                        <th>{% translate "EBV" %}</th>
-                                        <th>{% translate "Precisión (%)" %}</th>
-                                        <th>{% translate "Percentil" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for item in breedplan %}
-                                    <tr>
-                                        <td>{{ item.rasgo|default:item.indice }}</td>
-                                        <td class="fw-bold">{{ item.valor }}</td>
-                                        <td>{{ item.precision|default:"-" }}{% if item.precision %}%{% endif %}</td>
-                                        <td>
-                                            {% if item.percentil %}
-                                                <div class="progress" style="height: 8px; border-radius: 999px;">
-                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ item.percentil|default:0 }}%"></div>
+                                            <td>
+                                                {{ form_insumo.producto }}
+                                                {{ form_insumo.producto.errors }}
+                                            </td>
+
+                                            <td>
+                                                {{ form_insumo.dosis }}
+                                                {{ form_insumo.dosis.errors }}
+                                            </td>
+
+                                            <td>
+                                                {{ form_insumo.um }}
+                                                {{ form_insumo.um.errors }}
+                                            </td>
+
+                                            <td class="text-center">
+                                                <div class="d-none">
+                                                    {{ form_insumo.DELETE }}
                                                 </div>
-                                                <small class="text-muted">{{ item.percentil }}%</small>
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">{% translate "No hay datos de Breedplan disponibles." %}</td>
-                                    </tr>
+
+                                                <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
+                                                    <i class="mdi mdi-delete"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
                         </div>
+
+                        <template id="empty-form-template">
+                            <tr class="insumo-row">
+                                {% for hidden in insumo_formset.empty_form.hidden_fields %}
+                                    {{ hidden }}
+                                {% endfor %}
+
+                                <td>
+                                    {{ insumo_formset.empty_form.producto }}
+                                </td>
+
+                                <td>
+                                    {{ insumo_formset.empty_form.dosis }}
+                                </td>
+
+                                <td>
+                                    {{ insumo_formset.empty_form.um }}
+                                </td>
+
+                                <td class="text-center">
+                                    <div class="d-none">
+                                        {{ insumo_formset.empty_form.DELETE }}
+                                    </div>
+
+                                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
+                                        <i class="mdi mdi-delete"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
                     </div>
                 </div>
-            </div>
 
+                <div class="mt-4 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        {% translate "Guardar actividad" %}
+                    </button>
+
+                    <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">
+                        {% translate "Cancelar" %}
+                    </a>
+                </div>
+            </form>
         </div>
-
     </div>
 </div>
+
+</div>
+</div>
+
+{% endblock %}
+
+{% block custom_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const tipoSelect = document.getElementById("id_tipo");
+    const subtipoSelect = document.getElementById("id_subtipo");
+    const subtipoContainer = document.getElementById("subtipoContainer");
+
+    const addBtn = document.getElementById("btnAgregarInsumo");
+    const body = document.getElementById("insumosBody");
+    const totalForms = document.getElementById("id_insumos-TOTAL_FORMS");
+    const templateElement = document.getElementById("empty-form-template");
+
+    let productosActuales = [];
+
+    function crearOpcionVacia(texto = "---------") {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = texto;
+        return option;
+    }
+
+    function obtenerSelectsProducto() {
+        return body.querySelectorAll('select[name$="-producto"]');
+    }
+
+    function limpiarSubtipos() {
+        if (!subtipoSelect) return;
+
+        subtipoSelect.innerHTML = "";
+        subtipoSelect.appendChild(crearOpcionVacia());
+    }
+
+    function ocultarSubtipo() {
+        if (!subtipoContainer) return;
+
+        limpiarSubtipos();
+        subtipoContainer.style.display = "none";
+    }
+
+    function limpiarProductos() {
+        productosActuales = [];
+
+        const selectsProducto = obtenerSelectsProducto();
+
+        selectsProducto.forEach(function (select) {
+            select.innerHTML = "";
+            select.appendChild(crearOpcionVacia());
+        });
+    }
+
+    function actualizarSelectsProducto(productos) {
+        productosActuales = productos || [];
+
+        const selectsProducto = obtenerSelectsProducto();
+
+        selectsProducto.forEach(function (select) {
+            const valorActual = select.value;
+
+            select.innerHTML = "";
+            select.appendChild(crearOpcionVacia());
+
+            productosActuales.forEach(function (producto) {
+                const option = document.createElement("option");
+                option.value = producto.id;
+                option.textContent = producto.nombre;
+                select.appendChild(option);
+            });
+
+            if (valorActual && productosActuales.some(p => String(p.id) === String(valorActual))) {
+                select.value = valorActual;
+            }
+        });
+    }
+
+    function cargarProductos(tipoId, subtipoId = "") {
+        if (!tipoId) {
+            limpiarProductos();
+            return;
+        }
+
+        const url = new URL("{% url 'ajax_productos_por_actividad' %}", window.location.origin);
+        url.searchParams.append("tipo_id", tipoId);
+
+        if (subtipoId) {
+            url.searchParams.append("subtipo_id", subtipoId);
+        }
+
+        fetch(url)
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                if (!data.ok) {
+                    limpiarProductos();
+                    return;
+                }
+
+                actualizarSelectsProducto(data.productos);
+            })
+            .catch(function (error) {
+                console.error("Error al cargar productos:", error);
+                limpiarProductos();
+            });
+    }
+
+    function cargarSubtipos(tipoId) {
+        if (!tipoId) {
+            ocultarSubtipo();
+            limpiarProductos();
+            return;
+        }
+
+        fetch("{% url 'ajax_subtipos_tipo_actividad' %}?tipo_id=" + tipoId)
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                limpiarSubtipos();
+
+                if (!data.ok || data.subtipos.length === 0) {
+                    subtipoContainer.style.display = "none";
+                    cargarProductos(tipoId, "");
+                    return;
+                }
+
+                data.subtipos.forEach(function (subtipo) {
+                    const option = document.createElement("option");
+                    option.value = subtipo.id;
+                    option.textContent = subtipo.nombre;
+                    subtipoSelect.appendChild(option);
+                });
+
+                subtipoContainer.style.display = "block";
+
+                cargarProductos(tipoId, subtipoSelect.value);
+            })
+            .catch(function (error) {
+                console.error("Error al cargar subtipos:", error);
+                ocultarSubtipo();
+                limpiarProductos();
+            });
+    }
+
+    if (tipoSelect) {
+        tipoSelect.addEventListener("change", function () {
+            cargarSubtipos(this.value);
+        });
+
+        if (tipoSelect.value) {
+            cargarSubtipos(tipoSelect.value);
+        } else {
+            ocultarSubtipo();
+            limpiarProductos();
+        }
+    }
+
+    if (subtipoSelect) {
+        subtipoSelect.addEventListener("change", function () {
+            const tipoId = tipoSelect ? tipoSelect.value : "";
+            cargarProductos(tipoId, this.value);
+        });
+    }
+
+    if (addBtn && body && totalForms && templateElement) {
+        addBtn.addEventListener("click", function () {
+            const index = parseInt(totalForms.value, 10);
+            const html = templateElement.innerHTML.replace(/__prefix__/g, index);
+
+            body.insertAdjacentHTML("beforeend", html);
+            totalForms.value = index + 1;
+
+            actualizarSelectsProducto(productosActuales);
+        });
+
+        body.addEventListener("click", function (event) {
+            const btn = event.target.closest(".btn-remove-row");
+            if (!btn) return;
+
+            const row = btn.closest(".insumo-row");
+            if (!row) return;
+
+            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+
+            if (deleteInput) {
+                deleteInput.checked = true;
+                row.style.display = "none";
+            } else {
+                row.remove();
+            }
+        });
+    }
+});
+</script>
 {% endblock %}
