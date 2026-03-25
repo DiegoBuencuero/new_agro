@@ -102,6 +102,14 @@ class Ciudad(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.provincia})"
 
+class Lista_de_precios(models.Model):
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        verbose_name = "Lista de precios"
+        verbose_name_plural = "Listas de precios"
+
 class Empresa(models.Model):
     def __str__(self):
         return self.nombre
@@ -113,6 +121,8 @@ class Empresa(models.Model):
     status = models.CharField(max_length=1, choices=[('O', 'Ok'), ('B', 'Baja'), ('S', 'Suspendido'), ], default='O')
     add_date = models.DateTimeField(default=timezone.now)
     moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
+    unidad_default = models.ForeignKey("Unidad", on_delete=models.PROTECT, related_name="empresas", null=True, blank=True)
+    lista_precio = models.ForeignKey(Lista_de_precios, on_delete=models.CASCADE, related_name="lista_de_precios", null=True, blank=True)
 
 
 class Unidad(models.Model):

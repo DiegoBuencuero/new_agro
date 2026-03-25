@@ -6,7 +6,7 @@ import re
 from decimal import Decimal
 from django.db import transaction
 from django.core.exceptions import ValidationError
-from agro.models import Empresa, Unidad
+from agro.models import Empresa, Unidad, Moneda
 
 
 class Campo(models.Model):
@@ -274,6 +274,7 @@ class Producto(models.Model):
     nombre = models.CharField(max_length=255, verbose_name=_("Nombre"))
     categoria = models.ForeignKey(CategoriaProducto, on_delete=models.PROTECT, related_name="productos", verbose_name=_("Categoría"))
     unidad_base = models.ForeignKey(Unidad, on_delete=models.PROTECT, related_name="productos_unidad_base", verbose_name=_("Unidad base"))
+    precio = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Precio"))
     maneja_stock = models.BooleanField(default=True, verbose_name=_("Maneja stock"))
     activo = models.BooleanField(default=True, verbose_name=_("Activo"))
 
@@ -339,8 +340,39 @@ class TipoActividadCategoriaProducto(models.Model):
             return f"{self.tipo_actividad} / {self.subtipo_actividad} → {self.categoria_producto}"
         return f"{self.tipo_actividad} → {self.categoria_producto}"
 
+class ListaPrecio(models.Model):
+    TIPO_CHOICES = [("CP", "Compra"), ("V", "Venta")]
+
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="listas_precios")
+    codigo = models.CharField(max_length=20)
+    nombre = models.CharField(max_length=100)
+    tipo = models.CharField(max_length=2, choices=TIPO_CHOICES)
+    moneda = models.ForeignKey(Moneda, on_delete=models.PROTECT, related_name="listas_precios")
+    unidad = models.ForeignKey(Unidad, on_delete=models.PROTECT, related_name="listas_precios")
+    activa = models.BooleanField(default=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["empresa", "codigo"], name="uq_lista_precio_empresa_codigo")
+        ]
+
+    def __str__(self):
+        return f"{self.codigo} - {self.nombre}"
 
 
+class ListaPrecioDetalle(models.Model):
+    lista_precio = models.ForeignKey(ListaPrecio, on_delete=models.CASCADE, related_name="detalles")
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="precios")
+    unidad = models.ForeignKey(Unidad, on_delete=models.PROTECT, related_name="precios_lista")
+    precio = models.DecimalField(max_digits=18, decimal_places=4)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["lista_precio", "producto", "unidad"], name="uq_lista_precio_producto_unidad")
+        ]
+
+    def __str__(self):
+        return f"{self.lista_precio} - {self.producto} - {self.precio}"
 
 
 
