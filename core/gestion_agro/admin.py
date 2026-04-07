@@ -1,10 +1,10 @@
 from django.contrib import admin
 from agro.models import Profile, Pais, Provincia, Ciudad, Empresa, Moneda
 from gestion_agro.models import ( Campo, Lote, Actividad, Cultivo, Variedad, Campana,
-    CicloAgricola, FaseAgricola, TipoActividad, CaracteristicaActividad, TipoActividadCaracteristica,
+    CicloAgricola, FaseAgricola, TipoActividad, 
     SubTipoActividad, ActividadProductiva, CamposVistoria, CamposCosecha, CategoriaProducto,
     Producto, ProductoSemilla, ActividadInsumo, ProductoNormalizado, PresentacionProducto,
-    Proveedor_agro, FacturaCompra, FacturaCompraItem, MovimientoStock, StockActual,TipoActividadCategoriaProducto
+    Proveedor_agro, FacturaCompra, FacturaCompraItem, MovimientoStock, TipoActividadCategoriaProducto
 )
 
 
@@ -69,26 +69,11 @@ class FaseAgricolaAdmin(admin.ModelAdmin):
     search_fields = ("ciclo__nombre_lote",)
     list_filter = ("tipo", "estado")
 
-
 @admin.register(TipoActividad)
 class TipoActividadAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "orden", "activo")
-    search_fields = ("nombre",)
-    list_filter = ("activo",)
-
-
-@admin.register(CaracteristicaActividad)
-class CaracteristicaActividadAdmin(admin.ModelAdmin):
-    list_display = ("codigo", "nombre")
-    search_fields = ("codigo", "nombre")
-
-
-@admin.register(TipoActividadCaracteristica)
-class TipoActividadCaracteristicaAdmin(admin.ModelAdmin):
-    list_display = ("tipo_actividad", "caracteristica")
-    search_fields = ("tipo_actividad__nombre", "caracteristica__nombre", "caracteristica__codigo")
-    list_filter = ("tipo_actividad", "caracteristica")
-
+    list_display = ('nombre', 'tipo', 'abre_fase', 'cierra_fase')
+    list_filter = ('tipo', 'abre_fase', 'cierra_fase')
+    search_fields = ('nombre',)
 
 @admin.register(SubTipoActividad)
 class SubTipoActividadAdmin(admin.ModelAdmin):
@@ -190,11 +175,6 @@ class MovimientoStockAdmin(admin.ModelAdmin):
     search_fields = ("producto__nombre",)
     list_filter = ("tipo", "fecha")
 
-
-@admin.register(StockActual)
-class StockActualAdmin(admin.ModelAdmin):
-    list_display = ("producto", "cantidad", "actualizado")
-    search_fields = ("producto__nombre",)
 
 @admin.register(TipoActividadCategoriaProducto)
 class TipoActividadCategoriaProductoAdmin(admin.ModelAdmin):

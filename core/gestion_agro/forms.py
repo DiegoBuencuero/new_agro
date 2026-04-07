@@ -111,7 +111,7 @@ class ActividadProductivaForm(BaseForm):
         self.fields["tipo"].queryset = (
             TipoActividad.objects
             .filter(activo=True)
-            .order_by("orden", "nombre")
+            .order_by("nombre")
         )
 
         # Subtipos vacíos al inicio
@@ -136,7 +136,6 @@ class ActividadProductivaForm(BaseForm):
             self.fields["subtipo"].queryset = (
                 SubTipoActividad.objects
                 .filter(tipo_actividad_id=tipo_id, activo=True)
-                .order_by("nombre")
             )
 
     def clean(self):

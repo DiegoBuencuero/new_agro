@@ -156,49 +156,22 @@ class FaseAgricola(models.Model):
     def es_activa(self):
         return self.estado == 'abierto'
     
+
 class TipoActividad(models.Model):
-    nombre = models.CharField(max_length=50, unique=True)
-    descripcion = models.CharField(max_length=150, blank=True, null=True)
-    orden = models.PositiveIntegerField(default=0)
+    def __str__(self):
+        return f"{self.nombre} ({self.tipo})"
+    nombre = models.CharField(max_length=30)
+    tipo = models.CharField(max_length=1)
     activo = models.BooleanField(default=True)
-
-    def tiene_caracteristica(self, codigo):
-        return self.caracteristicas_asignadas.filter(
-            caracteristica__codigo=codigo
-        ).exists()
-
-    def __str__(self):
-        return self.nombre
-
-#### es para meter en una tabla si una actividad requiere insumos, maqui  mano de obra, si abre fsase si cierra fase
-class CaracteristicaActividad(models.Model):
-    codigo = models.CharField(max_length=30, unique=True)
-    nombre = models.CharField(max_length=50)
-    descripcion = models.CharField(max_length=150, blank=True, null=True)
-
-    def __str__(self):
-        return self.nombre
-
-# tabla intermedia para saber que  reglas  que vienen de CaracteristicaActividad
-# , si una actividad por ejemplo, requiere insumos, req maquina,  inicia fase cierra fase 
-class TipoActividadCaracteristica(models.Model):
-    tipo_actividad = models.ForeignKey(
-        TipoActividad,
-        on_delete=models.CASCADE,
-        related_name='caracteristicas_asignadas'
-    )
-    caracteristica = models.ForeignKey(
-        CaracteristicaActividad,
-        on_delete=models.CASCADE,
-        related_name='tipos_actividad'
-    )
-
-    class Meta:
-        unique_together = ('tipo_actividad', 'caracteristica')
-
-    def __str__(self):
-        return f"{self.tipo_actividad} - {self.caracteristica}"
-
+    abre_fase = models.BooleanField(default=False)
+    cierra_fase = models.BooleanField(default=False)
+    requiere_subtipo = models.BooleanField(default=False)
+    adicionales = models.BooleanField(default=False)
+    requiere_insumo = models.BooleanField(default=False)
+    requiere_mo = models.BooleanField(default=False)
+    requiere_maq = models.BooleanField(default=False)
+    requiere_vist = models.BooleanField(default=False)
+    requiere_cosecha = models.BooleanField(default=False)
 
 class SubTipoActividad(models.Model):
     tipo_actividad = models.ForeignKey(TipoActividad, on_delete=models.CASCADE, related_name='subtipos')
@@ -320,11 +293,54 @@ class ActividadInsumo(models.Model):
     actividad = models.ForeignKey("ActividadProductiva", on_delete=models.CASCADE, related_name="insumos")
     producto = models.ForeignKey("gestion_agro.Producto", on_delete=models.CASCADE, null=True, blank=True)
     dosis = models.DecimalField(max_digits=10, decimal_places=2)
-    um = models.ForeignKey("agro.Unidad", on_delete=models.CASCADE, related_name="dosis_insumos")
+    um = models.ForeignKey(
+        Unidad,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='actividad_insumos'
+    )
     cantidad_real = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     costo_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     costo_ha = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
+
+class MovimientoStock(models.Model):
+    class Tipo(models.TextChoices):
+        ENTRADA = "ENTRADA", _("Entrada")
+        SALIDA = "SALIDA", _("Salida")
+   
+
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    tipo = models.CharField(max_length=10, choices=Tipo.choices)
+    cantidad = models.DecimalField(max_digits=14, decimal_places=3)
+    um = models.ForeignKey(
+        Unidad,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='movimientos_stock'
+    )
+    fecha = models.DateTimeField(default=timezone.now)
+    actividad = models.ForeignKey(  
+         "gestion_agro.ActividadProductiva",
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="movimientos_stock"
+    )
+    factura_item = models.ForeignKey("FacturaCompraItem", on_delete=models.CASCADE, null=True, blank=True)
+    precio_unitario = models.DecimalField(
+        max_digits=14,
+        decimal_places=6,
+        help_text=_("Precio promedio aplicado al momento del consumo"),
+        null=True,
+        blank=False,
+    )
+
+    class Meta:
+        verbose_name = _("Movimiento de stock")
+        verbose_name_plural = _("Movimientos de stock")
 
 class TipoActividadCategoriaProducto(models.Model):
     tipo_actividad = models.ForeignKey(TipoActividad, on_delete=models.CASCADE, related_name="categorias_producto")
@@ -373,6 +389,7 @@ class ListaPrecioDetalle(models.Model):
 
     def __str__(self):
         return f"{self.lista_precio} - {self.producto} - {self.precio}"
+
 
 
 
@@ -721,54 +738,5 @@ class FacturaCompraItem(models.Model):
         verbose_name = _("Ítem de factura")
         verbose_name_plural = _("Ítems de factura")
 
-# =========================
-# MOVIMIENTOS DE STOCK
-# =========================
 
-class MovimientoStock(models.Model):
-    class Tipo(models.TextChoices):
-        ENTRADA = "ENTRADA", _("Entrada")
-        SALIDA = "SALIDA", _("Salida")
-        AJUSTE = "AJUSTE", _("Ajuste")
-
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    tipo = models.CharField(max_length=10, choices=Tipo.choices)
-    cantidad = models.DecimalField(max_digits=14, decimal_places=3)
-
-    fecha = models.DateTimeField(default=timezone.now)
-    factura_item = models.ForeignKey(FacturaCompraItem, on_delete=models.CASCADE, null=True, blank=True)
-    actividad = models.ForeignKey(  
-         "gestion_agro.ActividadProductiva",
-        on_delete=models.SET_NULL, 
-        null=True, 
-        blank=True,
-        related_name="movimientos_stock"
-    )
-    precio_unitario = models.DecimalField(
-        max_digits=14,
-        decimal_places=6,
-        help_text=_("Precio promedio aplicado al momento del consumo"),
-        null=True,
-        blank=False,
-    )
-
-    class Meta:
-        verbose_name = _("Movimiento de stock")
-        verbose_name_plural = _("Movimientos de stock")
-
-# =========================
-# STOCK ACTUAL
-# =========================
-
-class StockActual(models.Model):
-    producto = models.OneToOneField(Producto, on_delete=models.CASCADE)
-    cantidad = models.DecimalField(max_digits=14, decimal_places=3, default=0)
-    actualizado = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = _("Stock actual")
-        verbose_name_plural = _("Stock actual")
-
-    def __str__(self):
-        return f"{self.producto} → {self.cantidad}"
 

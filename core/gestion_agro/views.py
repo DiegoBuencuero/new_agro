@@ -7,13 +7,12 @@ from django.contrib import messages
 from django.core.exceptions import ValidationError
 from .funciones_aux import (  obtener_fase_abierta, validar_reglas_basicas_actividad,   crear_fase_si_corresponde,
                             actividad_debe_cerrar_fase,
-                            cerrar_fase,
                             )
 from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm,
                                 ActividadProductivaForm, ActividadInsumoForm, ActividadInsumoFormSet)
 from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
-                                ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto
-                                )
+                                ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
+                                CamposVistoria, CamposCosecha )
 
 
 @login_required
@@ -294,83 +293,138 @@ def ajax_subtipos_tipo_actividad(request):
 @login_required
 def vista_agregar_actividad(request, id_ciclo):
     empresa = request.user.profile.empresa
-    ciclo = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa)
+    ciclo = CicloAgricola.objects.filter(
+        id=id_ciclo,
+        campo__empresa=empresa
+    ).first()
+
+    if not ciclo:
+        messages.error(request, "El ciclo no existe.")
+        return redirect("vista_lista_ciclos")
 
     if not ciclo.activa:
-        messages.error(request, _("El ciclo está cerrado."))
+        messages.error(request, "El ciclo está cerrado.")
         return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
 
-    try:
-        fase = obtener_fase_abierta(ciclo)
-    except ValidationError as e:
-        messages.error(request, e.message)
-        return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
+    fase = (
+        FaseAgricola.objects
+        .filter(ciclo=ciclo)
+        .order_by("-fecha_inicio", "-id")
+        .first()
+    )
 
     if request.method == "POST":
         actividad_form = ActividadProductivaForm(request.POST)
         insumo_formset = ActividadInsumoFormSet(request.POST, prefix="insumos")
 
         if actividad_form.is_valid():
-            tipo_actividad = actividad_form.cleaned_data["tipo"]
-            subtipo = actividad_form.cleaned_data["subtipo"]
+            tipo = actividad_form.cleaned_data["tipo"]
+            subtipo = actividad_form.cleaned_data.get("subtipo")
             fecha = actividad_form.cleaned_data["fecha"]
 
-            usa_insumos = tipo_actividad.tiene_caracteristica("usa_insumos")
+            requiere_subtipo = tipo.requiere_subtipo
+            requiere_insumo = tipo.requiere_insumo
+            abre_fase = tipo.abre_fase
+            cierra_fase = tipo.cierra_fase
 
-            if not usa_insumos:
-                insumo_formset = ActividadInsumoFormSet(prefix="insumos")
+            context = {
+                "ciclo": ciclo,
+                "actividad_form": actividad_form,
+                "insumo_formset": insumo_formset,
+            }
 
-            if (usa_insumos and insumo_formset.is_valid()) or not usa_insumos:
-                try:
-                    if fase:
-                        validar_reglas_basicas_actividad(
-                            ciclo=ciclo,
-                            fase=fase,
-                            tipo_actividad=tipo_actividad,
-                            subtipo=subtipo,
-                            fecha=fecha,
-                        )
-                    else:
-                        validar_reglas_basicas_actividad(
-                            ciclo=ciclo,
-                            fase=None,
-                            tipo_actividad=tipo_actividad,
-                            subtipo=subtipo,
-                            fecha=fecha,
-                        )
-                        fase = crear_fase_si_corresponde(
-                            ciclo=ciclo,
-                            tipo_actividad=tipo_actividad,
-                            subtipo=subtipo,
-                            fecha=fecha,
-                        )
+            if fecha < ciclo.fecha_inicio:
+                messages.error(request, "La fecha no puede ser anterior al inicio del ciclo.")
+                return render(request, "vista_agregar_actividad.html", context)
 
-                    actividad = actividad_form.save(commit=False)
-                    actividad.fase = fase
-                    actividad.save()
+            if requiere_subtipo and not subtipo:
+                messages.error(request, "Este tipo de actividad requiere subtipo.")
+                return render(request, "vista_agregar_actividad.html", context)
 
-                    if usa_insumos:
-                        insumo_formset.instance = actividad
-                        insumo_formset.save()
+            if subtipo and subtipo.tipo_actividad_id != tipo.id:
+                messages.error(request, "El subtipo no corresponde al tipo seleccionado.")
+                return render(request, "vista_agregar_actividad.html", context)
 
-                    if actividad_debe_cerrar_fase(
-                        fase=fase,
-                        tipo_actividad=tipo_actividad,
-                        subtipo=subtipo,
-                    ):
-                        cerrar_fase(fase, fecha)
-
-                except ValidationError as e:
-                    messages.error(request, e.message)
-                    context = {
-                        "ciclo": ciclo,
-                        "actividad_form": actividad_form,
-                        "insumo_formset": insumo_formset,
-                    }
+            # REGLA DE FASE
+            # 1) si no existe ninguna fase, solo seguimos si la actividad abre fase
+            if not fase:
+                if not abre_fase:
+                    messages.error(request, "Todavía no existe ninguna fase. Debes registrar una actividad que abra fase.")
                     return render(request, "vista_agregar_actividad.html", context)
 
-                messages.success(request, _("Actividad registrada correctamente."))
+            # 2) si existe una fase abierta, trabajamos sobre esa
+            elif fase.estado == "abierto":
+                if fecha < fase.fecha_inicio:
+                    messages.error(request, "La fecha no puede ser anterior al inicio de la fase abierta.")
+                    return render(request, "vista_agregar_actividad.html", context)
+
+                if abre_fase:
+                    messages.error(request, "La última fase ya está abierta. No puedes abrir otra.")
+                    return render(request, "vista_agregar_actividad.html", context)
+
+            # 3) si la última fase está cerrada, solo una actividad que abre fase puede crear una nueva
+            elif fase.estado == "cerrado":
+                if not abre_fase:
+                    messages.error(request, "La última fase está cerrada. Debes usar una actividad que abra una nueva fase.")
+                    return render(request, "vista_agregar_actividad.html", context)
+
+            if requiere_insumo:
+                if not insumo_formset.is_valid():
+                    messages.error(request, "Revisa los insumos.")
+                    return render(request, "vista_agregar_actividad.html", context)
+
+                hay_insumos = False
+                for form in insumo_formset:
+                    if hasattr(form, "cleaned_data"):
+                        if form.cleaned_data and not form.cleaned_data.get("DELETE", False):
+                            hay_insumos = True
+                            break
+
+                if not hay_insumos:
+                    messages.error(request, "Debes cargar al menos un insumo.")
+                    return render(request, "vista_agregar_actividad.html", context)
+
+            try:
+                # Si no hay fase o la última está cerrada, y esta actividad abre fase, creo nueva
+                if abre_fase and (not fase or fase.estado == "cerrado"):
+                    fase = FaseAgricola.objects.create(
+                        ciclo=ciclo,
+                        tipo="PRI",
+                        fecha_inicio=fecha,
+                        estado="abierto"
+                    )
+
+                actividad = actividad_form.save(commit=False)
+                actividad.fase = fase
+                actividad.save()
+
+                if requiere_insumo:
+                    insumo_formset.instance = actividad
+                    insumo_formset.save()
+
+                if tipo.requiere_vist:
+                    CamposVistoria.objects.create(actividad=actividad)
+
+                if tipo.requiere_cosecha:
+                    CamposCosecha.objects.create(actividad=actividad)
+
+                if cierra_fase:
+                    if not fase or fase.estado != "abierto":
+                        messages.error(request, "No hay una fase abierta para cerrar.")
+                        return render(request, "vista_agregar_actividad.html", context)
+
+                    fase.fecha_fin = fecha
+                    fase.estado = "cerrado"
+                    fase.save()
+
+                messages.success(request, "Actividad registrada correctamente.")
                 return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
+
+            except Exception as e:
+                messages.error(request, f"Error al registrar la actividad: {e}")
+
+        else:
+            messages.error(request, "Hay errores en el formulario.")
 
     else:
         actividad_form = ActividadProductivaForm()
