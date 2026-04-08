@@ -9,13 +9,24 @@ from gestion_agro.models import (
 
 def obtener_reglas_de_fase(tipo, subtipo):
     # de donde saco si abre o cierra fase
+    af = None
+    cf = None
+
     if subtipo:
-        return subtipo.puede_abrir_fase, subtipo.puede_cerrar_fase
+        if subtipo.abre_fase is not None:
+            af = subtipo.abre_fase
+        if subtipo.cierra_fase is not None:
+            cf = subtipo.cierra_fase
+     
+    if not af:
+        af = tipo.abre_fase
+    if not cf:
+        cf = tipo.cierra_fase
 
-    return tipo.abre_fase, tipo.cierra_fase
+    return af, cf
 
 
-def validar_reglas_generales(ciclo, fase, tipo, subtipo, fecha, puede_abrir_fase):
+def validar_reglas_generales(ciclo, fase, tipo, subtipo, fecha,  abre_fase):
     # validaciones base del flujo
     if fecha < ciclo.fecha_inicio:
         return False, _("La fecha es anterior al inicio del ciclo.")
@@ -23,13 +34,13 @@ def validar_reglas_generales(ciclo, fase, tipo, subtipo, fecha, puede_abrir_fase
     if tipo.requiere_subtipo and not subtipo:
         return False, _("Debe seleccionar un subtipo.")
 
-    if not fase and not puede_abrir_fase:
+    if not fase and not  abre_fase:
         return False, _("No hay fase abierta y esta actividad no puede abrir una.")
 
     if fase and fase.estado == "abierto" and fecha < fase.fecha_inicio:
         return False, _("La fecha es menor al inicio de la fase.")
 
-    if fase and fase.estado == "cerrado" and not puede_abrir_fase:
+    if fase and fase.estado == "cerrado" and not  abre_fase:
         return False, _("La fase está cerrada y esta actividad no puede abrir una nueva.")
 
     return True, None
@@ -90,8 +101,6 @@ def validar_cosecha(ciclo, tipo, fecha, cosecha_form):
 
 def validar_reglas_siembra(fase, tipo, subtipo):
     # reglas propias de siembra
-    if tipo.nombre.lower() != "siembra" or not fase:
-        return True, None
 
     nombre_subtipo = subtipo.nombre.lower() if subtipo else ""
 
@@ -146,11 +155,11 @@ def validar_reglas_aplicacion(fase, tipo, subtipo, fecha):
     return True, None
 
 
-def crear_fase_si_corresponde(ciclo, fase, fecha, puede_abrir_fase):
+def crear_fase_si_corresponde(ciclo, fase, fecha,  abre_fase):
     # si la actividad abre fase y hace falta, la creo
     inicio_fase = False
 
-    if puede_abrir_fase and (not fase or fase.estado == "cerrado"):
+    if  abre_fase and (not fase or fase.estado == "cerrado"):
         fase = FaseAgricola.objects.create(
             ciclo=ciclo,
             tipo="PRI",
@@ -162,9 +171,9 @@ def crear_fase_si_corresponde(ciclo, fase, fecha, puede_abrir_fase):
     return fase, inicio_fase
 
 
-def cerrar_fase_si_corresponde(fase, fecha, puede_cerrar_fase):
+def cerrar_fase_si_corresponde(fase, fecha,  cierra_fase):
     # si corresponde, cierro la fase
-    if puede_cerrar_fase and fase and fase.estado == "abierto":
+    if  cierra_fase and fase and fase.estado == "abierto":
         fase.fecha_fin = fecha
         fase.estado = "cerrado"
         fase.save()
@@ -225,10 +234,10 @@ def registrar_actividad_aux(
     fecha = actividad_form.cleaned_data["fecha"]
 
     # 1. reglas de fase
-    puede_abrir_fase, puede_cerrar_fase = obtener_reglas_de_fase(tipo, subtipo)
+    abre_fase,  cierra_fase = obtener_reglas_de_fase(tipo, subtipo)
 
     # 2. validaciones generales
-    ok, msg = validar_reglas_generales(ciclo, fase, tipo, subtipo, fecha, puede_abrir_fase)
+    ok, msg = validar_reglas_generales(ciclo, fase, tipo, subtipo, fecha,  abre_fase)
     if not ok:
         return False, msg
 
@@ -248,7 +257,7 @@ def registrar_actividad_aux(
         return False, msg
 
     # 6. crear fase si corresponde
-    fase, inicio_fase = crear_fase_si_corresponde(ciclo, fase, fecha, puede_abrir_fase)
+    fase, inicio_fase = crear_fase_si_corresponde(ciclo, fase, fecha,  abre_fase)
 
     # 7. reglas de siembra
     ok, msg = validar_reglas_siembra(fase, tipo, subtipo)
@@ -271,7 +280,7 @@ def registrar_actividad_aux(
     guardar_cosecha(actividad, tipo, cosecha_form)
 
     # 11. cerrar fase
-    cerrar_fase_si_corresponde(fase, fecha, puede_cerrar_fase)
+    cerrar_fase_si_corresponde(fase, fecha,  cierra_fase)
 
     return True, {
         "actividad": actividad,
