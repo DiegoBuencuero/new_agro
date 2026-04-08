@@ -172,6 +172,7 @@ class TipoActividad(models.Model):
     requiere_maq = models.BooleanField(default=False)
     requiere_vist = models.BooleanField(default=False)
     requiere_cosecha = models.BooleanField(default=False)
+    valor_maquina = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Costo Maquina"), null=True, blank=True)
 
 class SubTipoActividad(models.Model):
     tipo_actividad = models.ForeignKey(TipoActividad, on_delete=models.CASCADE, related_name='subtipos')
@@ -181,6 +182,11 @@ class SubTipoActividad(models.Model):
     activo = models.BooleanField(default=True)
     abre_fase = models.BooleanField(null=True, blank=True )
     cierra_fase = models.BooleanField(null=True, blank=True )
+    valor_x_ha_mo = models.DecimalField(max_digits=5, decimal_places=3, null=True, blank=True)
+    valor_x_ha_mq = models.DecimalField(max_digits=5, decimal_places=3, null=True, blank = True)
+    valor_mobra = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Costo MO"), null=True, blank=True)
+    valor_maquina = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Costo Maquina"), null=True, blank=True)
+
     class Meta:
         unique_together = ('tipo_actividad', 'codigo')
 
