@@ -179,6 +179,8 @@ class SubTipoActividad(models.Model):
     nombre = models.CharField(max_length=50)
     descripcion = models.CharField(max_length=150, blank=True, null=True)
     activo = models.BooleanField(default=True)
+    puede_abrir_fase = models.BooleanField(default=False)
+    puede_cerrar_fase = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('tipo_actividad', 'codigo')

@@ -1,13 +1,29 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load i18n %}
-{% include 'mensajes.html' %}
 
 {% block plugin_css %}
 <link rel="stylesheet" href="{% static 'css/detalleCiclo.css' %}">
 {% endblock %}
+
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid">   
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+            <div>{{ message }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
     <div class="upload-card">
         <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
             <div>
@@ -344,4 +360,17 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+setTimeout(function () {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+    });
+}, 5000);
+
+</script>
 {% endblock %}

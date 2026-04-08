@@ -69,18 +69,6 @@ class FaseAgricolaAdmin(admin.ModelAdmin):
     search_fields = ("ciclo__nombre_lote",)
     list_filter = ("tipo", "estado")
 
-@admin.register(TipoActividad)
-class TipoActividadAdmin(admin.ModelAdmin):
-    list_display = ('nombre', 'tipo', 'abre_fase', 'cierra_fase')
-    list_filter = ('tipo', 'abre_fase', 'cierra_fase')
-    search_fields = ('nombre',)
-
-@admin.register(SubTipoActividad)
-class SubTipoActividadAdmin(admin.ModelAdmin):
-    list_display = ("nombre", "codigo", "tipo_actividad", "activo")
-    search_fields = ("nombre", "codigo", "tipo_actividad__nombre")
-    list_filter = ("tipo_actividad", "activo")
-
 
 @admin.register(ActividadProductiva)
 class ActividadProductivaAdmin(admin.ModelAdmin):
@@ -176,8 +164,25 @@ class MovimientoStockAdmin(admin.ModelAdmin):
     list_filter = ("tipo", "fecha")
 
 
-@admin.register(TipoActividadCategoriaProducto)
-class TipoActividadCategoriaProductoAdmin(admin.ModelAdmin):
-    list_display = ("tipo_actividad", "subtipo_actividad", "categoria_producto", "activo")
-    list_filter = ("tipo_actividad", "subtipo_actividad", "categoria_producto", "activo")
-    search_fields = ("tipo_actividad__nombre", "subtipo_actividad__nombre", "categoria_producto__nombre", "categoria_producto__codigo")
+@admin.register(TipoActividad)
+class TipoActividadAdmin(admin.ModelAdmin):
+    list_display = (
+        "nombre",
+        "tipo",
+        "activo",
+        "requiere_subtipo",
+        "requiere_insumo",
+        "requiere_mo",
+        "requiere_maq",
+        "requiere_vist",
+        "requiere_cosecha",
+    )
+    list_filter = ("activo", "requiere_subtipo", "tipo")
+    search_fields = ("nombre",)
+
+
+@admin.register(SubTipoActividad)
+class SubTipoActividadAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "codigo", "tipo_actividad", "activo")
+    list_filter = ("activo", "tipo_actividad")
+    search_fields = ("nombre", "codigo")

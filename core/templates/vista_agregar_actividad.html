@@ -119,369 +119,535 @@
                 </div>
             </div>
         </div>
-<div class="grid-margin stretch-card">
-    <div class="card">
-        <div class="card-body">
-            <form method="post" id="actividadForm">
-                {% csrf_token %}
 
-                {% if actividad_form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {{ actividad_form.non_field_errors }}
-                    </div>
-                {% endif %}
+        <div class="grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" id="actividadForm" enctype="multipart/form-data">
+                        {% csrf_token %}
 
-                <p class="card-description mb-4">
-                    {% translate "Datos de la actividad" %}
-                </p>
-
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label for="{{ actividad_form.fecha.id_for_label }}" class="form-label">
-                            {% translate "Fecha" %}
-                        </label>
-                        {{ actividad_form.fecha }}
-                        {{ actividad_form.fecha.errors }}
-                    </div>
-
-                    <div class="col-md-4">
-                        <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">
-                            {% translate "Tipo" %}
-                        </label>
-                        {{ actividad_form.tipo }}
-                        {{ actividad_form.tipo.errors }}
-                    </div>
-
-                    <div class="col-md-4" id="subtipoContainer" style="display: none;">
-                        <label for="{{ actividad_form.subtipo.id_for_label }}" class="form-label">
-                            {% translate "Subtipo" %}
-                        </label>
-                        {{ actividad_form.subtipo }}
-                        {{ actividad_form.subtipo.errors }}
-                    </div>
-                </div>
-
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <label for="{{ actividad_form.observaciones.id_for_label }}" class="form-label">
-                            {% translate "Observaciones" %}
-                        </label>
-                        {{ actividad_form.observaciones }}
-                        {{ actividad_form.observaciones.errors }}
-                    </div>
-                </div>
-
-                <hr class="my-4">
-
-                <div class="card mb-4" id="insumosSection">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <strong>{% translate "Insumos utilizados" %}</strong>
-
-                        <button type="button" class="btn btn-success btn-sm" id="btnAgregarInsumo">
-                            <i class="mdi mdi-plus"></i>
-                            {% translate "Agregar insumo" %}
-                        </button>
-                    </div>
-
-                    <div class="card-body p-0">
-                        {{ insumo_formset.management_form }}
-
-                        {% if insumo_formset.non_form_errors %}
-                            <div class="alert alert-danger m-3">
-                                {{ insumo_formset.non_form_errors }}
+                        {% if actividad_form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ actividad_form.non_field_errors }}
                             </div>
                         {% endif %}
 
-                        <div class="table-responsive">
-                            <table class="table mb-0 align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Producto" %}</th>
-                                        <th>{% translate "Dosis" %}</th>
-                                        <th>{% translate "Unidad" %}</th>
-                                        <th class="text-center">{% translate "Acción" %}</th>
-                                    </tr>
-                                </thead>
+                        <p class="card-description mb-4">
+                            {% translate "Datos de la actividad" %}
+                        </p>
 
-                                <tbody id="insumosBody">
-                                    {% for form_insumo in insumo_formset %}
-                                        <tr class="insumo-row">
-                                            {% for hidden in form_insumo.hidden_fields %}
-                                                {{ hidden }}
-                                            {% endfor %}
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label for="{{ actividad_form.fecha.id_for_label }}" class="form-label">
+                                    {% translate "Fecha" %}
+                                </label>
+                                {{ actividad_form.fecha }}
+                                {{ actividad_form.fecha.errors }}
+                            </div>
 
-                                            <td>
-                                                {{ form_insumo.producto }}
-                                                {{ form_insumo.producto.errors }}
-                                            </td>
+                            <div class="col-md-4">
+                                <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">
+                                    {% translate "Tipo" %}
+                                </label>
+                                {{ actividad_form.tipo }}
+                                {{ actividad_form.tipo.errors }}
+                            </div>
 
-                                            <td>
-                                                {{ form_insumo.dosis }}
-                                                {{ form_insumo.dosis.errors }}
-                                            </td>
-
-                                            <td>
-                                                {{ form_insumo.um }}
-                                                {{ form_insumo.um.errors }}
-                                            </td>
-
-                                            <td class="text-center">
-                                                <div class="d-none">
-                                                    {{ form_insumo.DELETE }}
-                                                </div>
-
-                                                <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
-                                                    <i class="mdi mdi-delete"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                            <div class="col-md-4" id="subtipoContainer" style="display: none;">
+                                <label for="{{ actividad_form.subtipo.id_for_label }}" class="form-label">
+                                    {% translate "Subtipo" %}
+                                </label>
+                                {{ actividad_form.subtipo }}
+                                {{ actividad_form.subtipo.errors }}
+                            </div>
                         </div>
 
-                        <template id="empty-form-template">
-                            <tr class="insumo-row">
-                                {% for hidden in insumo_formset.empty_form.hidden_fields %}
-                                    {{ hidden }}
-                                {% endfor %}
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <label for="{{ actividad_form.observaciones.id_for_label }}" class="form-label">
+                                    {% translate "Observaciones" %}
+                                </label>
+                                {{ actividad_form.observaciones }}
+                                {{ actividad_form.observaciones.errors }}
+                            </div>
+                        </div>
 
-                                <td>
-                                    {{ insumo_formset.empty_form.producto }}
-                                </td>
+                        <hr class="my-4">
 
-                                <td>
-                                    {{ insumo_formset.empty_form.dosis }}
-                                </td>
+                        <div class="card mb-4" id="insumosSection" style="display: none;">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <strong>{% translate "Insumos utilizados" %}</strong>
 
-                                <td>
-                                    {{ insumo_formset.empty_form.um }}
-                                </td>
+                                <button type="button" class="btn btn-success btn-sm" id="btnAgregarInsumo">
+                                    <i class="mdi mdi-plus"></i>
+                                    {% translate "Agregar insumo" %}
+                                </button>
+                            </div>
 
-                                <td class="text-center">
-                                    <div class="d-none">
-                                        {{ insumo_formset.empty_form.DELETE }}
+                            <div class="card-body p-0">
+                                {{ insumo_formset.management_form }}
+
+                                {% if insumo_formset.non_form_errors %}
+                                    <div class="alert alert-danger m-3">
+                                        {{ insumo_formset.non_form_errors }}
+                                    </div>
+                                {% endif %}
+
+                                <div class="table-responsive">
+                                    <table class="table mb-0 align-middle">
+                                        <thead>
+                                            <tr>
+                                                <th>{% translate "Producto" %}</th>
+                                                <th>{% translate "Dosis" %}</th>
+                                                <th>{% translate "Unidad" %}</th>
+                                                <th class="text-center">{% translate "Acción" %}</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody id="insumosBody">
+                                            {% for form_insumo in insumo_formset %}
+                                                <tr class="insumo-row">
+                                                    {% for hidden in form_insumo.hidden_fields %}
+                                                        {{ hidden }}
+                                                    {% endfor %}
+
+                                                    <td>
+                                                        {{ form_insumo.producto }}
+                                                        {{ form_insumo.producto.errors }}
+                                                    </td>
+
+                                                    <td>
+                                                        {{ form_insumo.dosis }}
+                                                        {{ form_insumo.dosis.errors }}
+                                                    </td>
+
+                                                    <td>
+                                                        {{ form_insumo.um }}
+                                                        {{ form_insumo.um.errors }}
+                                                    </td>
+
+                                                    <td class="text-center">
+                                                        <div class="d-none">
+                                                            {{ form_insumo.DELETE }}
+                                                        </div>
+
+                                                        <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
+                                                            <i class="mdi mdi-delete"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <template id="empty-form-template">
+                                    <tr class="insumo-row">
+                                        {% for hidden in insumo_formset.empty_form.hidden_fields %}
+                                            {{ hidden }}
+                                        {% endfor %}
+
+                                        <td>
+                                            {{ insumo_formset.empty_form.producto }}
+                                        </td>
+
+                                        <td>
+                                            {{ insumo_formset.empty_form.dosis }}
+                                        </td>
+
+                                        <td>
+                                            {{ insumo_formset.empty_form.um }}
+                                        </td>
+
+                                        <td class="text-center">
+                                            <div class="d-none">
+                                                {{ insumo_formset.empty_form.DELETE }}
+                                            </div>
+
+                                            <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
+                                                <i class="mdi mdi-delete"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4" id="vistoriaSection" style="display: none;">
+                            <div class="card-header">
+                                <strong>{% translate "Datos de monitoreo" %}</strong>
+                            </div>
+                            <div class="card-body">
+                                {% if vistoria_form.non_field_errors %}
+                                    <div class="alert alert-danger">
+                                        {{ vistoria_form.non_field_errors }}
+                                    </div>
+                                {% endif %}
+
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="{{ vistoria_form.plantas_m2.id_for_label }}" class="form-label">
+                                            {{ vistoria_form.plantas_m2.label }}
+                                        </label>
+                                        {{ vistoria_form.plantas_m2 }}
+                                        {{ vistoria_form.plantas_m2.errors }}
                                     </div>
 
-                                    <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
-                                        <i class="mdi mdi-delete"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        </template>
-                    </div>
-                </div>
+                                    <div class="col-md-4">
+                                        <label for="{{ vistoria_form.malezas.id_for_label }}" class="form-label">
+                                            {{ vistoria_form.malezas.label }}
+                                        </label>
+                                        {{ vistoria_form.malezas }}
+                                        {{ vistoria_form.malezas.errors }}
+                                    </div>
 
-                <div class="mt-4 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        {% translate "Guardar actividad" %}
-                    </button>
+                                    <div class="col-md-4">
+                                        <label for="{{ vistoria_form.insectos.id_for_label }}" class="form-label">
+                                            {{ vistoria_form.insectos.label }}
+                                        </label>
+                                        {{ vistoria_form.insectos }}
+                                        {{ vistoria_form.insectos.errors }}
+                                    </div>
 
-                    <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">
-                        {% translate "Cancelar" %}
-                    </a>
+                                    <div class="col-md-6">
+                                        <label for="{{ vistoria_form.enfermedades.id_for_label }}" class="form-label">
+                                            {{ vistoria_form.enfermedades.label }}
+                                        </label>
+                                        {{ vistoria_form.enfermedades }}
+                                        {{ vistoria_form.enfermedades.errors }}
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="{{ vistoria_form.imagen.id_for_label }}" class="form-label">
+                                            {{ vistoria_form.imagen.label }}
+                                        </label>
+                                        {{ vistoria_form.imagen }}
+                                        {{ vistoria_form.imagen.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4" id="cosechaSection" style="display: none;">
+                            <div class="card-header">
+                                <strong>{% translate "Datos de cosecha" %}</strong>
+                            </div>
+                            <div class="card-body">
+                                {% if cosecha_form.non_field_errors %}
+                                    <div class="alert alert-danger">
+                                        {{ cosecha_form.non_field_errors }}
+                                    </div>
+                                {% endif %}
+
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label for="{{ cosecha_form.rendimiento.id_for_label }}" class="form-label">
+                                            {{ cosecha_form.rendimiento.label }}
+                                        </label>
+                                        {{ cosecha_form.rendimiento }}
+                                        {{ cosecha_form.rendimiento.errors }}
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label for="{{ cosecha_form.comentarios_cosecha.id_for_label }}" class="form-label">
+                                            {{ cosecha_form.comentarios_cosecha.label }}
+                                        </label>
+                                        {{ cosecha_form.comentarios_cosecha }}
+                                        {{ cosecha_form.comentarios_cosecha.errors }}
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <label for="{{ cosecha_form.observaciones.id_for_label }}" class="form-label">
+                                            {{ cosecha_form.observaciones.label }}
+                                        </label>
+                                        {{ cosecha_form.observaciones }}
+                                        {{ cosecha_form.observaciones.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                {% translate "Guardar actividad" %}
+                            </button>
+
+                            <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">
+                                {% translate "Cancelar" %}
+                            </a>
+                        </div>
+                    </form>
                 </div>
-            </form>
+            </div>
         </div>
-    </div>
-</div>
 
-</div>
+    </div>
 </div>
 
 {% endblock %}
 
 {% block custom_js %}
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    const tipoSelect = document.getElementById("id_tipo");
-    const subtipoSelect = document.getElementById("id_subtipo");
-    const subtipoContainer = document.getElementById("subtipoContainer");
 
-    const addBtn = document.getElementById("btnAgregarInsumo");
-    const body = document.getElementById("insumosBody");
-    const totalForms = document.getElementById("id_insumos-TOTAL_FORMS");
-    const templateElement = document.getElementById("empty-form-template");
+<script>
+$(document).ready(function () {
+
+    const tipoSelect = $("#id_tipo");
+    const subtipoSelect = $("#id_subtipo");
+    const subtipoContainer = $("#subtipoContainer");
+
+    const insumosSection = $("#insumosSection");
+    const vistoriaSection = $("#vistoriaSection");
+    const cosechaSection = $("#cosechaSection");
+
+    const addBtn = $("#btnAgregarInsumo");
+    const body = $("#insumosBody");
+    const totalForms = $("#id_insumos-TOTAL_FORMS");
+    const templateElement = $("#empty-form-template");
 
     let productosActuales = [];
 
     function crearOpcionVacia(texto = "---------") {
-        const option = document.createElement("option");
-        option.value = "";
-        option.textContent = texto;
-        return option;
+        return $("<option>").val("").text(texto);
     }
 
     function obtenerSelectsProducto() {
-        return body.querySelectorAll('select[name$="-producto"]');
+        return body.find('select[name$="-producto"]');
     }
 
     function limpiarSubtipos() {
-        if (!subtipoSelect) return;
-
-        subtipoSelect.innerHTML = "";
-        subtipoSelect.appendChild(crearOpcionVacia());
+        if (!subtipoSelect.length) return;
+        subtipoSelect.empty().append(crearOpcionVacia());
     }
 
     function ocultarSubtipo() {
-        if (!subtipoContainer) return;
-
+        if (!subtipoContainer.length) return;
         limpiarSubtipos();
-        subtipoContainer.style.display = "none";
+        subtipoContainer.hide();
     }
 
     function limpiarProductos() {
+        console.log("🧹 limpiarProductos");
         productosActuales = [];
 
-        const selectsProducto = obtenerSelectsProducto();
-
-        selectsProducto.forEach(function (select) {
-            select.innerHTML = "";
-            select.appendChild(crearOpcionVacia());
+        obtenerSelectsProducto().each(function () {
+            $(this).empty().append(crearOpcionVacia());
         });
     }
 
+    function proponerUnidadEnFila(selectProducto) {
+        const row = $(selectProducto).closest(".insumo-row");
+        const selectUnidad = row.find('select[name$="-um"]');
+
+        const selectedOption = selectProducto.options[selectProducto.selectedIndex];
+        if (!selectedOption) return;
+
+        const unidadId = selectedOption.dataset.unidadId;
+        if (!unidadId) return;
+
+        selectUnidad.val(unidadId);
+    }
+
     function actualizarSelectsProducto(productos) {
+        console.log("=== actualizarSelectsProducto ===");
+        console.log("productos:", productos);
+
         productosActuales = productos || [];
 
-        const selectsProducto = obtenerSelectsProducto();
+        const selects = obtenerSelectsProducto();
+        console.log("selects encontrados:", selects.length);
 
-        selectsProducto.forEach(function (select) {
-            const valorActual = select.value;
+        selects.each(function () {
+            const select = $(this);
+            const valorActual = select.val();
 
-            select.innerHTML = "";
-            select.appendChild(crearOpcionVacia());
+            select.empty().append(crearOpcionVacia());
 
             productosActuales.forEach(function (producto) {
-                const option = document.createElement("option");
-                option.value = producto.id;
-                option.textContent = producto.nombre;
-                select.appendChild(option);
+                console.log("➕", producto.nombre);
+
+                const option = $("<option>")
+                    .val(producto.id)
+                    .text(producto.nombre)
+                    .attr("data-unidad-id", producto.unidad_id || "")
+                    .attr("data-unidad-abreviatura", producto.unidad_abreviatura || "");
+
+                select.append(option);
             });
 
             if (valorActual && productosActuales.some(p => String(p.id) === String(valorActual))) {
-                select.value = valorActual;
+                select.val(valorActual);
+                proponerUnidadEnFila(select[0]);
             }
         });
     }
 
+    function ocultarSecciones() {
+        insumosSection.hide();
+        vistoriaSection.hide();
+        cosechaSection.hide();
+    }
+
+    function actualizarSeccionesPorTipo() {
+        ocultarSecciones();
+
+        if (!tipoSelect.val()) return;
+
+        const texto = tipoSelect.find("option:selected").text().toLowerCase();
+
+        if (
+            texto.includes("siembra") ||
+            texto.includes("aplicación") ||
+            texto.includes("aplicacion") ||
+            texto.includes("fertilización") ||
+            texto.includes("fertilizacion")
+        ) {
+            insumosSection.show();
+        } else if (texto.includes("monitoreo")) {
+            vistoriaSection.show();
+        } else if (texto.includes("cosecha")) {
+            cosechaSection.show();
+        }
+    }
+
     function cargarProductos(tipoId, subtipoId = "") {
+        console.log("=== cargarProductos ===");
+        console.log("tipoId:", tipoId, "subtipoId:", subtipoId);
+
         if (!tipoId) {
             limpiarProductos();
             return;
         }
 
-        const url = new URL("{% url 'ajax_productos_por_actividad' %}", window.location.origin);
-        url.searchParams.append("tipo_id", tipoId);
+        $.ajax({
+            url: "{% url 'ajax_productos_por_actividad' %}",
+            type: "GET",
+            data: {
+                tipo_id: tipoId,
+                subtipo_id: subtipoId
+            },
+            success: function (data) {
+                console.log("📦 productos:", data);
 
-        if (subtipoId) {
-            url.searchParams.append("subtipo_id", subtipoId);
-        }
-
-        fetch(url)
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
                 if (!data.ok) {
                     limpiarProductos();
                     return;
                 }
 
+                console.log("cantidad:", data.productos.length);
                 actualizarSelectsProducto(data.productos);
-            })
-            .catch(function (error) {
-                console.error("Error al cargar productos:", error);
+            },
+            error: function (xhr, status, error) {
+                console.error("ERROR productos:", error);
+                console.log(xhr.responseText);
                 limpiarProductos();
-            });
-    }
-
-    function cargarSubtipos(tipoId) {
-        if (!tipoId) {
-            ocultarSubtipo();
-            limpiarProductos();
-            return;
-        }
-
-        fetch("{% url 'ajax_subtipos_tipo_actividad' %}?tipo_id=" + tipoId)
-            .then(function (response) {
-                return response.json();
-            })
-            .then(function (data) {
-                limpiarSubtipos();
-
-                if (!data.ok || data.subtipos.length === 0) {
-                    subtipoContainer.style.display = "none";
-                    cargarProductos(tipoId, "");
-                    return;
-                }
-
-                data.subtipos.forEach(function (subtipo) {
-                    const option = document.createElement("option");
-                    option.value = subtipo.id;
-                    option.textContent = subtipo.nombre;
-                    subtipoSelect.appendChild(option);
-                });
-
-                subtipoContainer.style.display = "block";
-
-                cargarProductos(tipoId, subtipoSelect.value);
-            })
-            .catch(function (error) {
-                console.error("Error al cargar subtipos:", error);
-                ocultarSubtipo();
-                limpiarProductos();
-            });
-    }
-
-    if (tipoSelect) {
-        tipoSelect.addEventListener("change", function () {
-            cargarSubtipos(this.value);
-        });
-
-        if (tipoSelect.value) {
-            cargarSubtipos(tipoSelect.value);
-        } else {
-            ocultarSubtipo();
-            limpiarProductos();
-        }
-    }
-
-    if (subtipoSelect) {
-        subtipoSelect.addEventListener("change", function () {
-            const tipoId = tipoSelect ? tipoSelect.value : "";
-            cargarProductos(tipoId, this.value);
-        });
-    }
-
-    if (addBtn && body && totalForms && templateElement) {
-        addBtn.addEventListener("click", function () {
-            const index = parseInt(totalForms.value, 10);
-            const html = templateElement.innerHTML.replace(/__prefix__/g, index);
-
-            body.insertAdjacentHTML("beforeend", html);
-            totalForms.value = index + 1;
-
-            actualizarSelectsProducto(productosActuales);
-        });
-
-        body.addEventListener("click", function (event) {
-            const btn = event.target.closest(".btn-remove-row");
-            if (!btn) return;
-
-            const row = btn.closest(".insumo-row");
-            if (!row) return;
-
-            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-
-            if (deleteInput) {
-                deleteInput.checked = true;
-                row.style.display = "none";
-            } else {
-                row.remove();
             }
         });
     }
+
+    function cargarSubtipos(tipoId) {
+        console.log("=== cargarSubtipos ===", tipoId);
+
+        if (!tipoId) {
+            ocultarSubtipo();
+            limpiarProductos();
+            actualizarSeccionesPorTipo();
+            return;
+        }
+
+        $.ajax({
+            url: "{% url 'ajax_subtipos_tipo_actividad' %}",
+            type: "GET",
+            data: { tipo_id: tipoId },
+            success: function (data) {
+                console.log("📦 subtipos:", data);
+
+                limpiarSubtipos();
+
+                if (!data.ok || data.subtipos.length === 0) {
+                    subtipoContainer.hide();
+                    cargarProductos(tipoId);
+                    actualizarSeccionesPorTipo();
+                    return;
+                }
+
+                data.subtipos.forEach(function (s) {
+                    subtipoSelect.append(
+                        $("<option>").val(s.id).text(s.nombre)
+                    );
+                });
+
+                subtipoContainer.show();
+                cargarProductos(tipoId, subtipoSelect.val());
+                actualizarSeccionesPorTipo();
+            },
+            error: function (xhr) {
+                console.error("ERROR subtipos", xhr.responseText);
+                ocultarSubtipo();
+                limpiarProductos();
+            }
+        });
+    }
+
+    // EVENTOS
+
+    tipoSelect.on("change", function () {
+        cargarSubtipos(this.value);
+        actualizarSeccionesPorTipo();
+    });
+
+    subtipoSelect.on("change", function () {
+        cargarProductos(tipoSelect.val(), this.value);
+    });
+
+    body.on("change", 'select[name$="-producto"]', function () {
+        proponerUnidadEnFila(this);
+    });
+
+    addBtn.on("click", function () {
+        const index = parseInt(totalForms.val());
+        const html = templateElement.html().replace(/__prefix__/g, index);
+
+        body.append(html);
+        totalForms.val(index + 1);
+
+        actualizarSelectsProducto(productosActuales);
+    });
+
+    body.on("click", ".btn-remove-row", function () {
+        const row = $(this).closest(".insumo-row");
+        const del = row.find('input[name$="-DELETE"]');
+
+        if (del.length) {
+            del.prop("checked", true);
+            row.hide();
+        } else {
+            row.remove();
+        }
+    });
+
+    // INIT
+
+    if (tipoSelect.val()) {
+        cargarSubtipos(tipoSelect.val());
+        actualizarSeccionesPorTipo();
+    } else {
+        ocultarSubtipo();
+        limpiarProductos();
+        ocultarSecciones();
+    }
+
 });
+
+setTimeout(function () {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(function(alert) {
+        // Bootstrap 5
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+    });
+}, 5000);
+
 </script>
+
+
 {% endblock %}

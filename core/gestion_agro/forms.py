@@ -6,8 +6,9 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad
-from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva,
-                                 TipoActividad, SubTipoActividad, ActividadInsumo )
+from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
+                                  ActividadInsumo, CamposVistoria, CamposCosecha, Producto)
+from agro.models import Unidad
 
 
 class BaseForm(ModelForm):
@@ -85,74 +86,52 @@ class CicloFiltroForm(BaseSimpleForm):
         self.fields["cultivo"].queryset = Cultivo.objects.all().order_by("nombre")
 
 class ActividadProductivaForm(BaseForm):
-
     class Meta:
         model = ActividadProductiva
-        fields = [
-            "fecha",
-            "tipo",
-            "subtipo",
-            "observaciones",
-        ]
+        fields = ("fecha", "tipo", "subtipo", "observaciones")
         widgets = {
-            "fecha": forms.DateInput(attrs={"type": "date"}),
+            "fecha": forms.DateInput(
+                format="%Y-%m-%d",
+                attrs={"type": "date"},
+            ),
             "observaciones": forms.Textarea(attrs={"rows": 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields["fecha"].label = _("Fecha")
-        self.fields["tipo"].label = _("Tipo")
-        self.fields["subtipo"].label = _("Subtipo")
-        self.fields["observaciones"].label = _("Observaciones")
+        if not self.is_bound and not self.instance.pk:
+            self.initial["fecha"] = timezone.localdate()
 
-        # Tipos activos
-        self.fields["tipo"].queryset = (
-            TipoActividad.objects
-            .filter(activo=True)
-            .order_by("nombre")
-        )
-
-        # Subtipos vacíos al inicio
-        self.fields["subtipo"].queryset = SubTipoActividad.objects.none()
+        self.fields["tipo"].queryset = TipoActividad.objects.filter(activo=True)
         self.fields["subtipo"].required = False
 
-        tipo_id = None
-
-        # Si viene POST
-        if "tipo" in self.data:
-            try:
-                tipo_id = int(self.data.get("tipo"))
-            except (TypeError, ValueError):
-                tipo_id = None
-
-        # Si es edición
-        elif self.instance.pk and self.instance.tipo_id:
+        if self.is_bound:
+            tipo_id = self.data.get("tipo")
+        elif self.instance.pk:
             tipo_id = self.instance.tipo_id
+        else:
+            tipo_id = None
 
-        # Cargar subtipos del tipo
         if tipo_id:
-            self.fields["subtipo"].queryset = (
-                SubTipoActividad.objects
-                .filter(tipo_actividad_id=tipo_id, activo=True)
+            self.fields["subtipo"].queryset = SubTipoActividad.objects.filter(
+                tipo_actividad_id=tipo_id,
+                activo=True,
             )
+        else:
+            self.fields["subtipo"].queryset = SubTipoActividad.objects.none()
 
     def clean(self):
         cleaned_data = super().clean()
-
         tipo = cleaned_data.get("tipo")
         subtipo = cleaned_data.get("subtipo")
 
-        if tipo and subtipo:
-            if subtipo.tipo_actividad_id != tipo.id:
-                self.add_error(
-                    "subtipo",
-                    _("El subtipo no corresponde al tipo de actividad seleccionado.")
-                )
+        if tipo and subtipo and subtipo.tipo_actividad_id != tipo.id:
+            self.add_error("subtipo", _("El subtipo no corresponde al tipo seleccionado."))
 
         return cleaned_data
     
+
 class ActividadInsumoForm(BaseForm):
     class Meta:
         model = ActividadInsumo
@@ -162,27 +141,40 @@ class ActividadInsumoForm(BaseForm):
             "dosis": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
             "um": forms.Select(),
         }
+        labels = {
+            "producto": _("Producto"),
+            "dosis": _("Dosis"),
+            "um": _("Unidad"),
+        }
 
     def __init__(self, *args, **kwargs):
+        empresa = kwargs.pop("empresa", None)
         super().__init__(*args, **kwargs)
-
-        self.fields["producto"].label = _("Producto")
-        self.fields["dosis"].label = _("Dosis")
-        self.fields["um"].label = _("Unidad")
 
         self.fields["producto"].required = False
         self.fields["dosis"].required = False
         self.fields["um"].required = False
 
+        self.fields["producto"].queryset = Producto.objects.none()
+        self.fields["um"].queryset = Unidad.objects.all().order_by("nombre")
+
+        if empresa:
+            self.fields["producto"].queryset = (
+                Producto.objects
+                .filter(empresa=empresa, activo=True, maneja_stock=True)
+                .select_related("unidad_base", "categoria")
+                .order_by("nombre")
+            )
+
     def clean(self):
         cleaned_data = super().clean()
+
+        if cleaned_data.get("DELETE"):
+            return cleaned_data
 
         producto = cleaned_data.get("producto")
         dosis = cleaned_data.get("dosis")
         um = cleaned_data.get("um")
-
-        if self.cleaned_data.get("DELETE"):
-            return cleaned_data
 
         hay_datos = bool(producto or dosis or um)
 
@@ -207,3 +199,38 @@ ActividadInsumoFormSet = inlineformset_factory(
     extra=1,
     can_delete=True
 )
+
+class CamposVistoriaForm(BaseForm):
+    class Meta:
+        model = CamposVistoria
+        fields = ["plantas_m2", "malezas", "insectos", "enfermedades", "imagen"]
+        widgets = {
+            "plantas_m2": forms.NumberInput(attrs={"min": "0"}),
+            "malezas": forms.TextInput(),
+            "insectos": forms.TextInput(),
+            "enfermedades": forms.TextInput(),
+        }
+        labels = {
+            "plantas_m2": _("Plantas por m²"),
+            "malezas": _("Malezas"),
+            "insectos": _("Insectos"),
+            "enfermedades": _("Enfermedades"),
+            "imagen": _("Imagen"),
+        }
+
+from django.utils.translation import gettext_lazy as _
+
+class CamposCosechaForm(BaseForm):
+    class Meta:
+        model = CamposCosecha
+        fields = ["rendimiento", "comentarios_cosecha", "observaciones"]
+        widgets = {
+            "rendimiento": forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+            "comentarios_cosecha": forms.Textarea(attrs={"rows": 3}),
+            "observaciones": forms.Textarea(attrs={"rows": 3}),
+        }
+        labels = {
+            "rendimiento": _("Rendimiento"),
+            "comentarios_cosecha": _("Comentarios de cosecha"),
+            "observaciones": _("Observaciones"),
+        }
