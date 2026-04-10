@@ -45,7 +45,7 @@ def calcular_costos_actividad(
     tipo,
     subtipo,
     empresa,
-    superficie,
+    actividad,
     insumos,
     v_mo_input=None,
     v_mq_input=None,
@@ -58,12 +58,13 @@ def calcular_costos_actividad(
     horas_maquina = 0
     costo_mq = 0
 
-    tiene_insumos = False
+    # superficie desde la relación
+    superficie = actividad.fase.ciclo. superficie_ha
 
-    # valores base desde configuración
+    # valores base
     v_mo, v_mq, c_mo_unit, c_mq_unit = obtener_valores_costos(tipo, subtipo, empresa)
 
-    # damos prioridad a los vores ingresados por el usuario
+    # prioridad a valores ingresados
     if v_mo_input is not None:
         v_mo = v_mo_input
 
@@ -78,22 +79,16 @@ def calcular_costos_actividad(
 
     # insumos
     for insumo in insumos or []:
-        if not insumo.producto:
-            continue
-
-        tiene_insumos = True
-
-        cantidad = insumo.dosis * superficie
-        costo = cantidad * insumo.producto.precio
-
-        costo_insumos += costo
+        if insumo.producto:
+            cantidad = insumo.dosis * actividad.fase.ciclo.superficie_ha
+            costo_insumos += cantidad * insumo.producto.precio
 
     # mano de obra
     if v_mo is not None and c_mo_unit is not None:
         horas_hombre = v_mo * superficie
         costo_mo = horas_hombre * c_mo_unit
 
-    # maquina
+    # máquina
     if v_mq is not None and c_mq_unit is not None:
         horas_maquina = v_mq * superficie
         costo_mq = horas_maquina * c_mq_unit
@@ -276,26 +271,30 @@ def cerrar_fase_si_corresponde(fase, fecha,  cierra_fase):
         fase.save()
 
 def guardar_insumos_y_stock(actividad, tipo, insumo_formset):
-    # guarda insumos y descuenta stock
+    # si no requiere insumos, no hace nada
     if not tipo.requiere_insumo:
         return []
 
     insumo_formset.instance = actividad
     insumos = insumo_formset.save()
 
-    for insumo in insumos:
-        if not insumo.producto:
-            continue
+    # superficie desde relación
+    superficie = actividad.fase.ciclo.superficie_ha 
 
-        MovimientoStock.objects.create(
-            producto=insumo.producto,
-            tipo="SALIDA",
-            cantidad=insumo.dosis,
-            um=insumo.um,
-            fecha=timezone.now(),
-            actividad=actividad,
-            precio_unitario=insumo.producto.precio,
-        )
+    # registrar salida de stock
+    for insumo in insumos:
+        if insumo.producto:
+            cantidad = insumo.dosis * superficie
+
+            MovimientoStock.objects.create(
+                producto=insumo.producto,
+                tipo="SALIDA",
+                cantidad=cantidad,
+                um=insumo.um,
+                fecha=timezone.now(),
+                actividad=actividad,
+                precio_unitario=insumo.producto.precio,
+            )
 
     return insumos
 
@@ -381,7 +380,7 @@ def registrar_actividad_aux(
         tipo,
         subtipo,
         empresa,
-        ciclo.superficie_ha,
+        actividad,
         insumos,
     )
 

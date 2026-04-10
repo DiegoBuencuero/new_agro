@@ -581,12 +581,6 @@ def ajax_valores_actividad(request):
         "valor_h_maq": str(c_mq) if c_mq is not None else "",
     })
 
-from django.shortcuts import get_object_or_404, render
-
-from .forms import StockFiltroForm
-from .models import Producto, MovimientoStock
-
-
 def vista_lista_stock(request):
     productos = (
         Producto.objects
