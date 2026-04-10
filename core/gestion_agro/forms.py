@@ -7,7 +7,7 @@ from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad
 from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
-                                  ActividadInsumo, CamposVistoria, CamposCosecha, Producto)
+                                  ActividadInsumo, CamposVistoria, CamposCosecha, Producto, CategoriaProducto)
 from agro.models import Unidad
 
 
@@ -88,13 +88,48 @@ class CicloFiltroForm(BaseSimpleForm):
 class ActividadProductivaForm(BaseForm):
     class Meta:
         model = ActividadProductiva
-        fields = ("fecha", "tipo", "subtipo", "observaciones")
+        fields = (
+            "fecha",
+            "tipo",
+            "subtipo",
+            "cantidad_hombre",
+            "valor_hombre",
+            "cantidad_h_maq",
+            "valor_h_maq",
+            "observaciones",
+        )
         widgets = {
             "fecha": forms.DateInput(
                 format="%Y-%m-%d",
                 attrs={"type": "date"},
             ),
-            "observaciones": forms.Textarea(attrs={"rows": 3}),
+            "cantidad_hombre": forms.NumberInput(attrs={
+                "step": "0.01",
+                "placeholder": _("Horas de mano de obra"),
+            }),
+            "valor_hombre": forms.NumberInput(attrs={
+                "step": "0.01",
+                "placeholder": _("Costo por hora"),
+            }),
+            "cantidad_h_maq": forms.NumberInput(attrs={
+                "step": "0.01",
+                "placeholder": _("Horas de máquina"),
+            }),
+            "valor_h_maq": forms.NumberInput(attrs={
+                "step": "0.01",
+                "placeholder": _("Costo por hora"),
+            }),
+            "observaciones": forms.Textarea(attrs={
+                "rows": 3,
+                "placeholder": _("Observaciones"),
+            }),
+        }
+
+        labels = {
+            "cantidad_hombre": _("Horas de mano de obra"),
+            "valor_hombre": _("Costo por hora"),
+            "cantidad_h_maq": _("Horas de máquina"),
+            "valor_h_maq": _("Costo por hora"),
         }
 
     def __init__(self, *args, **kwargs):
@@ -131,7 +166,6 @@ class ActividadProductivaForm(BaseForm):
 
         return cleaned_data
     
-
 class ActividadInsumoForm(BaseForm):
     class Meta:
         model = ActividadInsumo
@@ -218,8 +252,6 @@ class CamposVistoriaForm(BaseForm):
             "imagen": _("Imagen"),
         }
 
-from django.utils.translation import gettext_lazy as _
-
 class CamposCosechaForm(BaseForm):
     class Meta:
         model = CamposCosecha
@@ -234,3 +266,64 @@ class CamposCosechaForm(BaseForm):
             "comentarios_cosecha": _("Comentarios de cosecha"),
             "observaciones": _("Observaciones"),
         }
+
+
+class StockFiltroForm(BaseSimpleForm):
+    producto = forms.CharField(
+        required=False,
+        label=_("Producto"),
+        widget=forms.TextInput(
+            attrs={
+                "placeholder": _("Nombre o código del producto"),
+                "class": "form-control",
+            }
+        ),
+    )
+
+    categoria = forms.ModelChoiceField(
+        queryset=CategoriaProducto.objects.order_by("nombre"),
+        required=False,
+        label=_("Categoría"),
+        empty_label=_("Todas"),
+        widget=forms.Select(
+            attrs={
+                "class": "form-select",
+            }
+        ),
+    )
+
+    fecha_entrada_desde = forms.DateField(
+        required=False,
+        label=_("Fecha entrada desde"),
+        widget=forms.DateInput(
+            attrs={
+                "type": "date",
+                "class": "form-control",
+            }
+        ),
+    )
+
+    fecha_entrada_hasta = forms.DateField(
+        required=False,
+        label=_("Fecha entrada hasta"),
+        widget=forms.DateInput(
+            attrs={
+                "type": "date",
+                "class": "form-control",
+            }
+        ),
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        fecha_desde = cleaned_data.get("fecha_entrada_desde")
+        fecha_hasta = cleaned_data.get("fecha_entrada_hasta")
+
+        if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
+            self.add_error(
+                "fecha_entrada_hasta",
+                _("La fecha hasta no puede ser menor que la fecha desde."),
+            )
+
+        return cleaned_data

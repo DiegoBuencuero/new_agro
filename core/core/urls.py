@@ -3,7 +3,7 @@ from django.urls import path, include
 from agro.views import index,login_page
 from gestion_agro.views import (vista_crear_campo, vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
 vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo, ajax_get_ciclos_data, vista_agregar_actividad,
- ajax_subtipos_tipo_actividad, ajax_productos_por_actividad               
+ ajax_subtipos_tipo_actividad, ajax_productos_por_actividad, ajax_valores_actividad, vista_lista_stock            
 )
 
 urlpatterns = [
@@ -29,5 +29,8 @@ urlpatterns = [
     path('ciclo/<int:id_ciclo>/actividad/nueva/', vista_agregar_actividad, name="vista_agregar_actividad"),
     path("ajax/subtipos-tipo-actividad/", ajax_subtipos_tipo_actividad, name="ajax_subtipos_tipo_actividad" ),
     path("ajax/productos-por-actividad/", ajax_productos_por_actividad, name="ajax_productos_por_actividad"),
+    path( "ajax/valores-actividad/", ajax_valores_actividad, name="ajax_valores_actividad",),
+
+    path('stock/', vista_lista_stock, name='vista_lista_stock'),
 
 ]

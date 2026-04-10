@@ -123,8 +123,8 @@ class Empresa(models.Model):
     moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
     unidad_default = models.ForeignKey("Unidad", on_delete=models.PROTECT, related_name="empresas", null=True, blank=True)
     lista_precio = models.ForeignKey(Lista_de_precios, on_delete=models.CASCADE, related_name="lista_de_precios", null=True, blank=True)
-    valor_mobra = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Costo MO"))
-    valor_maquina = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Costo Maquina"))
+    valor_mobra = models.DecimalField(max_digits=18, decimal_places=2, default=0, verbose_name=_("Costo MO"))
+    valor_maquina = models.DecimalField(max_digits=18, decimal_places=2, default=0, verbose_name=_("Costo Maquina"))
 
 class Unidad(models.Model):
     nombre = models.CharField(max_length=50, verbose_name=_("Nombre"))

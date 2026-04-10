@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block plugin_css %}
+<link rel="stylesheet" href="{% static 'css/detalleCiclo.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                    <i class="mdi
+                        {% if 'success' in message.tags %}mdi-check-circle
+                        {% elif 'danger' in message.tags %}mdi-alert-circle
+                        {% elif 'warning' in message.tags %}mdi-alert
+                        {% else %}mdi-information{% endif %}
+                        me-2"></i>
+                    <div>{{ message }}</div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="upload-card">
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-cube-outline icon-agro"></i>
+                    {% translate "Stock de insumos" %}
+                </h3>
+                <div class="text-muted small">
+                    {% translate "Movimientos por producto" %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-lg-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-3">
+                            <i class="mdi mdi-filter-variant me-2"></i>
+                            {% translate "Filtros" %}
+                        </h5>
+
+                        <form method="get">
+                            <div class="mb-3">
+                                <label for="{{ form.producto.id_for_label }}" class="form-label">
+                                    {{ form.producto.label }}
+                                </label>
+                                {{ form.producto }}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.categoria.id_for_label }}" class="form-label">
+                                    {{ form.categoria.label }}
+                                </label>
+                                {{ form.categoria }}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.fecha_entrada_desde.id_for_label }}" class="form-label">
+                                    {{ form.fecha_entrada_desde.label }}
+                                </label>
+                                {{ form.fecha_entrada_desde }}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.fecha_entrada_hasta.id_for_label }}" class="form-label">
+                                    {{ form.fecha_entrada_hasta.label }}
+                                </label>
+                                {{ form.fecha_entrada_hasta }}
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="mdi mdi-magnify me-1"></i>
+                                    {% translate "Filtrar" %}
+                                </button>
+
+                                <a href="{% url 'vista_lista_stock' %}" class="btn btn-outline-secondary btn-sm">
+                                    <i class="mdi mdi-filter-remove-outline me-1"></i>
+                                    {% translate "Limpiar" %}
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card text-center h-100 border-0 shadow-sm">
+                            <div class="card-body">
+                                <i class="mdi mdi-format-list-bulleted fs-4 text-muted"></i>
+                                <div class="mt-2 small text-muted">Productos</div>
+                                {% comment %} <div class="fw-semibold">{{ total_productos }}</div> {% endcomment %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="card text-center h-100 border-0 shadow-sm">
+                            <div class="card-body">
+                                <i class="mdi mdi-arrow-down-bold fs-4 text-muted"></i>
+                                <div class="mt-2 small text-muted">Total ingresado</div>
+                                {% comment %} <div class="fw-semibold">{{ total_ingresado }}</div> {% endcomment %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="card text-center h-100 border-0 shadow-sm">
+                            <div class="card-body">
+                                <i class="mdi mdi-arrow-up-bold fs-4 text-muted"></i>
+                                <div class="mt-2 small text-muted">Total consumido</div>
+                                {% comment %} <div class="fw-semibold">{{ total_consumido }}</div> {% endcomment %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <div class="card text-center h-100 border-0 shadow-sm">
+                            <div class="card-body">
+                                <i class="mdi mdi-cube-outline fs-4 text-muted"></i>
+                                <div class="mt-2 small text-muted">Restante</div>
+{% comment %}                                 <div class="fw-semibold">{{ total_restante }}</div> {% endcomment %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-1">
+                                <i class="mdi mdi-package-variant-closed me-1"></i>
+                                {% translate "Productos" %}
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                {{ productos|length }} {% translate "registros" %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-0">
+                        {% if productos %}
+                            {% for item in productos %}
+                                {% with prod=item.obj %}
+                                    <div class="border-bottom px-4 py-3">
+
+                                        <!-- FILA SUPERIOR -->
+                                        <div class="d-flex justify-content-between align-items-start">
+
+                                            <!-- IZQUIERDA -->
+                                            <div>
+                                                <div class="fw-semibold">
+                                                    {{ prod.nombre }}
+                                                </div>
+
+                                                <div class="small text-muted mt-2">
+                                                    <span>
+                                                        {% translate "Código" %}:
+                                                        <strong>{{ prod.codigo }}</strong>
+                                                    </span>
+
+                                                    <span class="ms-3">
+                                                        {% translate "Ingresado" %}:
+                                                        <strong>{{ item.ingresado }}</strong>
+                                                        {{ prod.unidad_base }}
+                                                    </span>
+
+                                                    <span class="ms-3">
+                                                        {% translate "Consumido" %}:
+                                                        <strong>{{ item.consumido }}</strong>
+                                                        {{ prod.unidad_base }}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <!-- DERECHA -->
+                                            <div class="text-end">
+
+                                                <!-- CATEGORIA -->
+                                                <span class="badge bg-light text-dark border d-block mb-1">
+                                                    {{ prod.categoria.nombre }}
+                                                </span>
+
+                                                <!-- DISPONIBLE -->
+                                                <div class="small text-muted">
+                                                    {% translate "Disponible" %}
+                                                </div>
+
+                                                <div class="fw-semibold fs-6
+                                                    {% if item.restante > 0 %}
+                                                        text-success
+                                                    {% elif item.restante == 0 %}
+                                                        text-warning
+                                                    {% else %}
+                                                        text-danger
+                                                    {% endif %}
+                                                ">
+                                                    {{ item.restante }} {{ prod.unidad_base }}
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+                                {% endwith %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5 text-muted">
+                                <i class="mdi mdi-package-variant-closed-remove display-5 d-block mb-2"></i>
+                                {% translate "No hay productos cargados" %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+});
+</script>
+{% endblock %}

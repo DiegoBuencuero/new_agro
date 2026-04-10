@@ -27,7 +27,6 @@ class Campo(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.superficie_ha} ha)"
 
-
 class Lote(models.Model):
     class Meta:
         pass
@@ -48,7 +47,6 @@ class Actividad(models.Model):
     nombre = models.CharField(max_length=50)
     codigo = models.CharField(max_length=2)
 
-
 class Cultivo(models.Model):
     nombre = models.CharField(max_length=100, unique=True, verbose_name=_("Cultura"))
 
@@ -59,7 +57,6 @@ class Cultivo(models.Model):
 
     def __str__(self):
         return self.nombre
-
 
 class Variedad(models.Model):
     cultivo = models.ForeignKey(Cultivo, on_delete=models.CASCADE, related_name="variedades", verbose_name=_("Cultura"))
@@ -103,8 +100,6 @@ class Campana(models.Model):
             Campana.objects.filter(empresa=self.empresa, activa=True).exclude(id=self.id).update(activa=False)
         super().save(*args, **kwargs)
 
-
-
 class CicloAgricola(models.Model):
     def clean(self):
         if self.campo and self.campana:
@@ -124,9 +119,7 @@ class CicloAgricola(models.Model):
     fecha_fin = models.DateField(null=True, blank=True)
     activa = models.BooleanField(default=True)
 
-
 class FaseAgricola(models.Model):
-
     TIPO_FASE_CHOICES = [
         ('COB', 'Cobertura'),
         ('PRI', 'Cultivo principal'),
@@ -156,7 +149,6 @@ class FaseAgricola(models.Model):
     def es_activa(self):
         return self.estado == 'abierto'
     
-
 class TipoActividad(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.tipo})"
@@ -172,7 +164,8 @@ class TipoActividad(models.Model):
     requiere_maq = models.BooleanField(default=False)
     requiere_vist = models.BooleanField(default=False)
     requiere_cosecha = models.BooleanField(default=False)
-    valor_maquina = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Costo Maquina"), null=True, blank=True)
+    valor_x_ha_mq = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name=_("Horas de máquina por ha"))
+    valor_maquina = models.DecimalField(max_digits=18, decimal_places=2, default=0, null=True, blank=True, verbose_name=_("Costo por hora de máquina"))
 
 class SubTipoActividad(models.Model):
     tipo_actividad = models.ForeignKey(TipoActividad, on_delete=models.CASCADE, related_name='subtipos')
@@ -182,28 +175,31 @@ class SubTipoActividad(models.Model):
     activo = models.BooleanField(default=True)
     abre_fase = models.BooleanField(null=True, blank=True )
     cierra_fase = models.BooleanField(null=True, blank=True )
-    valor_x_ha_mo = models.DecimalField(max_digits=5, decimal_places=3, null=True, blank=True)
-    valor_x_ha_mq = models.DecimalField(max_digits=5, decimal_places=3, null=True, blank = True)
-    valor_mobra = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Costo MO"), null=True, blank=True)
-    valor_maquina = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Costo Maquina"), null=True, blank=True)
+    valor_x_ha_mo = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name=_("Horas de mano de obra por ha"))
+    valor_x_ha_mq = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name=_("Horas de máquina por ha"))
+    valor_mo = models.DecimalField(max_digits=18, decimal_places=4, default=0, null=True, blank=True, verbose_name=_("Costo por hora de mano de obra"))
+    valor_maquina = models.DecimalField(max_digits=18, decimal_places=2, default=0, null=True, blank=True, verbose_name=_("Costo por hora de máquina"))
 
     class Meta:
         unique_together = ('tipo_actividad', 'codigo')
 
     def __str__(self):
         return f"{self.tipo_actividad.nombre} - {self.nombre}"
-
     
 class ActividadProductiva(models.Model):
     fase = models.ForeignKey( FaseAgricola, on_delete=models.CASCADE, related_name='actividades')
     fecha = models.DateField()
     tipo = models.ForeignKey(TipoActividad, on_delete=models.CASCADE, related_name='actividades')
     subtipo = models.ForeignKey(SubTipoActividad,  on_delete=models.CASCADE, null=True, blank=True, related_name='actividades')
+    cantidad_hombre = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
+    valor_hombre = models.DecimalField(max_digits=18, decimal_places=2, default=0, null=True, blank=True)
+    cantidad_h_maq = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
+    valor_h_maq = models.DecimalField(max_digits=18, decimal_places=2, default=0, null=True, blank=True)
+
     observaciones = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"{self.tipo.nombre} - {self.fecha}"
-
 
 class CamposVistoria(models.Model):
     actividad = models.OneToOneField(ActividadProductiva, on_delete=models.CASCADE)
@@ -269,9 +265,7 @@ class Producto(models.Model):
     def __str__(self):
         return self.nombre
 
-
 class ProductoSemilla(models.Model):
-
     producto = models.OneToOneField(Producto, on_delete=models.CASCADE, related_name="datos_semilla", verbose_name=_("Producto"))
     cultivo = models.ForeignKey(Cultivo, on_delete=models.PROTECT, related_name="productos_semilla", verbose_name=_("Cultivo"))
     variedad = models.ForeignKey(Variedad, on_delete=models.PROTECT, related_name="productos_semilla", verbose_name=_("Variedad"))
@@ -294,7 +288,6 @@ class ProductoSemilla(models.Model):
         self.full_clean()
         super().save(*args, **kwargs)
 
-
 class ActividadInsumo(models.Model):
 
     actividad = models.ForeignKey("ActividadProductiva", on_delete=models.CASCADE, related_name="insumos")
@@ -310,7 +303,6 @@ class ActividadInsumo(models.Model):
     cantidad_real = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     costo_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     costo_ha = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-
 
 class MovimientoStock(models.Model):
     class Tipo(models.TextChoices):
@@ -381,7 +373,6 @@ class ListaPrecio(models.Model):
 
     def __str__(self):
         return f"{self.codigo} - {self.nombre}"
-
 
 class ListaPrecioDetalle(models.Model):
     lista_precio = models.ForeignKey(ListaPrecio, on_delete=models.CASCADE, related_name="detalles")

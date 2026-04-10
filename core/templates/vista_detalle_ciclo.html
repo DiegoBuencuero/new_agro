@@ -268,26 +268,185 @@
                                                             </div>
 
                                                             <div class="activity-card {{ act.tipo.nombre|slugify }}">
-                                                                <div class="activity-header">
-                                                                    <div>
-                                                                        <div class="activity-type">
-                                                                            {{ act.tipo.nombre }}
-                                                                            {% if act.subtipo %}
-                                                                                <span class="activity-subtype">· {{ act.subtipo.nombre }}</span>
-                                                                            {% endif %}
+                                                                <div
+                                                                    class="activity-header"
+                                                                    data-bs-toggle="collapse"
+                                                                    data-bs-target="#collapse{{ act.id }}"
+                                                                    role="button"
+                                                                    aria-expanded="false"
+                                                                    aria-controls="collapse{{ act.id }}"
+                                                                >
+                                                                    <div class="d-flex justify-content-between align-items-start w-100">
+                                                                        <div>
+                                                                            <div class="activity-type">
+                                                                                {{ act.tipo.nombre }}
+                                                                                {% if act.subtipo %}
+                                                                                    <span class="activity-subtype">· {{ act.subtipo.nombre }}</span>
+                                                                                {% endif %}
+                                                                            </div>
+
+                                                                            <div class="mt-1 small text-muted d-flex flex-wrap gap-3">
+                                                                                <span>
+                                                                                    <i class="mdi mdi-calendar me-1"></i>
+                                                                                    {{ act.fecha|date:"d/m/Y" }}
+                                                                                </span>
+
+                                                                                {% if act.insumos.exists %}
+                                                                                    <span>
+                                                                                        <i class="mdi mdi-cube-outline me-1"></i>
+                                                                                        {{ act.insumos.count }} {% translate "insumos" %}
+                                                                                    </span>
+                                                                                {% endif %}
+
+                                                                                {% if act.total %}
+                                                                                    <span>
+                                                                                        <i class="mdi mdi-cash me-1"></i>
+                                                                                        R$ {{ act.total|floatformat:2 }}
+                                                                                    </span>
+                                                                                {% endif %}
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="activity-date d-flex align-items-center gap-2">
+                                                                            <span>{{ act.fecha|date:"d/m/Y" }}</span>
+                                                                            <i class="mdi mdi-chevron-down"></i>
                                                                         </div>
                                                                     </div>
+                                                                </div>
 
-                                                                    <div class="activity-date">
-                                                                        {{ act.fecha|date:"d/m/Y" }}
+                                                                <div id="collapse{{ act.id }}" class="collapse">
+                                                                    <div class="pt-3">
+
+                                                                        {% if act.observaciones %}
+                                                                            <div class="activity-obs mb-3">
+                                                                                <strong>{% translate "Observaciones" %}:</strong>
+                                                                                {{ act.observaciones }}
+                                                                            </div>
+                                                                        {% endif %}
+
+                                                                        {% if act.cantidad_hombre %}
+                                                                            <div class="mt-3 border-top pt-3">
+                                                                                <div class="fw-bold mb-3">
+                                                                                    <i class="mdi mdi-account-hard-hat me-1 text-primary"></i>
+                                                                                    {% translate "Mano de obra" %}
+                                                                                </div>
+
+                                                                                <div class="table-responsive">
+                                                                                    <table class="table table-sm align-middle mb-0">
+                                                                                        <thead>
+                                                                                            <tr>
+                                                                                                <th>{% translate "Actividad" %}</th>
+                                                                                                <th class="text-end">{% translate "Cantidad" %}</th>
+                                                                                                <th class="text-end">{% translate "Costo unitario" %}</th>
+                                                                                                <th class="text-end">{% translate "Subtotal" %}</th>
+                                                                                            </tr>
+                                                                                        </thead>
+                                                                                        <tbody>
+                                                                                            <tr>
+                                                                                                <td>{{ act.tipo.nombre }}{% if act.subtipo %} · {{ act.subtipo.nombre }}{% endif %}</td>
+                                                                                                <td class="text-end">{{ act.cantidad_hombre|floatformat:2 }} hs</td>
+                                                                                                <td class="text-end">R$ {{ act.valor_hombre|floatformat:2 }}</td>
+                                                                                                <td class="text-end">R$ {{ act.total_mo|floatformat:2 }}</td>
+                                                                                            </tr>
+                                                                                        </tbody>
+                                                                                    </table>
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endif %}
+
+                                                                        {% if act.cantidad_h_maq %}
+                                                                            <div class="mt-3 border-top pt-3">
+                                                                                <div class="fw-bold mb-3">
+                                                                                    <i class="mdi mdi-tractor me-1 text-primary"></i>
+                                                                                    {% translate "Maquinaria" %}
+                                                                                </div>
+
+                                                                                <div class="table-responsive">
+                                                                                    <table class="table table-sm align-middle mb-0">
+                                                                                        <thead>
+                                                                                            <tr>
+                                                                                                <th>{% translate "Actividad" %}</th>
+                                                                                                <th class="text-end">{% translate "Cantidad" %}</th>
+                                                                                                <th class="text-end">{% translate "Costo unitario" %}</th>
+                                                                                                <th class="text-end">{% translate "Subtotal" %}</th>
+                                                                                            </tr>
+                                                                                        </thead>
+                                                                                        <tbody>
+                                                                                            <tr>
+                                                                                                <td>{{ act.tipo.nombre }}{% if act.subtipo %} · {{ act.subtipo.nombre }}{% endif %}</td>
+                                                                                                <td class="text-end">{{ act.cantidad_h_maq|floatformat:2 }} hs</td>
+                                                                                                <td class="text-end">R$ {{ act.valor_h_maq|floatformat:2 }}</td>
+                                                                                                <td class="text-end">R$ {{ act.total_mq|floatformat:2 }}</td>
+                                                                                            </tr>
+                                                                                        </tbody>
+                                                                                    </table>
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endif %}
+
+                                                                        {% if act.insumos.exists %}
+                                                                            <div class="mt-3 border-top pt-3">
+                                                                                <div class="fw-bold mb-3">
+                                                                                    <i class="mdi mdi-cube-outline me-1 text-success"></i>
+                                                                                    {% translate "Insumos aplicados" %}
+                                                                                    <span class="badge bg-success-subtle text-success border ms-2">
+                                                                                        {{ act.insumos.count }}
+                                                                                    </span>
+                                                                                </div>
+
+                                                                                <div class="table-responsive">
+                                                                                    <table class="table table-sm align-middle mb-0">
+                                                                                        <thead>
+                                                                                            <tr>
+                                                                                                <th>{% translate "Actividad" %}</th>
+                                                                                                <th class="text-end">{% translate "Cantidad" %}</th>
+                                                                                                <th class="text-end">{% translate "Costo unitario" %}</th>
+                                                                                                <th class="text-end">{% translate "Subtotal" %}</th>
+                                                                                            </tr>
+                                                                                        </thead>
+                                                                                        <tbody>
+                                                                                            {% for insumo in act.insumos.all %}
+                                                                                                <tr>
+                                                                                                    <td>{{ insumo.producto.nombre }}</td>
+                                                                                                    <td class="text-end">
+                                                                                                        {{ insumo.dosis|floatformat:2 }}
+                                                                                                        {% if insumo.um %}
+                                                                                                            {{ insumo.um.abreviatura }}
+                                                                                                        {% endif %}
+                                                                                                    </td>
+                                                                                                    <td class="text-end">
+                                                                                                        {% if insumo.producto and insumo.producto.precio %}
+                                                                                                            R$ {{ insumo.producto.precio|floatformat:2 }}
+                                                                                                        {% else %}
+                                                                                                            <span class="text-muted">-</span>
+                                                                                                        {% endif %}
+                                                                                                    </td>
+                                                                                                    <td class="text-end">
+                                                                                                        {% if insumo.costo_total %}
+                                                                                                            R$ {{ insumo.costo_total|floatformat:2 }}
+                                                                                                        {% else %}
+                                                                                                            <span class="text-muted">-</span>
+                                                                                                        {% endif %}
+                                                                                                    </td>
+                                                                                                </tr>
+                                                                                            {% endfor %}
+                                                                                        </tbody>
+                                                                                    </table>
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endif %}
+
+                                                                        {% if act.total %}
+                                                                            <div class="mt-3 border-top pt-3 d-flex justify-content-end">
+                                                                                <div class="fw-bold">
+                                                                                    {% translate "Total actividad" %}:
+                                                                                    <span class="text-success ms-2">R$ {{ act.total|floatformat:2 }}</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endif %}
+
                                                                     </div>
                                                                 </div>
-                                                                {% if act.observaciones %}
-                                                                    <div class="activity-obs">
-                                                                        <strong>{% translate "Observaciones" %}:</strong>
-                                                                        {{ act.observaciones }}
-                                                                    </div>
-                                                                {% endif %}
                                                             </div>
                                                         </div>
                                                     {% endfor %}

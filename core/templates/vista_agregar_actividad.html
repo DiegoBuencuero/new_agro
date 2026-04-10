@@ -174,6 +174,56 @@
 
                         <hr class="my-4">
 
+                        <div class="card mb-4" id="manoObraSection" style="display: none;">
+                            <div class="card-header">
+                                <strong>{% translate "Mano de obra" %}</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="{{ actividad_form.cantidad_hombre.id_for_label }}" class="form-label">
+                                            {{ actividad_form.cantidad_hombre.label }}
+                                        </label>
+                                        {{ actividad_form.cantidad_hombre }}
+                                        {{ actividad_form.cantidad_hombre.errors }}
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="{{ actividad_form.valor_hombre.id_for_label }}" class="form-label">
+                                            {{ actividad_form.valor_hombre.label }}
+                                        </label>
+                                        {{ actividad_form.valor_hombre }}
+                                        {{ actividad_form.valor_hombre.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4" id="maquinariaSection" style="display: none;">
+                            <div class="card-header">
+                                <strong>{% translate "Maquinaria" %}</strong>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="{{ actividad_form.cantidad_h_maq.id_for_label }}" class="form-label">
+                                            {{ actividad_form.cantidad_h_maq.label }}
+                                        </label>
+                                        {{ actividad_form.cantidad_h_maq }}
+                                        {{ actividad_form.cantidad_h_maq.errors }}
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="{{ actividad_form.valor_h_maq.id_for_label }}" class="form-label">
+                                            {{ actividad_form.valor_h_maq.label }}
+                                        </label>
+                                        {{ actividad_form.valor_h_maq }}
+                                        {{ actividad_form.valor_h_maq.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="card mb-4" id="insumosSection" style="display: none;">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <strong>{% translate "Insumos utilizados" %}</strong>
@@ -395,43 +445,40 @@ $(document).ready(function () {
     const subtipoSelect = $("#id_subtipo");
     const subtipoContainer = $("#subtipoContainer");
 
+    const manoObraSection = $("#manoObraSection");
+    const maquinariaSection = $("#maquinariaSection");
     const insumosSection = $("#insumosSection");
     const vistoriaSection = $("#vistoriaSection");
     const cosechaSection = $("#cosechaSection");
+
+    const cantidadHombreInput = $("#id_cantidad_hombre");
+    const valorHombreInput = $("#id_valor_hombre");
+    const cantidadMaqInput = $("#id_cantidad_h_maq");
+    const valorMaqInput = $("#id_valor_h_maq");
 
     const addBtn = $("#btnAgregarInsumo");
     const body = $("#insumosBody");
     const totalForms = $("#id_insumos-TOTAL_FORMS");
     const templateElement = $("#empty-form-template");
 
-    let productosActuales = [];
+    const cicloId = "{{ ciclo.id }}";
 
-    function crearOpcionVacia(texto = "---------") {
-        return $("<option>").val("").text(texto);
-    }
+    let productosActuales = [];
 
     function obtenerSelectsProducto() {
         return body.find('select[name$="-producto"]');
     }
 
-    function limpiarSubtipos() {
-        if (!subtipoSelect.length) return;
-        subtipoSelect.empty().append(crearOpcionVacia());
-    }
-
     function ocultarSubtipo() {
         if (!subtipoContainer.length) return;
-        limpiarSubtipos();
         subtipoContainer.hide();
     }
 
-    function limpiarProductos() {
-        console.log("🧹 limpiarProductos");
-        productosActuales = [];
-
-        obtenerSelectsProducto().each(function () {
-            $(this).empty().append(crearOpcionVacia());
-        });
+    function limpiarValoresActividad() {
+        cantidadHombreInput.val("");
+        valorHombreInput.val("");
+        cantidadMaqInput.val("");
+        valorMaqInput.val("");
     }
 
     function proponerUnidadEnFila(selectProducto) {
@@ -448,23 +495,18 @@ $(document).ready(function () {
     }
 
     function actualizarSelectsProducto(productos) {
-        console.log("=== actualizarSelectsProducto ===");
-        console.log("productos:", productos);
-
         productosActuales = productos || [];
 
         const selects = obtenerSelectsProducto();
-        console.log("selects encontrados:", selects.length);
 
         selects.each(function () {
             const select = $(this);
             const valorActual = select.val();
 
-            select.empty().append(crearOpcionVacia());
+            select.empty();
+            select.append($("<option>").val("").text("---------"));
 
             productosActuales.forEach(function (producto) {
-                console.log("➕", producto.nombre);
-
                 const option = $("<option>")
                     .val(producto.id)
                     .text(producto.nombre)
@@ -482,6 +524,8 @@ $(document).ready(function () {
     }
 
     function ocultarSecciones() {
+        manoObraSection.hide();
+        maquinariaSection.hide();
         insumosSection.hide();
         vistoriaSection.hide();
         cosechaSection.hide();
@@ -499,6 +543,18 @@ $(document).ready(function () {
             texto.includes("aplicación") ||
             texto.includes("aplicacion") ||
             texto.includes("fertilización") ||
+            texto.includes("fertilizacion") ||
+            texto.includes("cosecha")
+        ) {
+            manoObraSection.show();
+            maquinariaSection.show();
+        }
+
+        if (
+            texto.includes("siembra") ||
+            texto.includes("aplicación") ||
+            texto.includes("aplicacion") ||
+            texto.includes("fertilización") ||
             texto.includes("fertilizacion")
         ) {
             insumosSection.show();
@@ -510,9 +566,6 @@ $(document).ready(function () {
     }
 
     function cargarProductos(tipoId, subtipoId = "") {
-        console.log("=== cargarProductos ===");
-        console.log("tipoId:", tipoId, "subtipoId:", subtipoId);
-
         if (!tipoId) {
             limpiarProductos();
             return;
@@ -526,14 +579,11 @@ $(document).ready(function () {
                 subtipo_id: subtipoId
             },
             success: function (data) {
-                console.log("📦 productos:", data);
-
                 if (!data.ok) {
                     limpiarProductos();
                     return;
                 }
 
-                console.log("cantidad:", data.productos.length);
                 actualizarSelectsProducto(data.productos);
             },
             error: function (xhr, status, error) {
@@ -544,51 +594,91 @@ $(document).ready(function () {
         });
     }
 
-    function cargarSubtipos(tipoId) {
-        console.log("=== cargarSubtipos ===", tipoId);
-
-        if (!tipoId) {
-            ocultarSubtipo();
-            limpiarProductos();
-            actualizarSeccionesPorTipo();
+    function cargarValoresActividad(tipoId, subtipoId = "") {
+        if (!tipoId || !cicloId) {
+            limpiarValoresActividad();
             return;
         }
 
         $.ajax({
-            url: "{% url 'ajax_subtipos_tipo_actividad' %}",
+            url: "{% url 'ajax_valores_actividad' %}",
             type: "GET",
-            data: { tipo_id: tipoId },
+            data: {
+                tipo_id: tipoId,
+                subtipo_id: subtipoId,
+                ciclo_id: cicloId
+            },
             success: function (data) {
-                console.log("📦 subtipos:", data);
-
-                limpiarSubtipos();
-
-                if (!data.ok || data.subtipos.length === 0) {
-                    subtipoContainer.hide();
-                    cargarProductos(tipoId);
-                    actualizarSeccionesPorTipo();
+                if (!data.ok) {
+                    limpiarValoresActividad();
                     return;
                 }
 
-                data.subtipos.forEach(function (s) {
-                    subtipoSelect.append(
-                        $("<option>").val(s.id).text(s.nombre)
-                    );
-                });
-
-                subtipoContainer.show();
-                cargarProductos(tipoId, subtipoSelect.val());
-                actualizarSeccionesPorTipo();
+                cantidadHombreInput.val(data.cantidad_hombre || "");
+                valorHombreInput.val(data.valor_hombre || "");
+                cantidadMaqInput.val(data.cantidad_h_maq || "");
+                valorMaqInput.val(data.valor_h_maq || "");
             },
-            error: function (xhr) {
-                console.error("ERROR subtipos", xhr.responseText);
-                ocultarSubtipo();
-                limpiarProductos();
+            error: function (xhr, status, error) {
+                console.error("ERROR valores actividad:", error);
+                console.log(xhr.responseText);
+                limpiarValoresActividad();
             }
         });
     }
+function cargarSubtipos(tipoId) {
+    if (!tipoId) {
+        ocultarSubtipo();
+        limpiarValoresActividad();
+        actualizarSeccionesPorTipo();
+        return;
+    }
 
-    // EVENTOS
+    $.ajax({
+        url: "{% url 'ajax_subtipos_tipo_actividad' %}",
+        type: "GET",
+        data: { tipo_id: tipoId },
+        success: function (data) {
+            if (!data.ok || data.subtipos.length === 0) {
+                subtipoSelect.empty();
+                subtipoContainer.hide();
+                cargarProductos(tipoId);
+                cargarValoresActividad(tipoId);
+                actualizarSeccionesPorTipo();
+                return;
+            }
+
+            subtipoSelect.empty();
+            subtipoSelect.append($("<option>").val("").text("---------"));
+
+            data.subtipos.forEach(function (s) {
+                subtipoSelect.append(
+                    $("<option>").val(s.id).text(s.nombre)
+                );
+            });
+
+            if (data.subtipo_auto_id) {
+                subtipoSelect.val(String(data.subtipo_auto_id));
+            } else if (data.subtipos.length === 1) {
+                subtipoSelect.val(String(data.subtipos[0].id));
+            } else {
+                subtipoSelect.val("");
+            }
+
+            subtipoContainer.show();
+            cargarProductos(tipoId, subtipoSelect.val());
+            cargarValoresActividad(tipoId, subtipoSelect.val());
+            actualizarSeccionesPorTipo();
+        },
+        error: function (xhr) {
+            console.error("ERROR subtipos", xhr.responseText);
+            ocultarSubtipo();
+            limpiarValoresActividad();
+        }
+    });
+}
+
+
 
     tipoSelect.on("change", function () {
         cargarSubtipos(this.value);
@@ -597,6 +687,7 @@ $(document).ready(function () {
 
     subtipoSelect.on("change", function () {
         cargarProductos(tipoSelect.val(), this.value);
+        cargarValoresActividad(tipoSelect.val(), this.value);
     });
 
     body.on("change", 'select[name$="-producto"]', function () {
@@ -625,14 +716,12 @@ $(document).ready(function () {
         }
     });
 
-    // INIT
-
     if (tipoSelect.val()) {
         cargarSubtipos(tipoSelect.val());
         actualizarSeccionesPorTipo();
     } else {
         ocultarSubtipo();
-        limpiarProductos();
+        limpiarValoresActividad();
         ocultarSecciones();
     }
 
@@ -641,13 +730,11 @@ $(document).ready(function () {
 setTimeout(function () {
     const alerts = document.querySelectorAll('.alert');
     alerts.forEach(function(alert) {
-        // Bootstrap 5
         const bsAlert = new bootstrap.Alert(alert);
         bsAlert.close();
     });
 }, 5000);
 
 </script>
-
 
 {% endblock %}

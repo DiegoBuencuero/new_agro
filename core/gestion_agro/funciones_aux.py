@@ -7,6 +7,101 @@ from gestion_agro.models import (
     ActividadProductiva,
 )
 
+def obtener_valores_costos(tipo, subtipo, empresa):
+    v_mo = None
+    v_mq = None
+    c_mo = None
+    c_mq = None
+
+    # primero subtipo
+    if subtipo:
+        if subtipo.valor_x_ha_mo is not None:
+            v_mo = subtipo.valor_x_ha_mo
+        if subtipo.valor_x_ha_mq is not None:
+            v_mq = subtipo.valor_x_ha_mq
+
+        if subtipo.valor_mo not in (None, 0):
+            c_mo = subtipo.valor_mo
+        if subtipo.valor_maquina not in (None, 0):
+            c_mq = subtipo.valor_maquina
+
+    # despues tipo
+    if v_mq is None:
+        v_mq = tipo.valor_x_ha_mq
+
+    if c_mq in (None, 0):
+        c_mq = tipo.valor_maquina
+
+    # por ultimo empresa
+    if empresa:
+        if c_mo in (None, 0):
+            c_mo = empresa.valor_mobra
+        if c_mq in (None, 0):
+            c_mq = empresa.valor_maquina
+
+    return v_mo, v_mq, c_mo, c_mq
+
+def calcular_costos_actividad(
+    tipo,
+    subtipo,
+    empresa,
+    superficie,
+    insumos,
+    v_mo_input=None,
+    v_mq_input=None,
+    c_mo_input=None,
+    c_mq_input=None,
+):
+    costo_insumos = 0
+    horas_hombre = 0
+    costo_mo = 0
+    horas_maquina = 0
+    costo_mq = 0
+
+    tiene_insumos = False
+
+    # valores base desde configuración
+    v_mo, v_mq, c_mo_unit, c_mq_unit = obtener_valores_costos(tipo, subtipo, empresa)
+
+    # damos prioridad a los vores ingresados por el usuario
+    if v_mo_input is not None:
+        v_mo = v_mo_input
+
+    if v_mq_input is not None:
+        v_mq = v_mq_input
+
+    if c_mo_input not in (None, 0):
+        c_mo_unit = c_mo_input
+
+    if c_mq_input not in (None, 0):
+        c_mq_unit = c_mq_input
+
+    # insumos
+    for insumo in insumos or []:
+        if not insumo.producto:
+            continue
+
+        tiene_insumos = True
+
+        cantidad = insumo.dosis * superficie
+        costo = cantidad * insumo.producto.precio
+
+        costo_insumos += costo
+
+    # mano de obra
+    if v_mo is not None and c_mo_unit is not None:
+        horas_hombre = v_mo * superficie
+        costo_mo = horas_hombre * c_mo_unit
+
+    # maquina
+    if v_mq is not None and c_mq_unit is not None:
+        horas_maquina = v_mq * superficie
+        costo_mq = horas_maquina * c_mq_unit
+
+    total = costo_insumos + costo_mo + costo_mq
+
+    return costo_insumos, horas_hombre, costo_mo, horas_maquina, costo_mq, total
+
 def obtener_reglas_de_fase(tipo, subtipo):
     # de donde saco si abre o cierra fase
     af = None
@@ -101,6 +196,8 @@ def validar_cosecha(ciclo, tipo, fecha, cosecha_form):
 
 def validar_reglas_siembra(fase, tipo, subtipo):
     # reglas propias de siembra
+    if tipo.nombre.lower() != "siembra":
+        return True, None
 
     nombre_subtipo = subtipo.nombre.lower() if subtipo else ""
 
@@ -178,11 +275,10 @@ def cerrar_fase_si_corresponde(fase, fecha,  cierra_fase):
         fase.estado = "cerrado"
         fase.save()
 
-
 def guardar_insumos_y_stock(actividad, tipo, insumo_formset):
     # guarda insumos y descuenta stock
     if not tipo.requiere_insumo:
-        return
+        return []
 
     insumo_formset.instance = actividad
     insumos = insumo_formset.save()
@@ -200,6 +296,8 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset):
             actividad=actividad,
             precio_unitario=insumo.producto.precio,
         )
+
+    return insumos
 
 
 def guardar_monitoreo(actividad, tipo, vistoria_form):
@@ -220,10 +318,11 @@ def guardar_cosecha(actividad, tipo, cosecha_form):
     cosecha = cosecha_form.save(commit=False)
     cosecha.actividad = actividad
     cosecha.save()
-
+    
 def registrar_actividad_aux(
     ciclo,
     fase,
+    empresa,
     actividad_form,
     insumo_formset,
     vistoria_form=None,
@@ -234,10 +333,10 @@ def registrar_actividad_aux(
     fecha = actividad_form.cleaned_data["fecha"]
 
     # 1. reglas de fase
-    abre_fase,  cierra_fase = obtener_reglas_de_fase(tipo, subtipo)
+    abre_fase, cierra_fase = obtener_reglas_de_fase(tipo, subtipo)
 
     # 2. validaciones generales
-    ok, msg = validar_reglas_generales(ciclo, fase, tipo, subtipo, fecha,  abre_fase)
+    ok, msg = validar_reglas_generales(ciclo, fase, tipo, subtipo, fecha, abre_fase)
     if not ok:
         return False, msg
 
@@ -257,7 +356,7 @@ def registrar_actividad_aux(
         return False, msg
 
     # 6. crear fase si corresponde
-    fase, inicio_fase = crear_fase_si_corresponde(ciclo, fase, fecha,  abre_fase)
+    fase, inicio_fase = crear_fase_si_corresponde(ciclo, fase, fecha, abre_fase)
 
     # 7. reglas de siembra
     ok, msg = validar_reglas_siembra(fase, tipo, subtipo)
@@ -274,13 +373,33 @@ def registrar_actividad_aux(
     actividad.fase = fase
     actividad.save()
 
-    # 10. extras
-    guardar_insumos_y_stock(actividad, tipo, insumo_formset)
+    # 10. guardar insumos y stock
+    insumos = guardar_insumos_y_stock(actividad, tipo, insumo_formset)
+
+    # 11. calcular costos
+    costo_insumos, horas_hombre, costo_mo, horas_maquina, costo_mq, total = calcular_costos_actividad(
+        tipo,
+        subtipo,
+        empresa,
+        ciclo.superficie_ha,
+        insumos,
+    )
+
+    # 12. guardar horas y valores en actividad
+    v_mo, v_mq, c_mo_unit, c_mq_unit = obtener_valores_costos(tipo, subtipo, empresa)
+
+    actividad.cantidad_hombre = horas_hombre
+    actividad.valor_hombre = c_mo_unit or 0
+    actividad.cantidad_h_maq = horas_maquina
+    actividad.valor_h_maq = c_mq_unit or 0
+    actividad.save()
+
+    # 13. guardar extras
     guardar_monitoreo(actividad, tipo, vistoria_form)
     guardar_cosecha(actividad, tipo, cosecha_form)
 
-    # 11. cerrar fase
-    cerrar_fase_si_corresponde(fase, fecha,  cierra_fase)
+    # 14. cerrar fase
+    cerrar_fase_si_corresponde(fase, fecha, cierra_fase)
 
     return True, {
         "actividad": actividad,
