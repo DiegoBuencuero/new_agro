@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="col-12 grid-margin">
+<div class="card">
+<div class="card-body">
+
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="card-title mb-1">Revisar factura</h4>
+      <small class="text-muted">{{ nombre_archivo }}</small>
+    </div>
+    <span class="badge bg-success fs-6">Total R$ {{ datos_factura.total|floatformat:2 }}</span>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="post" action="{% url 'vista_confirmar_factura' %}" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="proveedor" value="{{ proveedor.id }}">
+
+    {# Proveedor + número + fecha en una línea #}
+    <div class="p-3 mb-3 border rounded bg-light d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="fw-semibold">{{ proveedor.razon_social }}</div>
+        <small class="text-muted">Doc.: {{ proveedor.identificador }}</small>
+      </div>
+      <div class="d-flex gap-3 flex-wrap">
+        <div>
+          <label class="form-label small fw-semibold mb-1">Nº Factura *</label>
+          <input type="text" name="numero_factura" class="form-control form-control-sm"
+                 value="{{ datos_factura.numero_factura }}" required style="min-width:140px">
+        </div>
+        <div>
+          <label class="form-label small fw-semibold mb-1">Fecha *</label>
+          <input type="date" name="fecha" class="form-control form-control-sm"
+                 value="{{ datos_factura.fecha_emision }}" required>
+        </div>
+      </div>
+    </div>
+
+    {{ formset.management_form }}
+
+    <div class="table-responsive">
+    <table class="table table-bordered align-middle mb-0" style="table-layout:fixed;min-width:1100px">
+      <colgroup>
+        <col style="width:16%">
+        <col style="width:11%">
+        <col style="width:18%">
+        <col style="width:9%">
+        <col style="width:7%">
+        <col style="width:7%">
+        <col style="width:6%">
+        <col style="width:7%">
+        <col style="width:8%">
+        <col style="width:7%">
+      </colgroup>
+      <thead class="table-light">
+        <tr>
+          <th class="small">Descripción</th>
+          <th class="small">Categoría</th>
+          <th class="small">Producto en sistema</th>
+          <th class="small">Presentación</th>
+          <th class="small">Cant.</th>
+          <th class="small">Cont./env.</th>
+          <th class="small">Unidad</th>
+          <th class="small">Stock total</th>
+          <th class="small">Precio unit.</th>
+          <th class="small">Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+
+      {% for form, match in items_con_match %}
+      <tr class="factura-row {% cycle '' 'table-light' %}">
+
+        {# 1 Descripción — campos ocultos necesarios para el POST #}
+        <td>
+          <div class="fw-semibold small lh-sm">{{ form.initial.descripcion|truncatewords:4 }}</div>
+          {{ form.descripcion }}
+          {{ form.unidad_detectada }}
+          {{ form.subtotal }}
+        </td>
+
+        {# 2 Categoría #}
+        <td>
+          {{ form.categoria }}
+          {% if form.categoria.errors %}
+            <div class="text-danger" style="font-size:.7rem;margin-top:3px">{{ form.categoria.errors.0 }}</div>
+          {% endif %}
+          {# Solo semillas #}
+          <div class="semilla-fields d-none mt-2">
+            <div style="font-size:.7rem;font-weight:600;color:#6c757d;margin-bottom:3px">Cultivo</div>
+            {{ form.cultivo }}
+            <div style="font-size:.7rem;font-weight:600;color:#6c757d;margin:4px 0 3px">Variedad</div>
+            <div class="variedad-wrapper">
+              <div class="variedad-select-group">
+                {{ form.variedad }}
+                <button type="button" class="btn btn-link btn-sm p-0 mt-1 btn-add-variedad"
+                        style="font-size:.7rem">+ nueva variedad</button>
+              </div>
+              <div class="variedad-inline d-none mt-1">
+                {{ form.variedad_manual }}
+                <button type="button" class="btn btn-link btn-sm p-0 text-secondary btn-var-cancel"
+                        style="font-size:.7rem">cancelar</button>
+              </div>
+            </div>
+          </div>
+        </td>
+
+        {# 3 Producto en sistema #}
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+            {# Badge de coincidencia #}
+            {% if match.candidatos %}
+              {% if match.label == "alto" %}
+                <span class="badge" style="background:#d4edda;color:#155724;font-size:.65rem;white-space:nowrap">✓ {{ match.score }}%</span>
+              {% elif match.label == "medio" %}
+                <span class="badge" style="background:#fff3cd;color:#856404;font-size:.65rem;white-space:nowrap">~ {{ match.score }}%</span>
+              {% else %}
+                <span class="badge" style="background:#f8d7da;color:#721c24;font-size:.65rem;white-space:nowrap">? {{ match.score }}%</span>
+              {% endif %}
+            {% else %}
+              <span class="badge" style="background:#f8f9fa;color:#6c757d;border:1px solid #dee2e6;font-size:.65rem;white-space:nowrap">sin coincidencia</span>
+            {% endif %}
+            {# Checkbox crear nuevo #}
+            {{ form.crear_nuevo_producto }}
+            <label class="text-muted" style="font-size:.7rem;white-space:nowrap;margin:0"
+                   for="{{ form.crear_nuevo_producto.id_for_label }}">Crear nuevo</label>
+          </div>
+          {# Select de candidatos #}
+          <select name="{{ form.producto_existente.html_name }}"
+                  class="form-select form-select-sm producto-select">
+            <option value="">— Crear nuevo —</option>
+            {% for c in match.candidatos %}
+              <option value="{{ c.producto.id }}"
+                {% if forloop.first and match.label != "bajo" %}selected{% endif %}>
+                {{ c.producto.nombre }}{% if match.candidatos|length > 1 %} ({{ c.score }}%){% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </td>
+
+        {# 4 Presentación #}
+        <td>
+          {% if match.presentaciones %}
+            <select name="{{ form.presentacion_existente.html_name }}"
+                    class="form-select form-select-sm pres-select">
+              <option value="">— Nueva —</option>
+              {% for p in match.presentaciones %}
+                <option value="{{ p.id }}">{{ p.nombre }}</option>
+              {% endfor %}
+            </select>
+          {% else %}
+            <span class="fw-semibold small">{{ form.initial.nueva_presentacion_nombre }}</span>
+            <input type="hidden" name="{{ form.presentacion_existente.html_name }}" value="">
+          {% endif %}
+          {# Campos ocultos para crear presentación nueva automáticamente #}
+          <input type="hidden" name="{{ form.nueva_presentacion_nombre.html_name }}"
+                 value="{{ form.initial.nueva_presentacion_nombre }}">
+          <input type="hidden" name="{{ form.contenido_por_envase.html_name }}"
+                 value="{{ form.contenido_por_envase.value|default:'' }}">
+          <input type="hidden" name="{{ form.unidad_medida.html_name }}"
+                 value="{{ form.unidad_medida.value|default:'' }}">
+        </td>
+
+        {# 5 Cantidad #}
+        <td>
+          {{ form.cantidad }}
+          {% if form.cantidad.errors %}
+            <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.cantidad.errors.0 }}</div>
+          {% endif %}
+        </td>
+
+        {# 6 Contenido por envase #}
+        <td>{{ form.contenido_por_envase }}</td>
+
+        {# 7 Unidad #}
+        <td>{{ form.unidad_medida }}</td>
+
+        {# 8 Stock total calculado por JS #}
+        <td class="text-center">
+          <span class="fw-semibold small total-stock-preview text-success">—</span>
+        </td>
+
+        {# 9 Precio unitario #}
+        <td>
+          {{ form.precio_unitario }}
+          {% if form.precio_unitario.errors %}
+            <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.precio_unitario.errors.0 }}</div>
+          {% endif %}
+        </td>
+
+        {# 10 Subtotal #}
+        <td class="text-end">
+          <span class="badge bg-success subtotal-preview" style="font-size:.75rem">R$ —</span>
+        </td>
+
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="10" class="text-center text-muted py-4">No hay ítems para revisar.</td>
+      </tr>
+      {% endfor %}
+
+      <tr class="table-light fw-semibold">
+        <td colspan="9" class="text-end small">Total factura</td>
+        <td class="text-end">
+          <span class="badge bg-success" style="font-size:.85rem">
+            R$ {{ datos_factura.total|floatformat:2 }}
+          </span>
+        </td>
+      </tr>
+
+      </tbody>
+    </table>
+    </div>
+
+    <div class="d-flex gap-3 mt-4">
+      <button type="submit" class="btn btn-success">
+        <i class="mdi mdi-check-circle me-1"></i> Confirmar y generar stock
+      </button>
+      <a href="{% url 'vista_cargar_factura' %}" class="btn btn-light">
+        <i class="mdi mdi-arrow-left me-1"></i> Volver
+      </a>
+    </div>
+
+  </form>
+</div>
+</div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  // Calcular stock y subtotal por fila
+  function recalcular(row) {
+    const cant   = parseFloat(row.querySelector(".cantidad-input")?.value  || 0);
+    const cont   = parseFloat(row.querySelector(".contenido-input")?.value || 0);
+    const precio = parseFloat(row.querySelector(".precio-input")?.value    || 0);
+
+    const elStk  = row.querySelector(".total-stock-preview");
+    const elSub  = row.querySelector(".subtotal-preview");
+    const elSubH = row.querySelector("input[name$='-subtotal']");
+
+    if (elStk)  elStk.textContent = (cant * cont).toFixed(2);
+    if (elSub)  elSub.textContent = "R$ " + (cant * precio).toFixed(2);
+    if (elSubH) elSubH.value      = (cant * precio).toFixed(2);
+  }
+
+  document.querySelectorAll(".factura-row").forEach(recalcular);
+  document.addEventListener("input", e => {
+    const row = e.target.closest(".factura-row");
+    if (row) recalcular(row);
+  });
+
+  // Semillas
+  function esSemilla(sel) {
+    return (sel?.options[sel.selectedIndex]?.text?.toLowerCase() || "").includes("semilla");
+  }
+  function actualizarSemilla() {
+    document.querySelectorAll(".factura-row").forEach(row => {
+      const sel    = row.querySelector("select[name$='-categoria']");
+      const campos = row.querySelector(".semilla-fields");
+      if (campos) campos.classList.toggle("d-none", !esSemilla(sel));
+    });
+  }
+  actualizarSemilla();
+  document.addEventListener("change", e => {
+    if (e.target.name?.includes("-categoria")) actualizarSemilla();
+  });
+
+  // Checkbox crear nuevo → deshabilita select producto
+  document.querySelectorAll(".check-nuevo").forEach(chk => {
+    function sync() {
+      const sel = chk.closest("td").querySelector(".producto-select");
+      if (sel) sel.disabled = chk.checked;
+    }
+    sync();
+    chk.addEventListener("change", sync);
+  });
+
+  // AJAX presentaciones al cambiar producto
+  document.querySelectorAll(".producto-select").forEach(sel => {
+    sel.addEventListener("change", function () {
+      const row     = sel.closest(".factura-row");
+      const presSel = row.querySelector(".pres-select");
+      const prodId  = this.value;
+      if (!presSel) return;
+      if (!prodId) { presSel.innerHTML = '<option value="">— Nueva —</option>'; return; }
+
+      fetch(`/gestion/api/presentaciones/?producto_id=${prodId}`)
+        .then(r => r.json())
+        .then(data => {
+          let html = '<option value="">— Nueva —</option>';
+          data.forEach(p => { html += `<option value="${p.id}">${p.nombre}</option>`; });
+          presSel.innerHTML = html;
+        })
+        .catch(() => { presSel.innerHTML = '<option value="">— Nueva —</option>'; });
+    });
+  });
+
+  // Variedad inline
+  document.querySelectorAll(".btn-add-variedad").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const w = btn.closest(".variedad-wrapper");
+      w.querySelector(".variedad-select-group").classList.add("d-none");
+      w.querySelector(".variedad-inline").classList.remove("d-none");
+    });
+  });
+  document.querySelectorAll(".btn-var-cancel").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const w = btn.closest(".variedad-wrapper");
+      w.querySelector(".variedad-inline").classList.add("d-none");
+      w.querySelector(".variedad-select-group").classList.remove("d-none");
+      const inp = w.querySelector(".variedad-inline input");
+      if (inp) inp.value = "";
+    });
+  });
+
+});
+</script>
+
+{% endblock %}
+{% block nav %}{% include 'nav_home.html' %}{% endblock %}

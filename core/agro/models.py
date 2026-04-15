@@ -43,7 +43,6 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
 
-
 class Moneda(models.Model):
     def __str__(self):
         return self.nombre
@@ -137,7 +136,6 @@ class Unidad(models.Model):
 
     def __str__(self):
         return self.abreviatura
-
 
 class ConversionUM(models.Model):
     um_origen = models.ForeignKey(Unidad, on_delete=models.CASCADE, related_name="conversiones_origen")

@@ -1,17 +1,32 @@
+from datetime import datetime
+import os, re
+import base64
+from django.core.files.base import ContentFile
+from decimal import Decimal
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db import transaction
+from django.db.models import Prefetch, Q
 from django.urls import reverse
 from django.http import JsonResponse
 from django.utils import timezone
-from django.contrib import messages
-from django.db.models import Prefetch
-from .funciones_aux import ( registrar_actividad_aux, obtener_valores_costos  )
+from django.forms import formset_factory
+
+import tempfile as tempfile
+
+from .funciones_aux import parse_nfe_pdf, br_to_float, _buscar_candidatos, _score, _detectar_contenido_unidad
+
+from .funciones_aux import ( registrar_actividad_aux, obtener_valores_costos, _detectar_contenido_unidad  )
 from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm,
-                                ActividadProductivaForm, ActividadInsumoForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm, StockFiltroForm)
+                                ActividadProductivaForm, ActividadInsumoForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm,
+                                StockFiltroForm, FacturaCompraForm, FacturaCompraItemFormSet)
 from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
                                 ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
-                                CamposVistoria, CamposCosecha, ActividadInsumo, Producto, CategoriaProducto, MovimientoStock)
+                                ActividadInsumo, CategoriaProducto, MovimientoStock, 
+                                FacturaCompra, Proveedor,  PresentacionProducto, FacturaCompraItem, Variedad
+                                )
 
 
 @login_required
@@ -581,14 +596,23 @@ def ajax_valores_actividad(request):
         "valor_h_maq": str(c_mq) if c_mq is not None else "",
     })
 
+@login_required
 def vista_lista_stock(request):
-    productos = (
-        Producto.objects
-        .select_related("categoria", "unidad_base")
-        .order_by("nombre")
-    )
-
     form = StockFiltroForm(request.GET or None)
+
+    productos = Producto.objects.select_related("categoria", "unidad_base").order_by("nombre")
+    categorias = CategoriaProducto.objects.order_by("nombre")
+
+    producto_txt = request.GET.get("producto")
+    categoria = request.GET.get("categoria")
+    fecha_desde = request.GET.get("fecha_entrada_desde")
+    fecha_hasta = request.GET.get("fecha_entrada_hasta")
+
+    if producto_txt:
+        productos = productos.filter(nombre__icontains=producto_txt)
+
+    if categoria:
+        productos = productos.filter(categoria_id=categoria)
 
     lista_productos = []
     total_ingresado = 0
@@ -596,10 +620,29 @@ def vista_lista_stock(request):
     total_restante = 0
 
     for producto in productos:
+
         movimientos = MovimientoStock.objects.filter(producto=producto)
+
+        if fecha_desde:
+            movimientos = movimientos.filter(fecha__gte=fecha_desde)
+
+        if fecha_hasta:
+            movimientos = movimientos.filter(fecha__lte=fecha_hasta)
 
         ingresado = 0
         consumido = 0
+
+        for mov in movimientos:
+            if mov.tipo == "ENTRADA":
+                ingresado += mov.cantidad
+            elif mov.tipo == "SALIDA":
+                consumido += mov.cantidad
+
+        ingresado = 0
+        consumido = 0
+
+        if not movimientos.exists():
+            continue
 
         for mov in movimientos:
             if mov.tipo == "ENTRADA":
@@ -620,16 +663,10 @@ def vista_lista_stock(request):
             "restante": restante,
         })
 
-    producto_seleccionado = None
-    producto_id = request.GET.get("producto_id")
-
-    if producto_id:
-        producto_seleccionado = get_object_or_404(productos, pk=producto_id)
-
     context = {
-        "form": form,
+        "form": form,                 
+        "categorias": categorias,    
         "productos": lista_productos,
-        "producto_seleccionado": producto_seleccionado,
         "total_productos": len(lista_productos),
         "total_ingresado": total_ingresado,
         "total_consumido": total_consumido,
@@ -637,3 +674,461 @@ def vista_lista_stock(request):
     }
 
     return render(request, "vista_lista_stock.html", context)
+
+@login_required
+def vista_lista_facturas(request):
+    empresa = request.user.profile.empresa
+
+    facturas = FacturaCompra.objects.filter(
+        empresa=empresa
+    ).select_related("proveedor").order_by("-fecha", "-id")
+
+    return render(request, "tem_facturas/vista_lista_facturas.html", {
+        "facturas": facturas
+    })
+
+@login_required
+def vista_cargar_factura(request):
+    if request.method == "POST":
+        empresa = request.user.profile.empresa
+        
+        try:
+            factura = FacturaCompra.objects.create(
+                empresa=empresa,
+                proveedor_id=request.POST.get("proveedor"),
+                numero=request.POST.get("numero"),
+                fecha=request.POST.get("fecha"),
+                total=request.POST.get("total"),
+                archivo_pdf=request.FILES.get("archivo_pdf"),  # <-- salva o PDF
+            )
+            messages.success(request, "Factura cargada correctamente.")
+            return redirect("vista_lista_facturas")
+
+        except Exception as e:
+            messages.error(request, f"Error al guardar: {e}")
+
+    proveedores = Proveedor.objects.filter(empresa=request.user.profile.empresa)
+    return render(request, "tem_facturas/vista_cargar_factura.html", {
+        "proveedores": proveedores
+    })
+
+@login_required
+def vista_cargar_factura_manual(request):
+    return render(request, "tem_facturas/vista_cargar_factura_manual.html")
+
+@login_required
+def vista_procesar_pdf_factura(request):
+    if request.method != "POST":
+        return redirect("vista_cargar_factura")
+
+    pdf_file = request.FILES.get("pdf_file")
+    if not pdf_file:
+        messages.error(request, _("No se ha seleccionado ningún archivo PDF."))
+        return redirect("vista_cargar_factura")
+
+    # Leer contenido antes de escribir el temp
+    pdf_content = pdf_file.read()
+    pdf_file.seek(0)
+
+    pdf_content = pdf_file.read()
+    pdf_file.seek(0)
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        tmp.write(pdf_content)
+        tmp_path = tmp.name
+
+    try:
+        datos = parse_nfe_pdf(tmp_path)
+
+        if not datos.get("items"):
+            messages.error(request, _("No se encontraron productos en la factura."))
+            return redirect("vista_cargar_factura")
+
+        total = sum(
+            Decimal(str(br_to_float(i.get("v_total")) or 0))
+            for i in datos["items"]
+        )
+
+        fecha_html = ""
+        if datos.get("fecha_emision"):
+            try:
+                fecha_html = datetime.strptime(
+                    datos["fecha_emision"], "%d/%m/%Y"
+                ).strftime("%Y-%m-%d")
+            except ValueError:
+                fecha_html = ""
+
+            request.session["factura_temporal"] = {
+            "items": datos["items"],
+            "nombre_archivo": pdf_file.name,
+            "proveedor_data": datos.get("proveedor"),
+            "datos_factura": {
+                "numero_factura": datos.get("numero_nfe"),
+                "fecha_emision": fecha_html,
+                "total": str(total),
+            },
+            "pdf_base64": base64.b64encode(pdf_content).decode("utf-8"),  # ← dentro do dict
+            "pdf_nombre": pdf_file.name,                                   # ← dentro do dict
+        }
+        return redirect("vista_revisar_factura")
+
+    except Exception as e:
+        messages.error(request, _("Error procesando factura: %(error)s") % {"error": str(e)})
+        return redirect("vista_cargar_factura")
+
+    finally:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+
+def _br_to_float(valor):
+    if not valor:
+        return None
+    try:
+        return float(str(valor).replace(".", "").replace(",", "."))
+    except ValueError:
+        return None
+
+@login_required
+def vista_revisar_factura(request):
+
+    factura_temp = request.session.get("factura_temporal")
+    if not factura_temp:
+        messages.warning(request, _("No hay factura cargada."))
+        return redirect("vista_cargar_factura")
+
+    empresa = request.user.profile.empresa
+    if not empresa:
+        messages.error(request, _("No tiene empresa asignada."))
+        return redirect("vista_cargar_factura")
+
+    items          = factura_temp["items"]
+    proveedor_data = factura_temp.get("proveedor_data", "")
+    datos_factura  = factura_temp["datos_factura"]
+
+    # ── Proveedor ────────────────────────────────────────────────────────
+    nombre    = (proveedor_data or "").upper()[:255] or "PROVEEDOR SIN IDENTIFICAR"
+    documento = re.sub(r"[^\d]", "", proveedor_data or "") or "00000000000"
+
+    proveedor_obj, _ = Proveedor.objects.get_or_create(
+        empresa=empresa,
+        razon_social=nombre,
+        defaults={"identificador": documento},
+    )
+    request.session["proveedor_seleccionado"] = proveedor_obj.id
+
+    # ── Formulario cabecera ───────────────────────────────────────────────
+    cabecera_form = FacturaCompraForm(initial={
+        "numero": datos_factura.get("numero_factura"),
+        "fecha":  datos_factura.get("fecha_emision"),
+    })
+
+    # ── Datos iniciales + matching ────────────────────────────────────────
+    initial_data = []
+    match_info   = []
+
+    for item in items:
+        desc         = item.get("descricao", "")
+        unid_factura = item.get("unidade", "")
+        cant         = _br_to_float(item.get("quantidade", 0)) or 0
+        p_u          = _br_to_float(item.get("v_unit", 0)) or 0
+        contenido, unidad, pres_nombre = _detectar_contenido_unidad(desc, unid_factura)
+
+        # Buscar candidatos — filtro simple por la primera palabra significativa
+        palabras = [p for p in desc.split() if len(p) >= 4]
+        candidatos = []
+
+        if palabras:
+            todos = Producto.objects.filter(
+                empresa=empresa,
+                activo=True,
+                nombre__icontains=palabras[0]   # filtra por la primera palabra
+            ).select_related("categoria")[:30]
+
+            for prod in todos:
+                s = _score(desc, prod)
+                if s >= 35:
+                    candidatos.append({"producto": prod, "score": s})
+
+            candidatos.sort(key=lambda x: x["score"], reverse=True)
+            candidatos = candidatos[:4]
+
+        mejor_score    = candidatos[0]["score"] if candidatos else 0
+        mejor_producto = candidatos[0]["producto"] if candidatos else None
+
+        presentaciones = []
+        if mejor_producto:
+            presentaciones = list(
+                PresentacionProducto.objects.filter(producto_id=prod).order_by("nombre")
+            )
+
+        pres_match = next(
+            (p for p in presentaciones if p.unidad_factura.upper() == unid_factura.upper()),
+            None,
+    )
+
+        initial_data.append({
+            "descripcion":               desc,
+            "unidad_detectada":          unid_factura,
+            "cantidad":                  cant,
+            "precio_unitario":           p_u,
+            "subtotal":                  cant * p_u,
+            "contenido_por_envase":      contenido,
+            "unidad_medida":             unidad,
+            "nueva_presentacion_nombre": pres_nombre,
+            "producto_existente":        mejor_producto.id if mejor_producto else None,
+            "presentacion_existente":    pres_match.id if pres_match else None,
+            "nueva_presentacion_nombre": f"Envase {contenido} {unidad}",
+        })
+
+        match_info.append({
+            "candidatos":  candidatos,           # lista [{"producto", "score"}]
+            "score":       mejor_score,
+            "label": (
+                "alto"   if mejor_score >= 75 else
+                "medio"  if mejor_score >= 50 else
+                "bajo"   if mejor_score >= 35 else
+                "ninguno"
+            ),
+            "presentaciones": presentaciones,
+        })
+
+    formset = FacturaCompraItemFormSet(
+        initial=initial_data,
+        prefix="item",
+        form_kwargs={"empresa": empresa},
+    )
+
+    # Pre-cargar presentaciones en el form según el candidato principal
+    for i, form in enumerate(formset):
+        prod = initial_data[i].get("producto_existente")
+        if prod:
+            form.fields["presentacion_existente"].queryset = (
+                PresentacionProducto.objects.filter(producto_id=prod).order_by("nombre")
+            )
+
+    context = {
+        "cabecera_form":   cabecera_form,
+        "formset":         formset,
+        "items_con_match": list(zip(formset, match_info)),
+        "items":           items,
+        "nombre_archivo":  factura_temp["nombre_archivo"],
+        "datos_factura":   datos_factura,
+        "proveedor":       proveedor_obj,
+        "empresa_usuario": empresa,
+        "categorias":      CategoriaProducto.objects.all().order_by("nombre"),
+    }
+
+    return render(request, "tem_facturas/vista_revisar_factura.html", context)
+
+@login_required
+@transaction.atomic
+def vista_confirmar_factura(request):
+    if request.method != "POST":
+        return redirect("vista_revisar_factura")
+
+    factura_temp = request.session.get("factura_temporal")
+    if not factura_temp:
+        messages.error(request, _("Sesión expirada."))
+        return redirect("vista_cargar_factura")
+
+    empresa = request.user.profile.empresa
+    proveedor_id = (
+        request.session.get("proveedor_seleccionado")
+        or request.POST.get("proveedor")
+    )
+
+    try:
+        proveedor = Proveedor.objects.get(id=proveedor_id, empresa=empresa)
+    except Proveedor.DoesNotExist:
+        messages.error(request, _("Proveedor no encontrado."))
+        return redirect("vista_revisar_factura")
+
+    cabecera_form = FacturaCompraForm({
+        "numero": request.POST.get("numero_factura"),
+        "fecha":  request.POST.get("fecha"),
+    })
+
+    formset = FacturaCompraItemFormSet(
+        request.POST,
+        prefix="item",
+        form_kwargs={"empresa": empresa},
+    )
+
+    if not cabecera_form.is_valid() or not formset.is_valid():
+        messages.error(request, _("Hay errores en la factura. Revisá los campos marcados."))
+        return render(request, "tem_facturas/vista_revisar_factura.html", {
+            "cabecera_form":   cabecera_form,
+            "formset":         formset,
+            "items_con_match": [
+                (f, {"score": 0, "label": "ninguno", "candidatos": [], "presentaciones": []})
+                for f in formset
+            ],
+            "items":          factura_temp["items"],
+            "nombre_archivo": factura_temp["nombre_archivo"],
+            "datos_factura":  factura_temp["datos_factura"],
+            "proveedor":      proveedor,
+            "empresa_usuario": empresa,
+        })
+
+    # ── Verificar duplicada ────────────────────────────────────────────────
+    numero_factura = request.POST.get("numero_factura")
+    if FacturaCompra.objects.filter(
+        empresa=empresa,
+        proveedor=proveedor,
+        numero=numero_factura
+    ).exists():
+        messages.warning(
+            request,
+            _(f"La factura {numero_factura} ya fue ingresada para este proveedor.")
+        )
+        request.session.pop("factura_temporal", None)
+        request.session.pop("proveedor_seleccionado", None)
+        return redirect("vista_lista_facturas")
+
+    # ── Unidad helper ──────────────────────────────────────────────────────
+    from agro.models import Unidad
+
+    def resolver_unidad(nombre):
+        return (
+            Unidad.objects.filter(nombre__iexact=nombre).first()
+            or Unidad.objects.filter(abreviatura__iexact=nombre).first()
+            or Unidad.objects.first()
+        )
+
+    # ── Guardar cabecera ───────────────────────────────────────────────────
+    factura = cabecera_form.save(commit=False)
+    factura.empresa   = empresa
+    factura.proveedor = proveedor
+    factura.total     = Decimal("0.00")
+
+    # ── Guardar PDF desde sesión ───────────────────────────────────────────
+    pdf_base64 = factura_temp.get("pdf_base64")
+    pdf_nombre = factura_temp.get("pdf_nombre", "factura.pdf")
+    if pdf_base64:
+        factura.archivo_pdf.save(
+            pdf_nombre,
+            ContentFile(base64.b64decode(pdf_base64)),
+            save=False
+        )
+    factura.save()
+
+    total_factura = Decimal("0.00")
+    items_raw     = factura_temp["items"]
+
+    for i, form in enumerate(formset):
+        cd = form.cleaned_data
+        if not cd:
+            continue
+
+        usar_nuevo       = cd.get("crear_nuevo_producto")
+        prod_existente   = cd.get("producto_existente")
+        pres_existente   = cd.get("presentacion_existente")
+
+        descripcion      = (cd.get("descripcion") or "").strip()
+        unidad_detectada = (cd.get("unidad_detectada") or "UN").strip()
+        categoria        = cd.get("categoria")
+        cultivo          = cd.get("cultivo")
+        variedad         = cd.get("variedad")
+        variedad_manual  = (cd.get("variedad_manual") or "").strip()
+
+        cantidad_envases     = cd["cantidad"]
+        contenido_por_envase = cd["contenido_por_envase"]
+        unidad_medida        = cd["unidad_medida"]
+        precio_unitario      = cd["precio_unitario"]
+        subtotal             = cd.get("subtotal") or (cantidad_envases * precio_unitario)
+
+        # ── Resolver producto ──────────────────────────────────────────────
+        if prod_existente and not usar_nuevo:
+            producto = prod_existente
+        else:
+            if categoria and "semilla" in categoria.nombre.lower():
+                if variedad_manual and cultivo:
+                    variedad, creada = Variedad.objects.get_or_create(
+                        cultivo=cultivo, nombre=variedad_manual
+                    )
+                nombre_producto = f"{descripcion[:180]} - {cultivo.nombre} {variedad.nombre}"
+            else:
+                nombre_producto = descripcion[:255]
+
+            unidad_base = resolver_unidad(unidad_medida)
+
+            producto = Producto.objects.filter(
+                empresa=empresa,
+                nombre=nombre_producto,
+            ).first()
+
+            if not producto:
+                import re
+                codigo_base = re.sub(r"[^A-Z0-9]", "", nombre_producto.upper())[:20]
+                codigo = codigo_base or "PROD"
+
+                sufijo = 1
+                codigo_final = codigo
+                while Producto.objects.filter(empresa=empresa, codigo=codigo_final).exists():
+                    codigo_final = f"{codigo[:18]}{sufijo:02d}"
+                    sufijo += 1
+
+                producto = Producto.objects.create(
+                    empresa=empresa,
+                    nombre=nombre_producto,
+                    codigo=codigo_final,
+                    categoria=categoria,
+                    activo=True,
+                    precio=precio_unitario,
+                    maneja_stock=True,
+                    unidad_base=unidad_base,
+                )
+
+        # ── Resolver presentación ──────────────────────────────────────────
+        if pres_existente and not usar_nuevo:
+            presentacion = pres_existente
+        else:
+            nombre_pres = (
+                (cd.get("nueva_presentacion_nombre") or "").strip()
+                or f"{unidad_detectada} {contenido_por_envase} {unidad_medida}"
+            )
+            unidad_contenido = resolver_unidad(unidad_medida)
+
+            presentacion, pres_creada = PresentacionProducto.objects.get_or_create(
+                producto=producto,
+                nombre=nombre_pres,
+                defaults={
+                    "contenido":        contenido_por_envase,
+                    "unidad_factura":   unidad_detectada,
+                    "unidad_contenido": unidad_contenido,
+                },
+            )
+
+        # ── Crear ítem y movimiento de stock ───────────────────────────────
+        cantidad_base = cantidad_envases * contenido_por_envase
+
+        factura_item = FacturaCompraItem.objects.create(
+            factura=factura,
+            producto=producto,
+            presentacion=presentacion,
+            cantidad_facturada=cantidad_envases,
+            cantidad_base=cantidad_base,
+            precio_unitario=precio_unitario,
+            subtotal=subtotal,
+        )
+
+        MovimientoStock.objects.create(
+            producto=producto,
+            tipo=MovimientoStock.Tipo.ENTRADA,
+            cantidad=cantidad_base,
+            um=presentacion.unidad_contenido,
+            factura_item=factura_item,
+            fecha=timezone.now(),
+            precio_unitario=precio_unitario,
+        )
+
+        total_factura += subtotal
+
+    factura.total = total_factura
+    factura.save(update_fields=["total"])
+
+    request.session.pop("factura_temporal", None)
+    request.session.pop("proveedor_seleccionado", None)
+
+    messages.success(request, _(f"Factura {factura.numero} guardada correctamente."))
+    return redirect("vista_lista_facturas")

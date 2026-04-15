@@ -164,7 +164,9 @@ class TipoActividad(models.Model):
     requiere_maq = models.BooleanField(default=False)
     requiere_vist = models.BooleanField(default=False)
     requiere_cosecha = models.BooleanField(default=False)
+    valor_x_ha_mo = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name=_("Horas de mano de obra por ha"))
     valor_x_ha_mq = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name=_("Horas de máquina por ha"))
+    valor_mo = models.DecimalField(max_digits=18, decimal_places=4, default=0, null=True, blank=True, verbose_name=_("Costo por hora de mano de obra"))
     valor_maquina = models.DecimalField(max_digits=18, decimal_places=2, default=0, null=True, blank=True, verbose_name=_("Costo por hora de máquina"))
 
 class SubTipoActividad(models.Model):
@@ -387,6 +389,103 @@ class ListaPrecioDetalle(models.Model):
 
     def __str__(self):
         return f"{self.lista_precio} - {self.producto} - {self.precio}"
+
+class FacturaCompra(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
+    proveedor = models.ForeignKey("Proveedor", on_delete=models.CASCADE, verbose_name=_("Proveedor"))
+    numero = models.CharField(max_length=50, verbose_name=_("Número factura"))
+    fecha = models.DateField(verbose_name=_("Fecha"))
+    total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Total"))
+    archivo_pdf = models.FileField(upload_to="facturas_compra/", blank=True, null=True)
+    creada = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Factura de compra")
+        verbose_name_plural = _("Facturas de compra")
+        unique_together = ("empresa", "proveedor", "numero")
+
+    def __str__(self):  
+        return f"{self.proveedor} - {self.numero}"
+
+class FacturaCompraItem(models.Model):
+    factura = models.ForeignKey(FacturaCompra, related_name="items", on_delete=models.CASCADE)
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    presentacion = models.ForeignKey("PresentacionProducto", on_delete=models.CASCADE)
+    cantidad_facturada = models.DecimalField(max_digits=12, decimal_places=3)
+    cantidad_base = models.DecimalField(max_digits=14, decimal_places=3)
+    precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=14, decimal_places=2)
+
+    class Meta:
+        verbose_name = _("Ítem de factura")
+        verbose_name_plural = _("Ítems de factura")
+
+class PresentacionProducto(models.Model):
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, verbose_name=_("Producto"))
+    nombre = models.CharField(max_length=100, verbose_name=_("Nombre presentación"))
+    unidad_factura = models.CharField(max_length=20, verbose_name=_("Unidad factura"))
+    contenido = models.DecimalField(max_digits=12, decimal_places=3, verbose_name=_("Contenido"))
+    unidad_contenido = models.ForeignKey("agro.Unidad", on_delete=models.CASCADE, verbose_name=_("Unidad contenido"))
+
+    class Meta:
+        verbose_name = _("Presentación de producto")
+        verbose_name_plural = _("Presentaciones de producto")
+
+    def __str__(self):
+        return f"{self.producto} - {self.nombre}"
+
+class Proveedor(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
+    razon_social = models.CharField(max_length=255, verbose_name=_("Razón social"))
+    identificador = models.CharField(max_length=30, blank=True, null=True, verbose_name=_("CUIT / CNPJ"))
+
+    class Meta:
+        verbose_name = _("Proveedor")
+        verbose_name_plural = _("Proveedores")
+        unique_together = ("empresa", "razon_social")
+
+    def __str__(self):
+        return self.razon_social
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -644,23 +743,6 @@ class ProductoExtractor:
 
 
 
-# =========================
-# PRESENTACIONES
-# =========================
-
-class PresentacionProducto(models.Model):
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, verbose_name=_("Producto"))
-    nombre = models.CharField(max_length=100, verbose_name=_("Nombre presentación"))
-    unidad_factura = models.CharField(max_length=20, verbose_name=_("Unidad factura"))
-    contenido = models.DecimalField(max_digits=12, decimal_places=3, verbose_name=_("Contenido"))
-    unidad_contenido = models.ForeignKey("agro.Unidad", on_delete=models.CASCADE, verbose_name=_("Unidad contenido"))
-
-    class Meta:
-        verbose_name = _("Presentación de producto")
-        verbose_name_plural = _("Presentaciones de producto")
-
-    def __str__(self):
-        return f"{self.producto} - {self.nombre}"
 
 
 
@@ -676,65 +758,6 @@ class PresentacionProducto(models.Model):
 
 
 
-
-
-
-
-
-# =========================
-# PROVEEDORES
-# =========================
-
-class Proveedor_agro(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
-    razon_social = models.CharField(max_length=255, verbose_name=_("Razón social"))
-    identificador = models.CharField(max_length=30, blank=True, null=True, verbose_name=_("CUIT / CNPJ"))
-
-    class Meta:
-        verbose_name = _("Proveedor")
-        verbose_name_plural = _("Proveedores")
-        unique_together = ("empresa", "razon_social")
-
-    def __str__(self):
-        return self.razon_social
-
-# =========================
-# FACTURAS DE COMPRA
-# =========================
-
-class FacturaCompra(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
-    proveedor = models.ForeignKey(Proveedor_agro, on_delete=models.CASCADE, verbose_name=_("Proveedor"))
-    numero = models.CharField(max_length=50, verbose_name=_("Número factura"))
-    fecha = models.DateField(verbose_name=_("Fecha"))
-    total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Total"))
-    archivo_pdf = models.FileField(upload_to="facturas_compra/", blank=True, null=True)
-    creada = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name = _("Factura de compra")
-        verbose_name_plural = _("Facturas de compra")
-        unique_together = ("empresa", "proveedor", "numero")
-
-    def __str__(self):
-        return f"{self.proveedor} - {self.numero}"
-
-# =========================
-# ÍTEMS DE FACTURA
-# =========================
-
-class FacturaCompraItem(models.Model):
-    factura = models.ForeignKey(FacturaCompra, related_name="items", on_delete=models.CASCADE)
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
-    presentacion = models.ForeignKey(PresentacionProducto, on_delete=models.CASCADE)
-    cantidad_facturada = models.DecimalField(max_digits=12, decimal_places=3)
-    cantidad_base = models.DecimalField(max_digits=14, decimal_places=3)
-    precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
-    subtotal = models.DecimalField(max_digits=14, decimal_places=2)
-
-    class Meta:
-        verbose_name = _("Ítem de factura")
-        verbose_name_plural = _("Ítems de factura")
 
 
 

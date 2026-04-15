@@ -1,0 +1,500 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<style>
+*{box-sizing:border-box}
+
+.rf-page{margin:1.5rem auto;padding:0 1.25rem}
+
+/* ── cabecera ── */
+.rf-head{display:flex;align-items:center;flex-wrap:wrap;gap:.75rem;margin-bottom:1.5rem}
+.rf-title{font-size:1.5rem;font-weight:500;color:var(--color-text-primary);margin:0}
+.rf-chip{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .9rem;
+         border-radius:20px;font-size:.8rem;background:var(--color-background-secondary);
+         color:var(--color-text-secondary);border:0.5px solid var(--color-border-tertiary)}
+.rf-total-chip{background:#EAF3DE;color:#3B6D11;font-weight:500;border-color:#C0DD97}
+
+/* ── tarjeta proveedor + cabecera factura ── */
+.rf-card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);
+         border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:1.25rem}
+.rf-prov{display:flex;align-items:center;gap:.875rem}
+.rf-prov-icon{width:40px;height:40px;border-radius:var(--border-radius-md);flex-shrink:0;
+              background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);
+              display:flex;align-items:center;justify-content:center;
+              color:var(--color-text-secondary);font-size:1.1rem}
+.rf-prov-name{font-size:.95rem;font-weight:500;color:var(--color-text-primary);margin:0}
+.rf-prov-doc{font-size:.8rem;color:var(--color-text-secondary);margin:0}
+.rf-fields{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;
+           padding-top:1rem;border-top:0.5px solid var(--color-border-tertiary)}
+.rf-label{font-size:.72rem;font-weight:500;text-transform:uppercase;letter-spacing:.06em;
+          color:var(--color-text-secondary);margin-bottom:.3rem}
+
+/* ── tabla ── */
+.rf-table-wrap{background:var(--color-background-primary);
+               border:0.5px solid var(--color-border-tertiary);
+               border-radius:var(--border-radius-lg);overflow:hidden;
+               overflow-x:auto;margin-bottom:1.25rem}
+table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:980px}
+thead tr{background:var(--color-background-secondary)}
+th{padding:9px 10px;font-size:.68rem;font-weight:500;text-transform:uppercase;
+   letter-spacing:.06em;color:var(--color-text-secondary);text-align:left;
+   border-bottom:0.5px solid var(--color-border-tertiary);white-space:nowrap}
+td{padding:8px 10px;vertical-align:top;border-bottom:0.5px solid var(--color-border-tertiary)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--color-background-secondary)}
+
+/* anchos de columna */
+.c-desc {width:22%}
+.c-cat  {width:10%}
+.c-prod {width:18%}
+.c-pres {width:10%}
+.c-cant {width:7%}
+.c-cont {width:7%}
+.c-um   {width:6%}
+.c-stk  {width:7%}
+.c-pu   {width:7%}
+.c-sub  {width:6%}
+
+/* celda descripción */
+.desc-raw{font-size:.82rem;font-weight:500;color:var(--color-text-primary);line-height:1.4}
+.desc-meta{font-size:.7rem;color:var(--color-text-secondary);margin-top:2px}
+
+/* badge match */
+.mbadge{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;
+        border-radius:20px;font-size:.68rem;font-weight:500;margin-bottom:4px;white-space:nowrap}
+.m-alto  {background:#EAF3DE;color:#3B6D11}
+.m-medio {background:#FAEEDA;color:#854F0B}
+.m-bajo  {background:#FCEBEB;color:#A32D2D}
+.m-none  {background:var(--color-background-secondary);color:var(--color-text-secondary)}
+
+/* controles */
+.ctrl,
+.ctrl-sm{width:100%;font-size:.78rem;padding:5px 7px;
+         border:0.5px solid var(--color-border-secondary);
+         border-radius:6px;background:var(--color-background-primary);
+         color:var(--color-text-primary)}
+.ctrl-sm{font-size:.72rem}
+.nuevo-check{display:flex;align-items:center;gap:4px;margin-top:4px;
+             font-size:.68rem;color:var(--color-text-secondary)}
+.nuevo-check input[type=checkbox]{width:auto;cursor:pointer}
+
+/* link nueva presentación */
+.link-nueva{font-size:.7rem;color:#1D9E75;cursor:pointer;
+            margin-top:3px;display:inline-block;
+            background:none;border:none;padding:0;text-decoration:underline}
+
+/* panel nueva presentación (oculto por defecto) */
+.pres-panel{display:none;margin-top:6px;padding:8px;
+            background:var(--color-background-secondary);
+            border:0.5px solid var(--color-border-tertiary);
+            border-radius:6px}
+.pres-panel .rf-label{margin-bottom:3px}
+.pres-panel .ctrl{margin-bottom:5px}
+.pres-panel.open{display:block}
+
+/* stock / subtotal */
+.stk-val{font-size:.82rem;font-weight:500;color:var(--color-text-primary);
+         padding-top:6px;display:block}
+.sub-pill{background:#EAF3DE;color:#3B6D11;padding:3px 9px;
+          border-radius:20px;font-size:.78rem;font-weight:500;
+          white-space:nowrap;display:inline-block}
+
+/* errores */
+.err{color:#A32D2D;font-size:.68rem;margin-top:3px;list-style:none;padding:0}
+
+/* fila total */
+.tr-total td{background:var(--color-background-secondary);border-top:0.5px solid var(--color-border-tertiary)}
+
+/* botones */
+.rf-actions{display:flex;gap:.875rem;flex-wrap:wrap}
+.btn-primary{padding:.75rem 1.75rem;border-radius:var(--border-radius-md);
+             font-size:.9rem;font-weight:500;cursor:pointer;border:none;
+             background:#2e7d32;color:#fff;display:inline-flex;align-items:center;gap:.4rem}
+.btn-primary:hover{background:#1b5e20}
+.btn-secondary{padding:.75rem 1.75rem;border-radius:var(--border-radius-md);
+               font-size:.9rem;font-weight:500;cursor:pointer;
+               border:0.5px solid var(--color-border-secondary);
+               background:var(--color-background-primary);
+               color:var(--color-text-secondary);text-decoration:none;
+               display:inline-flex;align-items:center;gap:.4rem}
+</style>
+
+<div class="rf-page">
+
+  {# ── Encabezado ── #}
+  <div class="rf-head">
+    <h1 class="rf-title">{% trans "Revisar factura" %}</h1>
+    <span class="rf-chip"><i class="bi bi-file-earmark-pdf"></i> {{ nombre_archivo }}</span>
+    <span class="rf-chip"><i class="bi bi-box"></i> {{ items|length }} {% trans "ítems" %}</span>
+    <span class="rf-chip rf-total-chip">Total R$ {{ datos_factura.total|floatformat:2 }}</span>
+  </div>
+
+  <form method="post" action="{% url 'vista_confirmar_factura' %}" id="factura-form" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="proveedor" value="{{ proveedor.id }}">
+
+    {# ── Proveedor + campos cabecera ── #}
+    <div class="rf-card">
+      <div class="rf-prov">
+        <div class="rf-prov-icon"><i class="bi bi-building"></i></div>
+        <div>
+          <p class="rf-prov-name">{{ proveedor.razon_social }}</p>
+          <p class="rf-prov-doc">{% trans "Doc." %}: {{ proveedor.identificador }}</p>
+        </div>
+      </div>
+      <div class="rf-fields">
+        <div>
+          <div class="rf-label">{% trans "Número factura" %} *</div>
+          <input type="text" name="numero_factura" class="ctrl"
+                 value="{{ datos_factura.numero_factura }}" required>
+        </div>
+        <div>
+          <div class="rf-label">{% trans "Fecha" %} *</div>
+          <input type="date" name="fecha" class="ctrl"
+                 value="{{ datos_factura.fecha_emision }}" required>
+        </div>
+      </div>
+    </div>
+
+    {# ── Tabla ── #}
+    <div class="rf-table-wrap">
+      {{ formset.management_form }}
+      <table>
+        <thead>
+          <tr>
+            <th class="c-desc">{% trans "Descripción factura" %}</th>
+            <th class="c-cat">{% trans "Categoría" %}</th>
+            <th class="c-prod">{% trans "Producto en sistema" %}</th>
+            <th class="c-pres">{% trans "Presentación" %}</th>
+            <th class="c-cant">{% trans "Cant." %}</th>
+            <th class="c-cont">{% trans "Cont./env." %}</th>
+            <th class="c-um">{% trans "Unidad" %}</th>
+            <th class="c-stk">{% trans "Stock total" %}</th>
+            <th class="c-pu">{% trans "Precio unit." %}</th>
+            <th class="c-sub">{% trans "Subtotal" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+
+        {% for form, match in items_con_match %}
+        <tr class="factura-row" data-index="{{ forloop.counter0 }}">
+
+          {# ── Descripción ── #}
+          <td class="c-desc">
+            <div class="desc-raw">{{ form.initial.descripcion|truncatechars:50 }}</div>
+            <div class="desc-meta">{{ form.initial.unidad_detectada }}</div>
+            {{ form.descripcion }}
+            {{ form.unidad_detectada }}
+            {{ form.subtotal }}
+          </td>
+
+          {# ── Categoría ── #}
+          <td class="c-cat">
+            {{ form.categoria }}
+            {% if form.categoria.errors %}
+              <ul class="err">{% for e in form.categoria.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+            {# Columnas semilla ocultas, se muestran con JS si categoría = semilla #}
+            <div class="semilla-fields" style="display:none;margin-top:6px">
+              <div class="rf-label">{% trans "Cultivo" %}</div>
+              {{ form.cultivo }}
+              <div class="rf-label" style="margin-top:4px">{% trans "Variedad" %}</div>
+              <div class="variedad-wrapper">
+                <div class="variedad-select-group">
+                  {{ form.variedad }}
+                  <button type="button" class="link-nueva btn-add-variedad">+ {% trans "nueva variedad" %}</button>
+                </div>
+                <div class="variedad-inline d-none" style="margin-top:4px">
+                  {{ form.variedad_manual }}
+                  <button type="button" class="link-nueva btn-var-cancel">{% trans "cancelar" %}</button>
+                </div>
+              </div>
+            </div>
+          </td>
+
+          {# ── Producto en sistema ── #}
+          <td class="c-prod">
+            {# Badge de confianza #}
+            {% if match.candidatos %}
+              <span class="mbadge m-{{ match.label }}">
+                {% if match.label == "alto" %}✓{% elif match.label == "medio" %}~{% else %}?{% endif %}
+                {{ match.score }}%
+              </span>
+            {% else %}
+              <span class="mbadge m-none">{% trans "sin coincidencia" %}</span>
+            {% endif %}
+
+            {# Select con todos los candidatos + opción crear nuevo #}
+            <select name="{{ form.producto_existente.html_name }}" class="ctrl producto-select">
+              <option value="">— {% trans "Crear producto nuevo" %} —</option>
+              {% for c in match.candidatos %}
+                <option value="{{ c.producto.id }}"
+                  {% if forloop.first and match.label != "bajo" %}selected{% endif %}>
+                  {{ c.producto.nombre }}
+                  {% if match.candidatos|length > 1 %}({{ c.score }}%){% endif %}
+                </option>
+              {% endfor %}
+            </select>
+
+            <label class="nuevo-check">
+              <input type="checkbox" name="{{ form.crear_nuevo_producto.html_name }}"
+                     class="check-nuevo"
+                     {% if not match.candidatos %}checked{% endif %}>
+              {% trans "Crear nuevo" %}
+            </label>
+
+            {% if form.producto_existente.errors %}
+              <ul class="err">{% for e in form.producto_existente.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+          </td>
+
+          {# ── Presentación ── #}
+          <td class="c-pres">
+            <select name="{{ form.presentacion_existente.html_name }}" class="ctrl pres-select">
+              <option value="">— {% trans "Nueva" %} —</option>
+              {% for p in match.presentaciones %}
+                <option value="{{ p.id }}">{{ p.nombre }}</option>
+              {% endfor %}
+            </select>
+
+            <button type="button" class="link-nueva btn-toggle-pres">+ {% trans "nueva" %}</button>
+
+            <div class="pres-panel">
+              <div class="rf-label">{% trans "Nombre" %}</div>
+              {{ form.nueva_presentacion_nombre }}
+              <div class="rf-label">{% trans "Unidad contenido BD" %}</div>
+              {{ form.unidad_contenido }}
+            </div>
+
+            {% if form.presentacion_existente.errors %}
+              <ul class="err">{% for e in form.presentacion_existente.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+          </td>
+
+          {# ── Cantidad ── #}
+          <td class="c-cant">
+            <input type="number" name="{{ form.cantidad.html_name }}"
+                   value="{{ form.cantidad.value|default:'' }}"
+                   step="0.001" min="0" class="ctrl cantidad-input">
+            {% if form.cantidad.errors %}
+              <ul class="err">{% for e in form.cantidad.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+          </td>
+
+          {# ── Contenido por envase ── #}
+          <td class="c-cont">
+            <input type="number" name="{{ form.contenido_por_envase.html_name }}"
+                   value="{{ form.contenido_por_envase.value|default:'' }}"
+                   step="0.001" min="0" class="ctrl contenido-input">
+            {% if form.contenido_por_envase.errors %}
+              <ul class="err">{% for e in form.contenido_por_envase.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+          </td>
+
+          {# ── Unidad de stock ── #}
+          <td class="c-um">
+            {{ form.unidad_medida }}
+            {% if form.unidad_medida.errors %}
+              <ul class="err">{% for e in form.unidad_medida.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+          </td>
+
+          {# ── Total stock calculado ── #}
+          <td class="c-stk">
+            <span class="stk-val total-stock-preview">—</span>
+          </td>
+
+          {# ── Precio unitario ── #}
+          <td class="c-pu">
+            <input type="number" name="{{ form.precio_unitario.html_name }}"
+                   value="{{ form.precio_unitario.value|default:'' }}"
+                   step="0.01" min="0" class="ctrl precio-input">
+            {% if form.precio_unitario.errors %}
+              <ul class="err">{% for e in form.precio_unitario.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+            {% endif %}
+          </td>
+
+          {# ── Subtotal ── #}
+          <td class="c-sub">
+            <span class="sub-pill subtotal-preview">—</span>
+          </td>
+
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="10" style="text-align:center;padding:2rem;color:var(--color-text-secondary)">
+            {% trans "No hay ítems para revisar." %}
+          </td>
+        </tr>
+        {% endfor %}
+
+        {# ── Fila total ── #}
+        <tr class="tr-total">
+          <td colspan="9" style="text-align:right;font-size:.8rem;
+              color:var(--color-text-secondary);padding-right:10px">
+            {% trans "Total factura" %}
+          </td>
+          <td>
+            <span class="sub-pill" style="background:#C0DD97;color:#27500A;font-size:.82rem">
+              R$ {{ datos_factura.total|floatformat:2 }}
+            </span>
+          </td>
+        </tr>
+
+        </tbody>
+      </table>
+    </div>
+
+    {# ── Botones ── #}
+    <div class="rf-actions">
+      <button type="submit" class="btn-primary">
+        <i class="bi bi-check-circle"></i>
+        {% trans "Confirmar y generar stock" %}
+      </button>
+      <a href="{% url 'vista_cargar_factura' %}" class="btn-secondary">
+        <i class="bi bi-arrow-left"></i>
+        {% trans "Volver" %}
+      </a>
+    </div>
+
+  </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  // ── Aplicar clase ctrl a selects del formset ────────────────────────
+  document.querySelectorAll(".factura-row select").forEach(s => {
+    if (!s.classList.contains("ctrl")) s.classList.add("ctrl");
+  });
+  document.querySelectorAll(".factura-row input[type=text]").forEach(i => {
+    if (!i.classList.contains("ctrl")) i.classList.add("ctrl");
+  });
+
+  // ── Calcular stock y subtotal por fila ──────────────────────────────
+  function recalcular(row) {
+    const cant     = parseFloat(row.querySelector(".cantidad-input")?.value  || 0);
+    const cont     = parseFloat(row.querySelector(".contenido-input")?.value || 0);
+    const precio   = parseFloat(row.querySelector(".precio-input")?.value    || 0);
+    const stk      = cant * cont;
+    const subtotal = cant * precio;
+
+    const elStk = row.querySelector(".total-stock-preview");
+    const elSub = row.querySelector(".subtotal-preview");
+    const elSubH = row.querySelector("input[name$='-subtotal']");
+
+    if (elStk) elStk.textContent = stk.toFixed(2);
+    if (elSub) elSub.textContent = "R$ " + subtotal.toFixed(2);
+    if (elSubH) elSubH.value = subtotal.toFixed(2);
+  }
+
+  document.querySelectorAll(".factura-row").forEach(recalcular);
+
+  document.addEventListener("input", e => {
+    const row = e.target.closest(".factura-row");
+    if (row) recalcular(row);
+  });
+
+  // ── Semillas: mostrar/ocultar campos cultivo/variedad ───────────────
+  function esSemilla(sel) {
+    return (sel?.options[sel.selectedIndex]?.text?.toLowerCase() || "").includes("semilla");
+  }
+
+  function actualizarSemilla() {
+    document.querySelectorAll(".factura-row").forEach(row => {
+      const sel = row.querySelector("select[name$='-categoria']");
+      const campos = row.querySelector(".semilla-fields");
+      if (campos) campos.style.display = esSemilla(sel) ? "block" : "none";
+    });
+  }
+
+  actualizarSemilla();
+  document.addEventListener("change", e => {
+    if (e.target.name?.includes("-categoria")) actualizarSemilla();
+  });
+
+  // ── Toggle "crear nuevo" deshabilita el select de producto ──────────
+  document.querySelectorAll(".check-nuevo").forEach(chk => {
+    function syncSelect() {
+      const sel = chk.closest("td").querySelector(".producto-select");
+      if (sel) sel.disabled = chk.checked;
+    }
+    syncSelect();
+    chk.addEventListener("change", syncSelect);
+  });
+
+  // ── Toggle panel nueva presentación ─────────────────────────────────
+  document.querySelectorAll(".btn-toggle-pres").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const panel = btn.nextElementSibling;
+      const abre  = !panel.classList.contains("open");
+      panel.classList.toggle("open", abre);
+      btn.textContent = abre ? "— cancelar" : "+ nueva";
+      if (abre) {
+        const sel = btn.previousElementSibling;
+        if (sel) sel.value = "";   // limpiar select presentación
+      }
+    });
+  });
+
+  // ── Cargar presentaciones por AJAX al cambiar producto ──────────────
+  document.querySelectorAll(".producto-select").forEach(sel => {
+    sel.addEventListener("change", function () {
+      const row     = sel.closest(".factura-row");
+      const presSel = row.querySelector(".pres-select");
+      const prodId  = this.value;
+
+      if (!presSel || !prodId) {
+        if (presSel) presSel.innerHTML = '<option value="">— Nueva —</option>';
+        return;
+      }
+
+      fetch(`/gestion/api/presentaciones/?producto_id=${prodId}`)
+        .then(r => r.json())
+        .then(data => {
+          let html = '<option value="">— Nueva —</option>';
+          data.forEach(p => {
+            html += `<option value="${p.id}">${p.nombre}</option>`;
+          });
+          presSel.innerHTML = html;
+        })
+        .catch(() => {
+          presSel.innerHTML = '<option value="">— Nueva —</option>';
+        });
+    });
+  });
+
+  // ── Nueva variedad inline ────────────────────────────────────────────
+  document.querySelectorAll(".btn-add-variedad").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const w = btn.closest(".variedad-wrapper");
+      w.querySelector(".variedad-select-group").style.display = "none";
+      w.querySelector(".variedad-inline").classList.remove("d-none");
+    });
+  });
+  document.querySelectorAll(".btn-var-cancel").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const w = btn.closest(".variedad-wrapper");
+      w.querySelector(".variedad-inline").classList.add("d-none");
+      w.querySelector(".variedad-select-group").style.display = "block";
+      const inp = w.querySelector(".variedad-inline input");
+      if (inp) inp.value = "";
+    });
+  });
+
+  // ── Abrir panel presentación si hay errores en esos campos ──────────
+  document.querySelectorAll(".pres-panel").forEach(panel => {
+    if (panel.querySelector(".err")) {
+      panel.classList.add("open");
+      const btn = panel.previousElementSibling;
+      if (btn) btn.textContent = "— cancelar";
+    }
+  });
+
+});
+</script>
+
+{% endblock %}
+
+{% block nav %}{% include 'nav_home.html' %}{% endblock %}

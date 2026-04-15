@@ -51,49 +51,51 @@
 
                         <form method="get">
                             <div class="mb-3">
-                                <label for="{{ form.producto.id_for_label }}" class="form-label">
-                                    {{ form.producto.label }}
-                                </label>
-                                {{ form.producto }}
+                                <label>Producto</label>
+                                <input type="text" name="producto" class="form-control"
+                                    placeholder="Nombre o código"
+                                    value="{{ request.GET.producto }}">
                             </div>
-
                             <div class="mb-3">
-                                <label for="{{ form.categoria.id_for_label }}" class="form-label">
-                                    {{ form.categoria.label }}
-                                </label>
-                                {{ form.categoria }}
+                                <label>Categoría</label>
+                                <select name="categoria" class="form-select">
+                                    <option value="">Todas</option>
+                                    {% for cat in categorias %}
+                                        <option value="{{ cat.id }}"
+                                            {% if request.GET.categoria == cat.id|stringformat:"s" %}
+                                                selected
+                                            {% endif %}
+                                        >
+                                            {{ cat.nombre }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
                             </div>
-
                             <div class="mb-3">
-                                <label for="{{ form.fecha_entrada_desde.id_for_label }}" class="form-label">
-                                    {{ form.fecha_entrada_desde.label }}
-                                </label>
-                                {{ form.fecha_entrada_desde }}
+                                <label>Fecha desde</label>
+                                <input type="date" name="fecha_entrada_desde"
+                                    class="form-control"
+                                    value="{{ request.GET.fecha_entrada_desde }}">
                             </div>
-
                             <div class="mb-3">
-                                <label for="{{ form.fecha_entrada_hasta.id_for_label }}" class="form-label">
-                                    {{ form.fecha_entrada_hasta.label }}
-                                </label>
-                                {{ form.fecha_entrada_hasta }}
+                                <label>Fecha hasta</label>
+                                <input type="date" name="fecha_entrada_hasta"
+                                    class="form-control"
+                                    value="{{ request.GET.fecha_entrada_hasta }}">
                             </div>
-
                             <div class="d-flex gap-2">
                                 <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="mdi mdi-magnify me-1"></i>
-                                    {% translate "Filtrar" %}
+                                    Filtrar
                                 </button>
 
                                 <a href="{% url 'vista_lista_stock' %}" class="btn btn-outline-secondary btn-sm">
-                                    <i class="mdi mdi-filter-remove-outline me-1"></i>
-                                    {% translate "Limpiar" %}
+                                    Limpiar
                                 </a>
                             </div>
                         </form>
                     </div>
                 </div>
             </div>
-
             <div class="col-lg-9">
                 <div class="row g-3 mb-4">
                     <div class="col-md-3">
@@ -161,7 +163,7 @@
                                             <!-- IZQUIERDA -->
                                             <div>
                                                 <div class="fw-semibold">
-                                                    {{ prod.nombre }}
+                                                {{ prod.nombre|truncatewords:6 }}
                                                 </div>
 
                                                 <div class="small text-muted mt-2">

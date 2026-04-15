@@ -1,14 +1,14 @@
 from django import forms
 from django.utils.translation import gettext as _
-from django.forms import inlineformset_factory
+from django.forms import inlineformset_factory, formset_factory, BaseFormSet
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User  
 from django.utils import timezone
 from django.forms import ModelForm
-from agro.models import Ciudad
+from agro.models import Ciudad, Unidad
 from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
-                                  ActividadInsumo, CamposVistoria, CamposCosecha, Producto, CategoriaProducto)
-from agro.models import Unidad
+                                ActividadInsumo, CamposVistoria, CamposCosecha, Producto, CategoriaProducto, FacturaCompra,
+                                Proveedor, FacturaCompraItem, PresentacionProducto, Variedad)
 
 
 class BaseForm(ModelForm):
@@ -267,7 +267,6 @@ class CamposCosechaForm(BaseForm):
             "observaciones": _("Observaciones"),
         }
 
-
 class StockFiltroForm(BaseSimpleForm):
     producto = forms.CharField(
         required=False,
@@ -327,3 +326,224 @@ class StockFiltroForm(BaseSimpleForm):
             )
 
         return cleaned_data
+
+
+from django import forms
+from django.forms import formset_factory
+from django.utils.translation import gettext_lazy as _
+from gestion_agro.models import (
+    CategoriaProducto, Cultivo, Variedad, Producto, PresentacionProducto
+)
+from agro.models import Unidad
+
+
+UNIDAD_CHOICES = [
+    ("L",   "L"),
+    ("ML",  "ML"),
+    ("KG",  "KG"),
+    ("G",   "G"),
+    ("TON", "TON"),
+    ("UN",  "UN"),
+]
+
+
+class FacturaCompraForm(BaseForm):
+    class Meta:
+        model = FacturaCompra
+        fields = ["numero", "fecha"]
+        widgets = {"fecha": forms.DateInput(attrs={"type": "date"})}
+        labels = {"numero": "Número factura", "fecha": "Fecha"}
+
+
+class FacturaCompraItemForm(forms.Form):
+
+    # ── Campos ocultos del PDF ─────────────────────────────────────────────
+    descripcion      = forms.CharField(required=False, widget=forms.HiddenInput())
+    unidad_detectada = forms.CharField(required=False, widget=forms.HiddenInput())
+    subtotal         = forms.DecimalField(required=False, decimal_places=2,
+                                          widget=forms.HiddenInput())
+
+    # ── Producto ───────────────────────────────────────────────────────────
+    producto_existente = forms.ModelChoiceField(
+        queryset=Producto.objects.none(),
+        required=False,
+        empty_label="— Crear producto nuevo —",
+        label=_("Producto existente"),
+    )
+
+    crear_nuevo_producto = forms.BooleanField(
+        required=False,
+        label=_("Crear nuevo"),
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+    )
+
+    # ── Categoría / semilla ────────────────────────────────────────────────
+    categoria = forms.ModelChoiceField(
+        queryset=CategoriaProducto.objects.all().order_by("nombre"),
+        required=False,
+        empty_label="---",
+        label=_("Categoría"),
+    )
+
+    cultivo = forms.ModelChoiceField(
+        queryset=Cultivo.objects.all().order_by("nombre"),
+        required=False,
+        label=_("Cultivo"),
+    )
+
+    variedad = forms.ModelChoiceField(
+        queryset=Variedad.objects.none(),
+        required=False,
+        label=_("Variedad"),
+    )
+
+    variedad_manual = forms.CharField(
+        required=False,
+        label=_("Nueva variedad"),
+        widget=forms.TextInput(attrs={"placeholder": _("Nombre de la variedad")}),
+    )
+
+    # ── Presentación ───────────────────────────────────────────────────────
+    presentacion_existente = forms.ModelChoiceField(
+        queryset=PresentacionProducto.objects.none(),
+        required=False,
+        empty_label="— Nueva —",
+        label=_("Presentación"),
+    )
+
+    nueva_presentacion_nombre = forms.CharField(
+        required=False,
+        max_length=100,
+        label=_("Nombre presentación"),
+    )
+
+    # ── Cantidades ─────────────────────────────────────────────────────────
+    cantidad = forms.DecimalField(
+        min_value=0, decimal_places=3,
+        label=_("Cantidad"),
+    )
+
+    contenido_por_envase = forms.DecimalField(
+        min_value=0, decimal_places=3,
+        label=_("Contenido por envase"),
+    )
+
+    unidad_medida = forms.ChoiceField(
+        choices=UNIDAD_CHOICES,
+        label=_("Unidad"),
+    )
+
+    precio_unitario = forms.DecimalField(
+        min_value=0, decimal_places=2,
+        label=_("Precio unit."),
+    )
+
+    # ──────────────────────────────────────────────────────────────────────
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+
+        # Clases Bootstrap según tipo de widget
+        for name, field in self.fields.items():
+            w = field.widget
+            if isinstance(w, forms.HiddenInput):
+                continue
+            if isinstance(w, forms.CheckboxInput):
+                continue
+            if isinstance(w, (forms.Select, forms.SelectMultiple)):
+                w.attrs["class"] = "form-select form-select-sm"
+            else:
+                w.attrs["class"] = "form-control form-control-sm"
+
+        # Clases específicas para cálculo JS
+        self.fields["cantidad"].widget.attrs["class"]            += " cantidad-input"
+        self.fields["contenido_por_envase"].widget.attrs["class"] += " contenido-input"
+        self.fields["precio_unitario"].widget.attrs["class"]      += " precio-input"
+
+        # Steps
+        self.fields["cantidad"].widget.attrs["step"]            = "0.001"
+        self.fields["contenido_por_envase"].widget.attrs["step"] = "0.001"
+        self.fields["precio_unitario"].widget.attrs["step"]      = "0.01"
+
+        # Queryset productos de la empresa
+        if empresa:
+            self.fields["producto_existente"].queryset = (
+                Producto.objects
+                .filter(empresa=empresa, activo=True)
+                .select_related("categoria")
+                .order_by("nombre")
+            )
+
+        # Variedad según cultivo
+        cultivo = None
+        if self.is_bound:
+            cultivo_id = self.data.get(self.add_prefix("cultivo"))
+            if cultivo_id:
+                cultivo = Cultivo.objects.filter(id=cultivo_id).first()
+        else:
+            cultivo = self.initial.get("cultivo")
+
+        if cultivo:
+            cultivo_id = cultivo.id if hasattr(cultivo, "id") else cultivo
+            self.fields["variedad"].queryset = (
+                Variedad.objects.filter(cultivo_id=cultivo_id).order_by("nombre")
+            )
+
+        # Presentaciones del producto pre-seleccionado
+        producto_id = None
+        if self.is_bound:
+            producto_id = self.data.get(self.add_prefix("producto_existente"))
+        elif self.initial.get("producto_existente"):
+            p = self.initial["producto_existente"]
+            producto_id = p.id if hasattr(p, "id") else p
+
+        if producto_id:
+            self.fields["presentacion_existente"].queryset = (
+                PresentacionProducto.objects
+                .filter(producto_id=producto_id)
+                .order_by("nombre")
+            )
+
+    # ──────────────────────────────────────────────────────────────────────
+    def clean(self):
+        cleaned = super().clean()
+
+        cantidad        = cleaned.get("cantidad") or 0
+        contenido       = cleaned.get("contenido_por_envase") or 0
+        precio          = cleaned.get("precio_unitario") or 0
+        categoria       = cleaned.get("categoria")
+        cultivo         = cleaned.get("cultivo")
+        variedad        = cleaned.get("variedad")
+        variedad_manual = (cleaned.get("variedad_manual") or "").strip()
+        usar_nuevo      = cleaned.get("crear_nuevo_producto")
+        prod_existente  = cleaned.get("producto_existente")
+        pres_existente  = cleaned.get("presentacion_existente")
+
+        cleaned["subtotal"]    = cantidad * precio
+        cleaned["total_stock"] = cantidad * contenido
+
+        # Si hay producto existente y no se fuerza crear nuevo
+        if prod_existente and not usar_nuevo:
+            return cleaned
+
+        # Validaciones semilla
+        if categoria and "semilla" in categoria.nombre.lower():
+            if not cultivo:
+                self.add_error("cultivo", _("Debe seleccionar cultivo."))
+            if not variedad and not variedad_manual:
+                self.add_error("variedad", _("Debe seleccionar variedad o escribir una nueva."))
+
+        # Validaciones presentación nueva
+        if not pres_existente:
+            if not contenido:
+                self.add_error("contenido_por_envase", _("Indicá el contenido del envase."))
+            if not cleaned.get("unidad_medida"):
+                self.add_error("unidad_medida", _("Seleccioná la unidad de stock."))
+
+        return cleaned
+
+
+FacturaCompraItemFormSet = formset_factory(
+    FacturaCompraItemForm,
+    extra=0,
+)

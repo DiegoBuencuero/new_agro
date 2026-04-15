@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+
+<div class="col-12 grid-margin">
+  <div class="card">
+    <div class="card-body">
+
+      {% if messages %}
+      <div class="mb-4">
+          {% for message in messages %}
+          <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+              <i class="mdi
+                  {% if 'success' in message.tags %}mdi-check-circle
+                  {% elif 'danger' in message.tags %}mdi-alert-circle
+                  {% elif 'warning' in message.tags %}mdi-alert
+                  {% else %}mdi-information{% endif %}
+                  me-2"></i>
+              <div>{{ message }}</div>
+              <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+          </div>
+          {% endfor %}
+      </div>
+      {% endif %}
+
+      <h4 class="card-title">
+          <i class="mdi mdi-file-document-outline icon-agro me-2"></i>
+          {% translate "Facturas de Compra" %}
+      </h4>
+      <p class="card-description">
+        {% trans "Listado de facturas ingresadas" %}
+      </p>
+
+      <div class="mb-3">
+        <a href="{% url 'vista_cargar_factura' %}" class="btn btn-primary">
+          <i class="fas fa-plus"></i> {% trans "Nueva Factura" %}
+        </a>
+      </div>
+
+      <!-- TABLA -->
+      <div class="table-responsive">
+        <table class="table table-striped">
+          <thead>
+            <tr>
+              <th>{% trans "Número" %}</th>
+              <th>{% trans "Proveedor" %}</th>
+              <th>{% trans "Fecha" %}</th>
+              <th>{% trans "Total" %}</th>
+              <th>{% trans "Ítems" %}</th>
+              <th>{% trans "Creada" %}</th>
+              <th class="text-center">{% trans "PDF" %}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for factura in facturas %}
+            <tr>
+              <td>{{ factura.numero }}</td>
+              <td>{{ factura.proveedor.razon_social }}</td>
+              <td>{{ factura.fecha|date:"d/m/Y" }}</td>
+              <td>${{ factura.total|floatformat:2 }}</td>
+              <td>{{ factura.items.count }}</td>
+              <td>{{ factura.creada|date:"d/m/Y H:i" }}</td>
+              <td class="text-center">
+                {% if factura.archivo_pdf %}
+                <a href="{{ factura.archivo_pdf.url }}" target="_blank" title="Ver PDF">
+                  <i class="mdi mdi-file-pdf-box" style="font-size: 1.5rem; color: #c0392b;"></i>
+                </a>
+                {% else %}
+                <i class="mdi mdi-file-pdf-box" style="font-size: 1.5rem; opacity: 0.25;"></i>
+                {% endif %}
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="7" class="text-center">
+                {% trans "No hay facturas cargadas" %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% block custom_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            new bootstrap.Alert(alert).close();
+        });
+    }, 5000);
+});
+</script>
+{% endblock %}
+
+{% endblock %}
+
+{% block nav %}
+{% include 'nav_home.html' %}
+{% endblock %}

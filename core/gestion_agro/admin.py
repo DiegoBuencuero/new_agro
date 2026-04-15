@@ -4,7 +4,7 @@ from gestion_agro.models import ( Campo, Lote, Actividad, Cultivo, Variedad, Cam
     CicloAgricola, FaseAgricola, TipoActividad, 
     SubTipoActividad, ActividadProductiva, CamposVistoria, CamposCosecha, CategoriaProducto,
     Producto, ProductoSemilla, ActividadInsumo, ProductoNormalizado, PresentacionProducto,
-    Proveedor_agro, FacturaCompra, FacturaCompraItem, MovimientoStock, TipoActividadCategoriaProducto
+    Proveedor, FacturaCompra, FacturaCompraItem, MovimientoStock, TipoActividadCategoriaProducto
 )
 
 
@@ -130,7 +130,7 @@ class PresentacionProductoAdmin(admin.ModelAdmin):
     list_filter = ("unidad_contenido",)
 
 
-@admin.register(Proveedor_agro)
+@admin.register(Proveedor)
 class ProveedorAgroAdmin(admin.ModelAdmin):
     list_display = ("razon_social", "empresa", "identificador")
     search_fields = ("razon_social", "identificador")

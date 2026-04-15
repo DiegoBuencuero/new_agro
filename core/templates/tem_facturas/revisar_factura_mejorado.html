@@ -1,0 +1,590 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<style>
+:root {
+    --agro-primary:       #2e7d32;
+    --agro-primary-dark:  #1b5e20;
+    --agro-primary-light: #e8f5e9;
+    --agro-neutral-50:    #fafafa;
+    --agro-neutral-100:   #f5f5f5;
+    --agro-neutral-200:   #eeeeee;
+    --agro-neutral-300:   #e0e0e0;
+    --agro-neutral-600:   #757575;
+    --agro-neutral-900:   #212121;
+    --agro-error:         #f44336;
+    --agro-warn:          #f57c00;
+    --agro-info:          #0288d1;
+}
+
+/* ── Layout ────────────────────────────────────────────── */
+.revision-container { margin: 2rem auto; padding: 0 1.5rem; }
+
+.titulo-revision {
+    font-size: 1.7rem; font-weight: 600;
+    color: var(--agro-neutral-900); margin-bottom: .5rem;
+}
+
+.subtitulo-archivo {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: var(--agro-neutral-100);
+    padding: .6rem 1rem; border-radius: 8px;
+    color: var(--agro-neutral-600); font-size: .9rem;
+}
+
+.badge-total {
+    background: linear-gradient(135deg, var(--agro-primary) 0%, var(--agro-primary-dark) 100%);
+    color: #fff; padding: .5rem 1rem; border-radius: 6px;
+    font-weight: 600; font-size: 1rem;
+}
+
+/* ── Tarjeta proveedor ─────────────────────────────────── */
+.tarjeta-proveedor {
+    background: #fff; border-radius: 12px;
+    padding: 1.5rem; margin-bottom: 2rem;
+    border: 1px solid var(--agro-neutral-200);
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    display: flex; align-items: center; gap: 1rem;
+}
+.icono-proveedor {
+    width: 46px; height: 46px;
+    background: var(--agro-primary-light);
+    border-radius: 10px; display: flex; align-items: center;
+    justify-content: center; color: var(--agro-primary); font-size: 1.2rem;
+    border: 1px solid var(--agro-neutral-200); flex-shrink: 0;
+}
+.info-proveedor h5 { font-size: 1rem; font-weight: 600; margin: 0; }
+.info-proveedor small { color: var(--agro-neutral-600); font-size: .85rem; }
+
+/* ── Campos cabecera ───────────────────────────────────── */
+.seccion-cabecera {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr));
+    gap: 1.25rem; margin-bottom: 2rem;
+}
+.campo-label {
+    font-size: .8rem; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .05em; color: var(--agro-neutral-600); margin-bottom: .4rem;
+}
+
+/* ── Tabla ─────────────────────────────────────────────── */
+.tabla-wrap {
+    background: #fff; border-radius: 12px; overflow: hidden;
+    border: 1px solid var(--agro-neutral-200);
+    box-shadow: 0 2px 12px rgba(0,0,0,.04);
+    overflow-x: auto;
+}
+.tabla-wrap table { width: 100%; border-collapse: collapse; min-width: 1100px; }
+.tabla-wrap thead {
+    background: linear-gradient(90deg, var(--agro-primary-light) 0%, #f1f8f2 100%);
+}
+.tabla-wrap th {
+    padding: 1rem .875rem; font-size: .75rem; font-weight: 600;
+    color: var(--agro-primary-dark); text-transform: uppercase;
+    letter-spacing: .05em; white-space: nowrap;
+    border-bottom: 1px solid var(--agro-neutral-200);
+}
+.tabla-wrap td {
+    padding: .875rem .75rem; vertical-align: top;
+    border-bottom: 1px solid var(--agro-neutral-100);
+}
+.tabla-wrap tbody tr:last-child td { border-bottom: none; }
+.tabla-wrap tbody tr:hover { background: var(--agro-neutral-50); }
+
+/* ── Celda producto ────────────────────────────────────── */
+.prod-nombre { font-weight: 600; font-size: .95rem; display: block; }
+.prod-meta   { font-size: .78rem; color: var(--agro-neutral-600); margin-top: .2rem; }
+
+/* ── Badge de matching ─────────────────────────────────── */
+.match-badge {
+    display: inline-flex; align-items: center; gap: .3rem;
+    padding: .25rem .65rem; border-radius: 20px; font-size: .75rem; font-weight: 600;
+    margin-top: .4rem; white-space: nowrap;
+}
+.match-alto    { background: #e8f5e9; color: #1b5e20; }
+.match-medio   { background: #fff8e1; color: #f57c00; }
+.match-bajo    { background: #fce4ec; color: #c62828; }
+.match-ninguno { display: none; }
+
+/* ── Bloque producto existente ─────────────────────────── */
+.bloque-producto {
+    background: var(--agro-neutral-50);
+    border: 1px solid var(--agro-neutral-200);
+    border-radius: 8px; padding: .75rem; margin-top: .5rem;
+    min-width: 280px;
+}
+.bloque-producto .campo-label { margin-bottom: .3rem; }
+
+/* ── Presentación ──────────────────────────────────────── */
+.pres-toggle-link {
+    font-size: .8rem; color: var(--agro-primary);
+    cursor: pointer; text-decoration: underline; margin-top: .4rem;
+    display: inline-block;
+}
+.nueva-pres-panel {
+    background: #f0f7f0; border: 1px solid #c8e6c9;
+    border-radius: 8px; padding: .75rem; margin-top: .5rem;
+}
+.nueva-pres-panel .campo-label { color: var(--agro-primary-dark); }
+
+/* ── Inputs ────────────────────────────────────────────── */
+.ctrl { width: 100%; box-sizing: border-box; }
+.ctrl-num { max-width: 110px; }
+
+/* ── Badges valor ──────────────────────────────────────── */
+.badge-stock, .badge-subtotal {
+    padding: .45rem .8rem; border-radius: 6px;
+    font-weight: 600; font-size: .9rem; white-space: nowrap;
+}
+.badge-stock    { background: var(--agro-neutral-100); color: var(--agro-neutral-900); }
+.badge-subtotal { background: #e8f5e9; color: var(--agro-primary-dark); }
+
+/* ── Errores ───────────────────────────────────────────── */
+.error-list { color: var(--agro-error); font-size: .78rem; margin: .3rem 0 0; padding: 0; list-style: none; }
+
+/* ── Botones ───────────────────────────────────────────── */
+.botones { display: flex; gap: 1rem; margin-top: 2.5rem; padding-top: 1.75rem; border-top: 1px solid var(--agro-neutral-200); flex-wrap: wrap; }
+.btn-agro {
+    padding: .9rem 2rem; border-radius: 10px; font-weight: 600;
+    font-size: 1rem; cursor: pointer; border: 2px solid transparent;
+    display: inline-flex; align-items: center; gap: .5rem;
+    text-decoration: none; min-width: 200px; justify-content: center;
+}
+.btn-agro-primary {
+    background: linear-gradient(135deg, var(--agro-primary) 0%, var(--agro-primary-dark) 100%);
+    color: #fff;
+}
+.btn-agro-secondary { background: #fff; color: var(--agro-neutral-600); border-color: var(--agro-neutral-300); }
+
+/* ── Columnas semilla ocultas ──────────────────────────── */
+.th-cultivo, .th-variedad,
+.col-cultivo, .col-variedad { display: none; }
+
+@media (max-width: 900px) {
+    .botones { flex-direction: column; }
+    .btn-agro { width: 100%; }
+}
+</style>
+
+<div class="revision-container">
+
+    {# ── Encabezado ──────────────────────────────────────────── #}
+    <h1 class="titulo-revision">{% trans "Revisar factura" %}</h1>
+
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+        <div class="subtitulo-archivo">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <span>{{ nombre_archivo }}</span>
+        </div>
+        <div class="subtitulo-archivo">
+            <i class="bi bi-box"></i>
+            <span>{{ items|length }} {% trans "ítems" %}</span>
+        </div>
+        <div class="badge-total">
+            Total: R$ {{ datos_factura.total|default:"0"|floatformat:2 }}
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'vista_confirmar_factura' %}" id="factura-form" novalidate>
+        {% csrf_token %}
+
+        {# ── Proveedor ───────────────────────────────────────────── #}
+        <div class="tarjeta-proveedor">
+            <div class="icono-proveedor"><i class="bi bi-building"></i></div>
+            <div class="info-proveedor">
+                <h5>{{ proveedor.razon_social }}</h5>
+                <small>{% trans "Documento" %}: {{ proveedor.identificador }}</small>
+            </div>
+            <input type="hidden" name="proveedor" value="{{ proveedor.id }}">
+        </div>
+
+        {# ── Cabecera: número y fecha ─────────────────────────────── #}
+        <div class="seccion-cabecera">
+            <div>
+                <div class="campo-label">{% trans "Número factura" %} *</div>
+                <input type="text" name="numero_factura" id="numero_factura"
+                       class="form-control"
+                       value="{{ datos_factura.numero_factura }}" required>
+            </div>
+            <div>
+                <div class="campo-label">{% trans "Fecha" %} *</div>
+                <input type="date" name="fecha" id="fecha"
+                       class="form-control"
+                       value="{{ datos_factura.fecha_emision }}" required>
+            </div>
+        </div>
+
+        {# ── Tabla de ítems ──────────────────────────────────────── #}
+        <div class="tabla-wrap">
+            {{ formset.management_form }}
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>{% trans "Producto" %}</th>
+                        <th>{% trans "Categoría" %}</th>
+                        <th class="th-cultivo">{% trans "Cultivo" %}</th>
+                        <th class="th-variedad">{% trans "Variedad" %}</th>
+                        <th>{% trans "Presentación" %}</th>
+                        <th>{% trans "Cantidad" %}</th>
+                        <th>{% trans "Cont./Envase" %}</th>
+                        <th>{% trans "Unidad" %}</th>
+                        <th>{% trans "Total stock" %}</th>
+                        <th>{% trans "Precio unit." %}</th>
+                        <th>{% trans "Subtotal" %}</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                {% for form, match in items_con_match %}
+                <tr class="factura-row" data-index="{{ forloop.counter0 }}">
+
+                    {# ── Columna PRODUCTO ── #}
+                    <td style="min-width:300px;">
+                        <span class="prod-nombre">
+                            {{ form.initial.descripcion|default:form.descripcion.value|truncatechars:60 }}
+                        </span>
+                        {% if form.initial.unidad_detectada %}
+                            <span class="prod-meta">
+                                Unidad factura: {{ form.initial.unidad_detectada }}
+                            </span>
+                        {% endif %}
+
+                        {# Badge de confianza del matching #}
+                        {% if match.producto %}
+                        <span class="match-badge match-{{ match.label }}">
+                            {% if match.label == "alto" %}
+                                <i class="bi bi-check-circle-fill"></i>
+                            {% elif match.label == "medio" %}
+                                <i class="bi bi-exclamation-circle"></i>
+                            {% else %}
+                                <i class="bi bi-question-circle"></i>
+                            {% endif %}
+                            {% trans "Coincidencia" %}: {{ match.score }}%
+                        </span>
+                        {% endif %}
+
+                        {# Campos ocultos #}
+                        {{ form.descripcion }}
+                        {{ form.unidad_detectada }}
+                        {{ form.subtotal }}
+
+                        {# ── Bloque producto existente / nuevo ── #}
+                        <div class="bloque-producto mt-2">
+                            <div class="campo-label">{% trans "Usar producto existente" %}</div>
+                            {{ form.producto_existente }}
+                            {% if form.producto_existente.errors %}
+                                <ul class="error-list">{% for e in form.producto_existente.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                            {% endif %}
+
+                            <div class="mt-2 form-check">
+                                {{ form.crear_nuevo_producto }}
+                                <label class="form-check-label small" for="{{ form.crear_nuevo_producto.id_for_label }}">
+                                    {{ form.crear_nuevo_producto.label }}
+                                </label>
+                            </div>
+                        </div>
+                    </td>
+
+                    {# ── Categoría ── #}
+                    <td style="min-width:160px;">
+                        {{ form.categoria }}
+                        {% if form.categoria.errors %}
+                            <ul class="error-list">{% for e in form.categoria.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </td>
+
+                    {# ── Cultivo (semillas) ── #}
+                    <td class="col-cultivo" style="min-width:160px;">
+                        {{ form.cultivo }}
+                        {% if form.cultivo.errors %}
+                            <ul class="error-list">{% for e in form.cultivo.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </td>
+
+                    {# ── Variedad (semillas) ── #}
+                    <td class="col-variedad" style="min-width:180px;">
+                        <div class="variedad-wrapper">
+                            <div class="variedad-select-group">
+                                {{ form.variedad }}
+                                <button type="button" class="btn btn-outline-success btn-sm mt-1 btn-add-variedad">
+                                    <i class="bi bi-plus"></i> {% trans "Nueva" %}
+                                </button>
+                            </div>
+                            <div class="variedad-inline-form d-none mt-2">
+                                {{ form.variedad_manual }}
+                                <button type="button" class="btn btn-outline-secondary btn-sm mt-1 btn-variedad-cancel">
+                                    {% trans "Cancelar" %}
+                                </button>
+                            </div>
+                        </div>
+                        {% if form.variedad.errors %}
+                            <ul class="error-list">{% for e in form.variedad.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </td>
+
+                    {# ── Presentación ── #}
+                    <td style="min-width:220px;">
+                        {# Select presentaciones existentes #}
+                        {{ form.presentacion_existente }}
+                        {% if form.presentacion_existente.errors %}
+                            <ul class="error-list">{% for e in form.presentacion_existente.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+
+                        {# Link para expandir panel nueva presentación #}
+                        <span class="pres-toggle-link">
+                            <i class="bi bi-plus-circle"></i> {% trans "Nueva presentación" %}
+                        </span>
+
+                        {# Panel nueva presentación #}
+                        <div class="nueva-pres-panel d-none">
+                            <div class="campo-label">{% trans "Nombre" %}</div>
+                            {{ form.nueva_presentacion_nombre }}
+
+                            <div class="campo-label mt-2">{% trans "Contenido por envase" %}</div>
+                            {{ form.contenido_por_envase }}
+
+                            <div class="campo-label mt-2">{% trans "Unidad de stock" %}</div>
+                            {{ form.unidad_medida }}
+
+                            <div class="campo-label mt-2">{% trans "Unidad contenido (BD)" %}</div>
+                            {{ form.unidad_contenido }}
+
+                            {% if form.contenido_por_envase.errors %}
+                                <ul class="error-list">{% for e in form.contenido_por_envase.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                            {% endif %}
+                        </div>
+                    </td>
+
+                    {# ── Cantidad ── #}
+                    <td>
+                        <input type="number" name="{{ form.cantidad.html_name }}"
+                               value="{{ form.cantidad.value|default:'' }}"
+                               step="0.001" min="0"
+                               class="form-control ctrl ctrl-num cantidad-input">
+                        {% if form.cantidad.errors %}
+                            <ul class="error-list">{% for e in form.cantidad.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </td>
+
+                    {# ── Contenido (solo visible si panel cerrado) ── #}
+                    <td class="col-contenido">
+                        <span class="badge-stock contenido-preview">
+                            {{ form.initial.contenido_por_envase|default:"1" }}
+                            {{ form.initial.unidad_medida|default:"" }}
+                        </span>
+                    </td>
+
+                    {# ── Unidad ── #}
+                    <td>
+                        <span class="badge-stock unidad-preview">
+                            {{ form.initial.unidad_medida|default:"UN" }}
+                        </span>
+                    </td>
+
+                    {# ── Total stock ── #}
+                    <td>
+                        <span class="badge-stock total-stock-preview">0.00</span>
+                    </td>
+
+                    {# ── Precio ── #}
+                    <td>
+                        <input type="number" name="{{ form.precio_unitario.html_name }}"
+                               value="{{ form.precio_unitario.value|default:'' }}"
+                               step="0.01" min="0"
+                               class="form-control ctrl ctrl-num precio-input">
+                        {% if form.precio_unitario.errors %}
+                            <ul class="error-list">{% for e in form.precio_unitario.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+                        {% endif %}
+                    </td>
+
+                    {# ── Subtotal ── #}
+                    <td>
+                        <span class="badge-subtotal subtotal-preview">R$ 0.00</span>
+                    </td>
+
+                </tr>
+                {% empty %}
+                <tr><td colspan="11" class="text-center text-muted py-4">{% trans "No hay ítems para revisar." %}</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {# ── Botones ─────────────────────────────────────────────── #}
+        <div class="botones">
+            <button type="submit" class="btn-agro btn-agro-primary">
+                <i class="bi bi-check-circle"></i>
+                {% trans "Confirmar factura y generar stock" %}
+            </button>
+            <a href="{% url 'vista_cargar_factura' %}" class="btn-agro btn-agro-secondary">
+                <i class="bi bi-arrow-left"></i>
+                {% trans "Volver" %}
+            </a>
+        </div>
+
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // ── Aplicar clases Bootstrap a selects/inputs generados por Django ──
+    document.querySelectorAll(".factura-row select").forEach(s => s.classList.add("form-select", "ctrl"));
+    document.querySelectorAll(".factura-row input[type='text'], .factura-row input[type='number']")
+        .forEach(i => { if (!i.classList.contains("form-control")) i.classList.add("form-control"); });
+
+    // ── Calcular totales por fila ───────────────────────────────────────
+    function recalcular(row) {
+        const cantidad  = parseFloat(row.querySelector(".cantidad-input")?.value  || 0);
+        const precio    = parseFloat(row.querySelector(".precio-input")?.value    || 0);
+
+        // Buscar contenido desde el panel nueva presentación si está abierto,
+        // o desde el preview si está cerrado
+        const panelAbierto = !row.querySelector(".nueva-pres-panel")?.classList.contains("d-none");
+        let contenido = 1;
+
+        if (panelAbierto) {
+            contenido = parseFloat(row.querySelector("input[name$='-contenido_por_envase']")?.value || 1);
+        } else {
+            // Intentar leer del preview
+            const preview = row.querySelector(".contenido-preview");
+            if (preview) {
+                contenido = parseFloat(preview.textContent) || 1;
+            }
+        }
+
+        const totalStock = cantidad * contenido;
+        const subtotal   = cantidad * precio;
+
+        const elStock    = row.querySelector(".total-stock-preview");
+        const elSub      = row.querySelector(".subtotal-preview");
+        const elSubInput = row.querySelector("input[name$='-subtotal']");
+
+        if (elStock)    elStock.textContent    = totalStock.toFixed(2);
+        if (elSub)      elSub.textContent      = "R$ " + subtotal.toFixed(2);
+        if (elSubInput) elSubInput.value       = subtotal.toFixed(2);
+    }
+
+    // Calcular al cargar
+    document.querySelectorAll(".factura-row").forEach(recalcular);
+
+    // Calcular al editar
+    document.addEventListener("input", e => {
+        const row = e.target.closest(".factura-row");
+        if (row) recalcular(row);
+    });
+
+    // ── Semillas: mostrar/ocultar columnas ─────────────────────────────
+    function esSemilla(select) {
+        return (select?.options[select.selectedIndex]?.text?.toLowerCase() || "").includes("semilla");
+    }
+
+    function actualizarVisibilidadSemilla() {
+        let haySemilla = false;
+        document.querySelectorAll(".factura-row").forEach(row => {
+            const sel = row.querySelector("select[name$='-categoria']");
+            const es  = esSemilla(sel);
+            row.querySelector(".col-cultivo")?.classList.toggle("d-none", !es);
+            row.querySelector(".col-variedad")?.classList.toggle("d-none", !es);
+            if (es) haySemilla = true;
+        });
+        document.querySelector(".th-cultivo")?.classList.toggle("d-none", !haySemilla);
+        document.querySelector(".th-variedad")?.classList.toggle("d-none", !haySemilla);
+    }
+
+    actualizarVisibilidadSemilla();
+
+    document.addEventListener("change", e => {
+        if (e.target.name?.includes("-categoria")) actualizarVisibilidadSemilla();
+    });
+
+    // ── Toggle nueva variedad ──────────────────────────────────────────
+    document.querySelectorAll(".btn-add-variedad").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const w = btn.closest(".variedad-wrapper");
+            w.querySelector(".variedad-select-group")?.classList.add("d-none");
+            w.querySelector(".variedad-inline-form")?.classList.remove("d-none");
+            w.querySelector(".variedad-inline-form input")?.focus();
+        });
+    });
+
+    document.querySelectorAll(".btn-variedad-cancel").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const w = btn.closest(".variedad-wrapper");
+            w.querySelector(".variedad-inline-form")?.classList.add("d-none");
+            w.querySelector(".variedad-select-group")?.classList.remove("d-none");
+            const inp = w.querySelector(".variedad-inline-form input");
+            if (inp) inp.value = "";
+        });
+    });
+
+    // ── Toggle panel nueva presentación ───────────────────────────────
+    document.querySelectorAll(".pres-toggle-link").forEach(link => {
+        link.addEventListener("click", () => {
+            const td    = link.closest("td");
+            const panel = td.querySelector(".nueva-pres-panel");
+            const sel   = td.querySelector("select[name$='-presentacion_existente']");
+
+            const abriendo = panel.classList.toggle("d-none") === false;
+
+            // Si se abre el panel nueva presentación → resetear select presentación
+            if (abriendo) {
+                if (sel) sel.value = "";
+                link.innerHTML = '<i class="bi bi-dash-circle"></i> {% trans "Cancelar nueva presentación" %}';
+            } else {
+                link.innerHTML = '<i class="bi bi-plus-circle"></i> {% trans "Nueva presentación" %}';
+            }
+            recalcular(link.closest(".factura-row"));
+        });
+    });
+
+    // Si al cargar hay error en campos de presentación, abrir el panel
+    document.querySelectorAll(".factura-row").forEach(row => {
+        const panel = row.querySelector(".nueva-pres-panel");
+        if (!panel) return;
+        const tieneError = panel.querySelector(".error-list");
+        if (tieneError) {
+            panel.classList.remove("d-none");
+            const link = row.querySelector(".pres-toggle-link");
+            if (link) link.innerHTML = '<i class="bi bi-dash-circle"></i> {% trans "Cancelar nueva presentación" %}';
+        }
+    });
+
+    // ── Cambio de producto existente → recargar presentaciones via fetch ─
+    document.querySelectorAll("select[name$='-producto_existente']").forEach(sel => {
+        sel.addEventListener("change", function () {
+            const row       = sel.closest(".factura-row");
+            const idx       = row.dataset.index;
+            const presSel   = row.querySelector("select[name$='-presentacion_existente']");
+            const productoId = this.value;
+
+            if (!presSel) return;
+
+            if (!productoId) {
+                presSel.innerHTML = '<option value="">— Nueva presentación —</option>';
+                return;
+            }
+
+            fetch(`/gestion/api/presentaciones/?producto_id=${productoId}`)
+                .then(r => r.json())
+                .then(data => {
+                    let html = '<option value="">— Nueva presentación —</option>';
+                    data.forEach(p => {
+                        html += `<option value="${p.id}">${p.nombre}</option>`;
+                    });
+                    presSel.innerHTML = html;
+                })
+                .catch(() => {
+                    presSel.innerHTML = '<option value="">— Nueva presentación —</option>';
+                });
+        });
+    });
+
+});
+</script>
+{% endblock %}
+
+{% block nav %}
+    {% include 'nav_home.html' %}
+{% endblock %}
