@@ -6,6 +6,8 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad, Unidad
+from gestion_agro.funciones_aux import convertir_unidad
+
 from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
                                 ActividadInsumo, CamposVistoria, CamposCosecha, Producto, CategoriaProducto, FacturaCompra,
                                 Proveedor, FacturaCompraItem, PresentacionProducto, Variedad, MovimientoStock)
@@ -246,17 +248,28 @@ class ActividadInsumoBaseFormSet(BaseInlineFormSet):
 
             producto = cd.get("producto")
             dosis = cd.get("dosis")
+            um = cd.get("um")
 
             if not producto or dosis is None:
                 continue
 
             cantidad_real = dosis * self.superficie  # igual que guardar_insumos_y_stock
 
-            agg = MovimientoStock.objects.filter(producto=producto).aggregate(
-                entradas=Sum("cantidad", filter=Q(tipo=MovimientoStock.Tipo.ENTRADA)),
-                salidas=Sum("cantidad", filter=Q(tipo=MovimientoStock.Tipo.SALIDA)),
-            )
-            disponible = (agg["entradas"] or 0) - (agg["salidas"] or 0)
+            movimientos = MovimientoStock.objects.filter(producto=producto)
+            ingresado = 0
+            consumido = 0
+
+            for mov in movimientos:
+                cantidad = convertir_unidad(mov.cantidad, mov.um, um)
+                if cantidad is None:
+                    raise Exception('Falta la conversión entre unidades: %s a %s' % (mov.um, um))
+
+                if mov.tipo == "ENTRADA":
+                    ingresado += cantidad
+                elif mov.tipo == "SALIDA":
+                    consumido += cantidad
+
+            disponible = ingresado - consumido
 
             if cantidad_real > disponible:
                 form.add_error(

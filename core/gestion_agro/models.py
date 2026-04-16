@@ -8,7 +8,6 @@ from django.db import transaction
 from django.core.exceptions import ValidationError
 from agro.models import Empresa, Unidad, Moneda
 
-
 class Campo(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE,verbose_name=_("Empresa"), )
     nombre = models.CharField( max_length=100, verbose_name=_("Nombre del campo"),)
@@ -198,7 +197,7 @@ class ActividadProductiva(models.Model):
     cantidad_h_maq = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
     valor_h_maq = models.DecimalField(max_digits=18, decimal_places=2, default=0, null=True, blank=True)
 
-  # Para  historicos ─────────────────────────────────────────
+  # Para  historicos borrar dejar como calculo─────────────────────────────────────────
     total_mo  = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     total_maq = models.DecimalField(max_digits=8,decimal_places=2, null=True, blank=True)
     total     = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
@@ -327,9 +326,9 @@ class MovimientoStock(models.Model):
         related_name='movimientos_stock'
     )
     fecha = models.DateTimeField(default=timezone.now)
-    actividad = models.ForeignKey(  
-         "gestion_agro.ActividadProductiva",
-        on_delete=models.SET_NULL, 
+    actividad_item = models.ForeignKey(  
+         "gestion_agro.ActividadInsumo",
+        on_delete=models.CASCADE, 
         null=True, 
         blank=True,
         related_name="movimientos_stock"

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from agro.models import Profile, Pais, Provincia, Ciudad, Empresa, Moneda
+from agro.models import Profile, Pais, Provincia, Ciudad, Empresa, Moneda, Unidad, ConversionUM
 from gestion_agro.models import ( Campo, Lote, Actividad, Cultivo, Variedad, Campana,
     CicloAgricola, FaseAgricola, TipoActividad, 
     SubTipoActividad, ActividadProductiva, CamposVistoria, CamposCosecha, CategoriaProducto,
@@ -14,6 +14,8 @@ admin.site.register(Provincia)
 admin.site.register(Ciudad)
 admin.site.register(Empresa)
 admin.site.register(Moneda)
+admin.site.register(Unidad)
+admin.site.register(ConversionUM)
 
 admin.site.register(TipoActividadCategoriaProducto)
 
@@ -161,7 +163,7 @@ class FacturaCompraItemAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoStock)
 class MovimientoStockAdmin(admin.ModelAdmin):
-    list_display = ("producto", "tipo", "cantidad", "fecha", "factura_item", "actividad", "precio_unitario")
+    list_display = ("producto", "tipo", "cantidad", "fecha", "factura_item", "actividad_item", "precio_unitario")
     search_fields = ("producto__nombre",)
     list_filter = ("tipo", "fecha")
 

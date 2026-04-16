@@ -16,7 +16,7 @@ from django.forms import formset_factory
 
 import tempfile as tempfile
 
-from .funciones_aux import parse_nfe_pdf, br_to_float, _buscar_candidatos, _score, _detectar_contenido_unidad
+from .funciones_aux import parse_nfe_pdf, br_to_float, _buscar_candidatos, _score, _detectar_contenido_unidad, convertir_unidad
 
 from .funciones_aux import ( registrar_actividad_aux, obtener_valores_costos, _detectar_contenido_unidad  )
 from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm,
@@ -630,23 +630,19 @@ def vista_lista_stock(request):
         ingresado = 0
         consumido = 0
 
+        unidad_base = producto.unidad_base
+        
         for mov in movimientos:
+            cantidad = convertir_unidad(mov.cantidad, mov.um, unidad_base)
+            if cantidad is None:
+                raise Exception('Falta la conversión entre unidades: %s a %s' % (mov.um, unidad_base))
+
             if mov.tipo == "ENTRADA":
-                ingresado += mov.cantidad
+                ingresado += cantidad
             elif mov.tipo == "SALIDA":
-                consumido += mov.cantidad
+                consumido += cantidad
 
-        ingresado = 0
-        consumido = 0
 
-        if not movimientos.exists():
-            continue
-
-        for mov in movimientos:
-            if mov.tipo == "ENTRADA":
-                ingresado += mov.cantidad
-            elif mov.tipo == "SALIDA":
-                consumido += mov.cantidad
 
         restante = ingresado - consumido
 

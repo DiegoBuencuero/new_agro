@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
-
+from agro.models import ConversionUM, Unidad
 from gestion_agro.models import ( MovimientoStock, FaseAgricola, ActividadProductiva,
                                  
 )
@@ -268,7 +268,7 @@ def cerrar_fase_si_corresponde(fase, fecha,  cierra_fase):
         fase.estado = "cerrado"
         fase.save()
 
-def obtener_capas_stock(producto, metodo="FIFO"):
+def obtener_capas_stock(producto, unidad, metodo="FIFO"):
     entradas = list(
         MovimientoStock.objects
         .filter(
@@ -276,7 +276,7 @@ def obtener_capas_stock(producto, metodo="FIFO"):
             tipo=MovimientoStock.Tipo.ENTRADA,
         )
         .order_by("fecha", "id")
-        .values("id", "fecha", "cantidad", "precio_unitario")
+        .values("id", "fecha", "cantidad", "um", "precio_unitario")
     )
 
     salidas = list(
@@ -286,21 +286,23 @@ def obtener_capas_stock(producto, metodo="FIFO"):
             tipo=MovimientoStock.Tipo.SALIDA,
         )
         .order_by("fecha", "id")
-        .values("id", "fecha", "cantidad")
+        .values("id", "fecha", "cantidad", "um")
     )
 
     capas = []
     for e in entradas:
+    
         capas.append({
             "movimiento_id": e["id"],
             "fecha": e["fecha"],
-            "precio_unitario": e["precio_unitario"],
-            "cantidad_original": e["cantidad"],
-            "cantidad_disponible": e["cantidad"],
+            "precio_unitario": convertir_unidad_precio(e["precio_unitario"], e["um"], unidad),
+            "cantidad_original": convertir_unidad(e["cantidad"], e["um"], unidad),
+            "cantidad_disponible": convertir_unidad(e["cantidad"], e["um"], unidad),
         })
 
     for s in salidas:
-        pendiente = s["cantidad"]
+        unidad_mov = Unidad.objects.get(id=s["um"])
+        pendiente = convertir_unidad(s["cantidad"], unidad_mov, unidad)
 
         if metodo == "FIFO":
             recorrido = capas
@@ -328,9 +330,9 @@ def obtener_capas_stock(producto, metodo="FIFO"):
 
     return capas
 
-def calcular_costo_salida(producto, cantidad_salida, metodo="FIFO"):
+def calcular_costo_salida(producto, cantidad_salida, unidad, metodo="FIFO"):
     cantidad_salida = Decimal(cantidad_salida)
-    capas = obtener_capas_stock(producto, metodo=metodo)
+    capas = obtener_capas_stock(producto, unidad, metodo=metodo)
 
     pendiente = cantidad_salida
     costo_total = Decimal("0")
@@ -400,15 +402,15 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa):
         if insumo.producto:
             cantidad = insumo.dosis * superficie
 
-            algo = calcular_costo_salida(insumo.producto, cantidad, metodo= metodo)  # valida que haya stock suficiente
-            
+            algo = calcular_costo_salida(insumo.producto, cantidad, insumo.um, metodo=metodo)  # valida que haya stock suficiente
+
             MovimientoStock.objects.create(
                 producto=insumo.producto,
                 tipo="SALIDA",
                 cantidad=cantidad,
                 um=insumo.um,
                 fecha=timezone.now(),
-                actividad=actividad,
+                actividad_item=insumo,
                 precio_unitario=algo["precio_promedio"],
             )
             insumo.cantidad_real = cantidad
@@ -845,3 +847,31 @@ def br_to_float(valor):
         return float(str(valor).replace(".", "").replace(",", "."))
     except ValueError:
         return None
+
+
+#---------------- Ayuda unidades-----------
+def convertir_unidad(cantidad, unidad_origen, unidad_destino):
+
+    if unidad_origen == unidad_destino:
+        return cantidad
+
+    convercion = ConversionUM.objects.filter(um_origen=unidad_origen, um_destino=unidad_destino).first()
+    
+    if convercion:
+        return cantidad * convercion.factor
+    else:   
+        print("No se encontró conversión de unidad de medida de {} a {}".format(unidad_origen, unidad_destino)  )       
+        return None
+    
+def convertir_unidad_precio(precio, unidad_origen, unidad_destino):
+
+    if unidad_origen == unidad_destino:
+        return precio
+
+    convercion = ConversionUM.objects.filter(um_origen=unidad_origen, um_destino=unidad_destino).first()
+    
+    if convercion:
+        return precio / convercion.factor
+    else:           
+        return None
+    
