@@ -1,11 +1,13 @@
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 import re
-import tempfile
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime
 import pdfplumber
+from typing import Any, Dict, List, Optional, Tuple
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 
 from gestion_agro.models import ( MovimientoStock, FaseAgricola, ActividadProductiva,
                                  
@@ -266,7 +268,116 @@ def cerrar_fase_si_corresponde(fase, fecha,  cierra_fase):
         fase.estado = "cerrado"
         fase.save()
 
-def guardar_insumos_y_stock(actividad, tipo, insumo_formset):
+def obtener_capas_stock(producto, metodo="FIFO"):
+    entradas = list(
+        MovimientoStock.objects
+        .filter(
+            producto=producto,
+            tipo=MovimientoStock.Tipo.ENTRADA,
+        )
+        .order_by("fecha", "id")
+        .values("id", "fecha", "cantidad", "precio_unitario")
+    )
+
+    salidas = list(
+        MovimientoStock.objects
+        .filter(
+            producto=producto,
+            tipo=MovimientoStock.Tipo.SALIDA,
+        )
+        .order_by("fecha", "id")
+        .values("id", "fecha", "cantidad")
+    )
+
+    capas = []
+    for e in entradas:
+        capas.append({
+            "movimiento_id": e["id"],
+            "fecha": e["fecha"],
+            "precio_unitario": e["precio_unitario"],
+            "cantidad_original": e["cantidad"],
+            "cantidad_disponible": e["cantidad"],
+        })
+
+    for s in salidas:
+        pendiente = s["cantidad"]
+
+        if metodo == "FIFO":
+            recorrido = capas
+        elif metodo == "LIFO":
+            recorrido = list(reversed(capas))
+        else:
+            raise ValueError("Método inválido. Debe ser 'FIFO' o 'LIFO'.")
+
+        for capa in recorrido:
+            if pendiente <= 0:
+                break
+
+            disponible = capa["cantidad_disponible"]
+            if disponible <= 0:
+                continue
+
+            consumir = min(disponible, pendiente)
+            capa["cantidad_disponible"] -= consumir
+            pendiente -= consumir
+
+        if pendiente > 0:
+            raise ValueError(
+                f"Las salidas históricas del producto {producto.id} superan las entradas disponibles."
+            )
+
+    return capas
+
+def calcular_costo_salida(producto, cantidad_salida, metodo="FIFO"):
+    cantidad_salida = Decimal(cantidad_salida)
+    capas = obtener_capas_stock(producto, metodo=metodo)
+
+    pendiente = cantidad_salida
+    costo_total = Decimal("0")
+    detalle = []
+
+    if metodo == "FIFO":
+        recorrido = capas
+    elif metodo == "LIFO":
+        recorrido = list(reversed(capas))
+    else:
+        raise ValueError("Método inválido. Debe ser 'FIFO' o 'LIFO'.")
+
+    for capa in recorrido:
+        if pendiente <= 0:
+            break
+
+        disponible = capa["cantidad_disponible"]
+        if disponible <= 0:
+            continue
+
+        consumir = min(disponible, pendiente)
+        costo_parcial = consumir * capa["precio_unitario"]
+
+        detalle.append({
+            "movimiento_entrada_id": capa["movimiento_id"],
+            "cantidad": consumir,
+            "precio_unitario": capa["precio_unitario"],
+            "costo_parcial": costo_parcial,
+        })
+
+        costo_total += costo_parcial
+        pendiente -= consumir
+
+    if pendiente > 0:
+        raise ValueError("Stock insuficiente para realizar la salida.")
+
+    precio_promedio = (
+        costo_total / cantidad_salida if cantidad_salida > 0 else Decimal("0")
+    )
+
+    return {
+        "costo_total": costo_total,
+        "precio_promedio": precio_promedio,
+        "detalle": detalle,
+    }
+
+def guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa):
     # si no requiere insumos, no hace nada
     if not tipo.requiere_insumo:
         return []
@@ -277,11 +388,20 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset):
     # superficie desde relación
     superficie = actividad.fase.ciclo.superficie_ha 
 
+    if empresa.calculo_costo == "F":
+        metodo = "FIFO"
+    elif empresa.calculo_costo == "L":
+        metodo = "LIFO"
+    else:
+        metodo = "FIFO"  # default
+
     # registrar salida de stock
     for insumo in insumos:
         if insumo.producto:
             cantidad = insumo.dosis * superficie
 
+            algo = calcular_costo_salida(insumo.producto, cantidad, metodo= metodo)  # valida que haya stock suficiente
+            
             MovimientoStock.objects.create(
                 producto=insumo.producto,
                 tipo="SALIDA",
@@ -289,8 +409,12 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset):
                 um=insumo.um,
                 fecha=timezone.now(),
                 actividad=actividad,
-                precio_unitario=insumo.producto.precio,
+                precio_unitario=algo["precio_promedio"],
             )
+            insumo.cantidad_real = cantidad
+            insumo.costo_total   = algo["costo_total"]
+            insumo.costo_ha      = algo["costo_total"] / superficie if superficie else Decimal("0")
+            insumo.save()
 
     return insumos
 
@@ -367,7 +491,7 @@ def registrar_actividad_aux(
     actividad.save()
 
     # 10. guardar insumos y stock
-    insumos = guardar_insumos_y_stock(actividad, tipo, insumo_formset)
+    insumos = guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa)
 
     # 11. calcular costos
     costo_insumos, horas_hombre, costo_mo, horas_maquina, costo_mq, total = calcular_costos_actividad(
@@ -386,6 +510,11 @@ def registrar_actividad_aux(
     actividad.cantidad_h_maq = horas_maquina
     actividad.valor_h_maq = c_mq_unit or 0
     actividad.save()
+    # agregue total de mo y maq para historicos
+    actividad.total_mo  = horas_hombre  * (c_mo_unit  or Decimal("0"))
+    actividad.total_maq = horas_maquina * (c_mq_unit  or Decimal("0"))
+    actividad.total     = actividad.total_mo + actividad.total_maq
+    actividad.save()
 
     # 13. guardar extras
     guardar_monitoreo(actividad, tipo, vistoria_form)
@@ -398,13 +527,6 @@ def registrar_actividad_aux(
         "actividad": actividad,
         "inicio_fase": inicio_fase,
     }
-
-import re
-import pdfplumber
-from typing import Any, Dict, List, Optional, Tuple
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.db.models import Q
 
 
 RE_DATE    = re.compile(r"\b(\d{2}/\d{2}/\d{4})\b")
@@ -432,7 +554,6 @@ def group_words_by_line(words: List[Dict[str, Any]], y_tol: float = 3.0) -> List
         out.append({"y": y, "words": row, "text": text})
     return out
 
-
 def find_table_range(rows: List[Dict[str, Any]]) -> Tuple[int, int]:
     start = -1
     end = len(rows)
@@ -453,7 +574,6 @@ def find_table_range(rows: List[Dict[str, Any]]) -> Tuple[int, int]:
             break
 
     return start, end
-
 
 def extract_nfe_number_from_lines(lines: List[str]) -> Optional[str]:
     for i, ln in enumerate(lines):
@@ -477,7 +597,6 @@ def extract_nfe_number_from_lines(lines: List[str]) -> Optional[str]:
 
     return None
 
-
 def extract_provider_from_lines(lines: List[str]) -> Optional[str]:
     for i, ln in enumerate(lines):
         if ln.strip().upper() == "RECEBEMOS":
@@ -494,11 +613,9 @@ def extract_provider_from_lines(lines: List[str]) -> Optional[str]:
 
     return None
 
-
 def extract_emission_date(full_text: str) -> Optional[str]:
     m = RE_EMISSAO.search(full_text)
     return m.group(1) if m else None
-
 
 def parse_item_row(tokens: List[str]) -> Optional[Dict[str, Any]]:
     if not tokens or not RE_CODE.match(tokens[0]):
@@ -532,7 +649,6 @@ def parse_item_row(tokens: List[str]) -> Optional[Dict[str, Any]]:
         "v_unit":    v_unit,
         "v_total":   v_total,
     }
-
 
 def parse_nfe_pdf(pdf_path: str) -> Dict[str, Any]:
     with pdfplumber.open(pdf_path) as pdf:
@@ -590,7 +706,6 @@ def parse_nfe_pdf(pdf_path: str) -> Dict[str, Any]:
             "items":        items,
         }
 
-
 # ── Helpers de matching ──────────────────────────────────────────────────────
 
 def _score(descripcion: str, producto) -> int:
@@ -606,7 +721,6 @@ def _score(descripcion: str, producto) -> int:
         return 0
     comunes = palabras_desc & palabras_prod
     return int(len(comunes) / len(palabras_desc) * 70)
-
 
 def _buscar_candidatos(descripcion: str, empresa, top_n: int = 4, umbral: int = 35):
     from gestion_agro.models import Producto
@@ -631,7 +745,6 @@ def _buscar_candidatos(descripcion: str, empresa, top_n: int = 4, umbral: int = 
 
     candidatos.sort(key=lambda x: x["score"], reverse=True)
     return candidatos[:top_n]
-
 
 def _detectar_contenido_unidad(descripcion: str, unidad_factura: str):
     """
@@ -688,7 +801,6 @@ def _detectar_contenido_unidad(descripcion: str, unidad_factura: str):
     # Fallback
     return 1.0, "UN", unid.lower() or "un"
 
-
 # ── API AJAX ─────────────────────────────────────────────────────────────────
 
 @login_required
@@ -723,7 +835,6 @@ def api_presentaciones(request):
     ]
 
     return JsonResponse(data, safe=False)
-
 
 # ── Helper numérico ──────────────────────────────────────────────────────────
 

@@ -287,41 +287,30 @@ def vista_detalle_ciclo(request, id_ciclo):
         .order_by("fecha", "id")
     )
 
-    costo_total_ciclo = 0
+    # solo leemos no calculamos nada
+    costo_total_ciclo = sum(
+        act.total or Decimal("0")
+        for act in actividades
+    )
 
-    for act in actividades:
-        total_mo = 0
-        total_mq = 0
-        total_insumos = 0
-
-        if act.cantidad_hombre and act.valor_hombre:
-            total_mo = act.cantidad_hombre * act.valor_hombre
-
-        if act.cantidad_h_maq and act.valor_h_maq:
-            total_mq = act.cantidad_h_maq * act.valor_h_maq
-
-        for insumo in act.insumos.all():
-            costo_insumo = 0
-
-            if insumo.dosis and insumo.producto and insumo.producto.precio:
-                costo_insumo = insumo.dosis * insumo.producto.precio
-
-            insumo.costo_total = costo_insumo
-            total_insumos += costo_insumo
-
-        act.total_mo = total_mo
-        act.total_mq = total_mq
-        act.total_insumos = total_insumos
-        act.total_actividad = total_mo + total_mq + total_insumos
-
-        # si en tu template vienes usando act.total
-        act.total = act.total_actividad
-
-        costo_total_ciclo += act.total_actividad
-
-    costo_ha_ciclo = 0
+    costo_ha_ciclo = Decimal("0")
     if ciclo.superficie_ha:
         costo_ha_ciclo = costo_total_ciclo / ciclo.superficie_ha
+
+    fecha_fin_real = (
+        fases.filter(estado="cerrado")
+        .order_by("-fecha_fin")
+        .values_list("fecha_fin", flat=True)
+        .first()
+    )
+
+    precio_saco = getattr(ciclo, 'precio_saco', Decimal("0")) or Decimal("0")
+
+    sacos_equilibrio_ha = Decimal("0")
+    if precio_saco and costo_ha_ciclo:
+        sacos_equilibrio_ha = costo_ha_ciclo / precio_saco
+
+    rendimiento_esperado_sacos = getattr(ciclo, 'rendimiento_esperado_sacos', None)
 
     context = {
         "ciclo": ciclo,
@@ -329,6 +318,10 @@ def vista_detalle_ciclo(request, id_ciclo):
         "actividades": actividades,
         "costo_total_ciclo": costo_total_ciclo,
         "costo_ha_ciclo": costo_ha_ciclo,
+        "precio_saco": precio_saco,
+        "sacos_equilibrio_ha": sacos_equilibrio_ha,
+        "rendimiento_esperado_sacos": rendimiento_esperado_sacos,
+        "fecha_fin_real": fecha_fin_real,
     }
 
     return render(request, "vista_detalle_ciclo.html", context)
@@ -385,6 +378,7 @@ def vista_agregar_actividad(request, id_ciclo):
             request.POST,
             prefix="insumos",
             form_kwargs={"empresa": empresa},
+            superficie=ciclo.superficie_ha, 
         )
 
         vistoria_form = CamposVistoriaForm(
@@ -405,6 +399,12 @@ def vista_agregar_actividad(request, id_ciclo):
 
             if tipo.requiere_insumo and not insumo_formset.is_valid():
                 forms_validos = False
+                for form in insumo_formset:
+                    for field, errors in form.errors.items():
+                        for error in errors:
+                            messages.error(request, f"Insumo - {field}: {error}")
+                for error in insumo_formset.non_form_errors():
+                    messages.error(request, f"Insumo: {error}")
 
             if tipo.requiere_vist and not vistoria_form.is_valid():
                 forms_validos = False
@@ -433,9 +433,6 @@ def vista_agregar_actividad(request, id_ciclo):
 
                 messages.error(request, resultado)
 
-            else:
-                messages.error(request, _("Hay errores en los datos de la actividad."))
-
         else:
             messages.error(request, _("Hay errores en el formulario."))
 
@@ -447,6 +444,7 @@ def vista_agregar_actividad(request, id_ciclo):
         insumo_formset = ActividadInsumoFormSet(
             prefix="insumos",
             form_kwargs={"empresa": empresa},
+            superficie=ciclo.superficie_ha,
         )
 
         vistoria_form = CamposVistoriaForm(prefix="vistoria")

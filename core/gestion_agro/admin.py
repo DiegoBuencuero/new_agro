@@ -15,6 +15,8 @@ admin.site.register(Ciudad)
 admin.site.register(Empresa)
 admin.site.register(Moneda)
 
+admin.site.register(TipoActividadCategoriaProducto)
+
 
 @admin.register(Campo)
 class CampoAdmin(admin.ModelAdmin):

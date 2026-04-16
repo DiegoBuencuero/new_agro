@@ -45,7 +45,6 @@
                     {{ ciclo.nombre_lote }} · {{ ciclo.campo }}
                 </div>
             </div>
-
             <div>
                 <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-outline-secondary">
                     <i class="mdi mdi-arrow-left me-1"></i>
@@ -59,54 +58,37 @@
                 <div class="card h-100">
                     <div class="card-body">
                         <div class="form-group row">
-                            <label class="col-sm-5 col-form-label label-ciclo">
-                                {% translate "Superficie" %}
-                            </label>
-                            <div class="col-sm-7 pt-2">
-                                {{ ciclo.superficie_ha }} ha
-                            </div>
+                            <label class="col-sm-5 col-form-label label-ciclo">{% translate "Superficie" %}</label>
+                            <div class="col-sm-7 pt-2">{{ ciclo.superficie_ha }} ha</div>
                         </div>
                     </div>
                 </div>
             </div>
-
             <div class="col-lg-3">
                 <div class="card h-100">
                     <div class="card-body">
                         <div class="form-group row">
-                            <label class="col-sm-5 col-form-label label-ciclo">
-                                {% translate "Cultivo" %}
-                            </label>
-                            <div class="col-sm-7 pt-2">
-                                {{ ciclo.cultivo }}
-                            </div>
+                            <label class="col-sm-5 col-form-label label-ciclo">{% translate "Cultivo" %}</label>
+                            <div class="col-sm-7 pt-2">{{ ciclo.cultivo }}</div>
                         </div>
                     </div>
                 </div>
             </div>
-
             <div class="col-lg-3">
                 <div class="card h-100">
                     <div class="card-body">
                         <div class="form-group row">
-                            <label class="col-sm-5 col-form-label label-ciclo">
-                                {% translate "Inicio" %}
-                            </label>
-                            <div class="col-sm-7 pt-2">
-                                {{ ciclo.fecha_inicio|date:"d/m/Y" }}
-                            </div>
+                            <label class="col-sm-5 col-form-label label-ciclo">{% translate "Inicio" %}</label>
+                            <div class="col-sm-7 pt-2">{{ ciclo.fecha_inicio|date:"d/m/Y" }}</div>
                         </div>
                     </div>
                 </div>
             </div>
-
             <div class="col-lg-3">
                 <div class="card h-100">
                     <div class="card-body">
                         <div class="form-group row">
-                            <label class="col-sm-5 col-form-label label-ciclo">
-                                {% translate "Estado" %}
-                            </label>
+                            <label class="col-sm-5 col-form-label label-ciclo">{% translate "Estado" %}</label>
                             <div class="col-sm-7 pt-2">
                                 {% if ciclo.activa %}
                                     <span class="badge bg-success">{% translate "Activo" %}</span>
@@ -127,36 +109,24 @@
                         {% csrf_token %}
 
                         {% if actividad_form.non_field_errors %}
-                            <div class="alert alert-danger">
-                                {{ actividad_form.non_field_errors }}
-                            </div>
+                            <div class="alert alert-danger">{{ actividad_form.non_field_errors }}</div>
                         {% endif %}
 
-                        <p class="card-description mb-4">
-                            {% translate "Datos de la actividad" %}
-                        </p>
+                        <p class="card-description mb-4">{% translate "Datos de la actividad" %}</p>
 
                         <div class="row g-3">
                             <div class="col-md-4">
-                                <label for="{{ actividad_form.fecha.id_for_label }}" class="form-label">
-                                    {% translate "Fecha" %}
-                                </label>
+                                <label for="{{ actividad_form.fecha.id_for_label }}" class="form-label">{% translate "Fecha" %}</label>
                                 {{ actividad_form.fecha }}
                                 {{ actividad_form.fecha.errors }}
                             </div>
-
                             <div class="col-md-4">
-                                <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">
-                                    {% translate "Tipo" %}
-                                </label>
+                                <label for="{{ actividad_form.tipo.id_for_label }}" class="form-label">{% translate "Tipo" %}</label>
                                 {{ actividad_form.tipo }}
                                 {{ actividad_form.tipo.errors }}
                             </div>
-
                             <div class="col-md-4" id="subtipoContainer" style="display: none;">
-                                <label for="{{ actividad_form.subtipo.id_for_label }}" class="form-label">
-                                    {% translate "Subtipo" %}
-                                </label>
+                                <label for="{{ actividad_form.subtipo.id_for_label }}" class="form-label">{% translate "Subtipo" %}</label>
                                 {{ actividad_form.subtipo }}
                                 {{ actividad_form.subtipo.errors }}
                             </div>
@@ -164,9 +134,7 @@
 
                         <div class="row mt-3">
                             <div class="col-12">
-                                <label for="{{ actividad_form.observaciones.id_for_label }}" class="form-label">
-                                    {% translate "Observaciones" %}
-                                </label>
+                                <label for="{{ actividad_form.observaciones.id_for_label }}" class="form-label">{% translate "Observaciones" %}</label>
                                 {{ actividad_form.observaciones }}
                                 {{ actividad_form.observaciones.errors }}
                             </div>
@@ -174,73 +142,78 @@
 
                         <hr class="my-4">
 
+                        <!-- MANO DE OBRA -->
                         <div class="card mb-4" id="manoObraSection" style="display: none;">
                             <div class="card-header">
                                 <strong>{% translate "Mano de obra" %}</strong>
                             </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="{{ actividad_form.cantidad_hombre.id_for_label }}" class="form-label">
-                                            {{ actividad_form.cantidad_hombre.label }}
-                                        </label>
-                                        {{ actividad_form.cantidad_hombre }}
-                                        {{ actividad_form.cantidad_hombre.errors }}
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <label for="{{ actividad_form.valor_hombre.id_for_label }}" class="form-label">
-                                            {{ actividad_form.valor_hombre.label }}
-                                        </label>
-                                        {{ actividad_form.valor_hombre }}
-                                        {{ actividad_form.valor_hombre.errors }}
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-3">
+                                            <label for="{{ actividad_form.cantidad_hombre.id_for_label }}" class="form-label">{{ actividad_form.cantidad_hombre.label }}</label>
+                                            {{ actividad_form.cantidad_hombre }}
+                                            {{ actividad_form.cantidad_hombre.errors }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="{{ actividad_form.valor_hombre.id_for_label }}" class="form-label">{{ actividad_form.valor_hombre.label }}</label>
+                                            {{ actividad_form.valor_hombre }}
+                                            {{ actividad_form.valor_hombre.errors }}
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">{% translate "Total horas" %}</label>
+                                            <input type="text" class="form-control" id="totalHsManoObra" readonly placeholder="—">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">{% translate "Costo total" %}</label>
+                                            <input type="text" class="form-control" id="costoTotalManoObra" readonly placeholder="—">
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
                         </div>
 
+                        <!-- MAQUINARIA -->
                         <div class="card mb-4" id="maquinariaSection" style="display: none;">
                             <div class="card-header">
                                 <strong>{% translate "Maquinaria" %}</strong>
                             </div>
                             <div class="card-body">
                                 <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label for="{{ actividad_form.cantidad_h_maq.id_for_label }}" class="form-label">
-                                            {{ actividad_form.cantidad_h_maq.label }}
-                                        </label>
+                                    <div class="col-md-3">
+                                        <label for="{{ actividad_form.cantidad_h_maq.id_for_label }}" class="form-label">{{ actividad_form.cantidad_h_maq.label }}</label>
                                         {{ actividad_form.cantidad_h_maq }}
                                         {{ actividad_form.cantidad_h_maq.errors }}
                                     </div>
-
-                                    <div class="col-md-6">
-                                        <label for="{{ actividad_form.valor_h_maq.id_for_label }}" class="form-label">
-                                            {{ actividad_form.valor_h_maq.label }}
-                                        </label>
+                                    <div class="col-md-3">
+                                        <label for="{{ actividad_form.valor_h_maq.id_for_label }}" class="form-label">{{ actividad_form.valor_h_maq.label }}</label>
                                         {{ actividad_form.valor_h_maq }}
                                         {{ actividad_form.valor_h_maq.errors }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">{% translate "Total horas" %}</label>
+                                        <input type="text" class="form-control" id="totalHsMaquinaria" readonly placeholder="—">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">{% translate "Costo total" %}</label>
+                                        <input type="text" class="form-control" id="costoTotalMaquinaria" readonly placeholder="—">
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- INSUMOS -->
                         <div class="card mb-4" id="insumosSection" style="display: none;">
                             <div class="card-header d-flex justify-content-between align-items-center">
                                 <strong>{% translate "Insumos utilizados" %}</strong>
-
                                 <button type="button" class="btn btn-success btn-sm" id="btnAgregarInsumo">
                                     <i class="mdi mdi-plus"></i>
                                     {% translate "Agregar insumo" %}
                                 </button>
                             </div>
-
                             <div class="card-body p-0">
                                 {{ insumo_formset.management_form }}
 
                                 {% if insumo_formset.non_form_errors %}
-                                    <div class="alert alert-danger m-3">
-                                        {{ insumo_formset.non_form_errors }}
-                                    </div>
+                                    <div class="alert alert-danger m-3">{{ insumo_formset.non_form_errors }}</div>
                                 {% endif %}
 
                                 <div class="table-responsive">
@@ -250,37 +223,22 @@
                                                 <th>{% translate "Producto" %}</th>
                                                 <th>{% translate "Dosis" %}</th>
                                                 <th>{% translate "Unidad" %}</th>
+                                                <th>{% translate "Total a usar" %}</th>
                                                 <th class="text-center">{% translate "Acción" %}</th>
                                             </tr>
                                         </thead>
-
                                         <tbody id="insumosBody">
                                             {% for form_insumo in insumo_formset %}
                                                 <tr class="insumo-row">
-                                                    {% for hidden in form_insumo.hidden_fields %}
-                                                        {{ hidden }}
-                                                    {% endfor %}
-
+                                                    {% for hidden in form_insumo.hidden_fields %}{{ hidden }}{% endfor %}
+                                                    <td>{{ form_insumo.producto }}{{ form_insumo.producto.errors }}</td>
+                                                    <td>{{ form_insumo.dosis }}{{ form_insumo.dosis.errors }}</td>
+                                                    <td>{{ form_insumo.um }}{{ form_insumo.um.errors }}</td>
                                                     <td>
-                                                        {{ form_insumo.producto }}
-                                                        {{ form_insumo.producto.errors }}
+                                                        <input type="text" class="form-control insumo-total-unidad" readonly placeholder="—" style="min-width:110px">
                                                     </td>
-
-                                                    <td>
-                                                        {{ form_insumo.dosis }}
-                                                        {{ form_insumo.dosis.errors }}
-                                                    </td>
-
-                                                    <td>
-                                                        {{ form_insumo.um }}
-                                                        {{ form_insumo.um.errors }}
-                                                    </td>
-
                                                     <td class="text-center">
-                                                        <div class="d-none">
-                                                            {{ form_insumo.DELETE }}
-                                                        </div>
-
+                                                        <div class="d-none">{{ form_insumo.DELETE }}</div>
                                                         <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
                                                             <i class="mdi mdi-delete"></i>
                                                         </button>
@@ -293,27 +251,15 @@
 
                                 <template id="empty-form-template">
                                     <tr class="insumo-row">
-                                        {% for hidden in insumo_formset.empty_form.hidden_fields %}
-                                            {{ hidden }}
-                                        {% endfor %}
-
+                                        {% for hidden in insumo_formset.empty_form.hidden_fields %}{{ hidden }}{% endfor %}
+                                        <td>{{ insumo_formset.empty_form.producto }}</td>
+                                        <td>{{ insumo_formset.empty_form.dosis }}</td>
+                                        <td>{{ insumo_formset.empty_form.um }}</td>
                                         <td>
-                                            {{ insumo_formset.empty_form.producto }}
+                                            <input type="text" class="form-control insumo-total-unidad" readonly placeholder="—" style="min-width:110px">
                                         </td>
-
-                                        <td>
-                                            {{ insumo_formset.empty_form.dosis }}
-                                        </td>
-
-                                        <td>
-                                            {{ insumo_formset.empty_form.um }}
-                                        </td>
-
                                         <td class="text-center">
-                                            <div class="d-none">
-                                                {{ insumo_formset.empty_form.DELETE }}
-                                            </div>
-
+                                            <div class="d-none">{{ insumo_formset.empty_form.DELETE }}</div>
                                             <button type="button" class="btn btn-outline-danger btn-sm btn-remove-row">
                                                 <i class="mdi mdi-delete"></i>
                                             </button>
@@ -323,108 +269,69 @@
                             </div>
                         </div>
 
+                        <!-- MONITOREO -->
                         <div class="card mb-4" id="vistoriaSection" style="display: none;">
                             <div class="card-header">
                                 <strong>{% translate "Datos de monitoreo" %}</strong>
                             </div>
                             <div class="card-body">
                                 {% if vistoria_form.non_field_errors %}
-                                    <div class="alert alert-danger">
-                                        {{ vistoria_form.non_field_errors }}
-                                    </div>
+                                    <div class="alert alert-danger">{{ vistoria_form.non_field_errors }}</div>
                                 {% endif %}
-
                                 <div class="row g-3">
                                     <div class="col-md-4">
-                                        <label for="{{ vistoria_form.plantas_m2.id_for_label }}" class="form-label">
-                                            {{ vistoria_form.plantas_m2.label }}
-                                        </label>
-                                        {{ vistoria_form.plantas_m2 }}
-                                        {{ vistoria_form.plantas_m2.errors }}
+                                        <label for="{{ vistoria_form.plantas_m2.id_for_label }}" class="form-label">{{ vistoria_form.plantas_m2.label }}</label>
+                                        {{ vistoria_form.plantas_m2 }}{{ vistoria_form.plantas_m2.errors }}
                                     </div>
-
                                     <div class="col-md-4">
-                                        <label for="{{ vistoria_form.malezas.id_for_label }}" class="form-label">
-                                            {{ vistoria_form.malezas.label }}
-                                        </label>
-                                        {{ vistoria_form.malezas }}
-                                        {{ vistoria_form.malezas.errors }}
+                                        <label for="{{ vistoria_form.malezas.id_for_label }}" class="form-label">{{ vistoria_form.malezas.label }}</label>
+                                        {{ vistoria_form.malezas }}{{ vistoria_form.malezas.errors }}
                                     </div>
-
                                     <div class="col-md-4">
-                                        <label for="{{ vistoria_form.insectos.id_for_label }}" class="form-label">
-                                            {{ vistoria_form.insectos.label }}
-                                        </label>
-                                        {{ vistoria_form.insectos }}
-                                        {{ vistoria_form.insectos.errors }}
+                                        <label for="{{ vistoria_form.insectos.id_for_label }}" class="form-label">{{ vistoria_form.insectos.label }}</label>
+                                        {{ vistoria_form.insectos }}{{ vistoria_form.insectos.errors }}
                                     </div>
-
                                     <div class="col-md-6">
-                                        <label for="{{ vistoria_form.enfermedades.id_for_label }}" class="form-label">
-                                            {{ vistoria_form.enfermedades.label }}
-                                        </label>
-                                        {{ vistoria_form.enfermedades }}
-                                        {{ vistoria_form.enfermedades.errors }}
+                                        <label for="{{ vistoria_form.enfermedades.id_for_label }}" class="form-label">{{ vistoria_form.enfermedades.label }}</label>
+                                        {{ vistoria_form.enfermedades }}{{ vistoria_form.enfermedades.errors }}
                                     </div>
-
                                     <div class="col-md-6">
-                                        <label for="{{ vistoria_form.imagen.id_for_label }}" class="form-label">
-                                            {{ vistoria_form.imagen.label }}
-                                        </label>
-                                        {{ vistoria_form.imagen }}
-                                        {{ vistoria_form.imagen.errors }}
+                                        <label for="{{ vistoria_form.imagen.id_for_label }}" class="form-label">{{ vistoria_form.imagen.label }}</label>
+                                        {{ vistoria_form.imagen }}{{ vistoria_form.imagen.errors }}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- COSECHA -->
                         <div class="card mb-4" id="cosechaSection" style="display: none;">
                             <div class="card-header">
                                 <strong>{% translate "Datos de cosecha" %}</strong>
                             </div>
                             <div class="card-body">
                                 {% if cosecha_form.non_field_errors %}
-                                    <div class="alert alert-danger">
-                                        {{ cosecha_form.non_field_errors }}
-                                    </div>
+                                    <div class="alert alert-danger">{{ cosecha_form.non_field_errors }}</div>
                                 {% endif %}
-
                                 <div class="row g-3">
                                     <div class="col-md-4">
-                                        <label for="{{ cosecha_form.rendimiento.id_for_label }}" class="form-label">
-                                            {{ cosecha_form.rendimiento.label }}
-                                        </label>
-                                        {{ cosecha_form.rendimiento }}
-                                        {{ cosecha_form.rendimiento.errors }}
+                                        <label for="{{ cosecha_form.rendimiento.id_for_label }}" class="form-label">{{ cosecha_form.rendimiento.label }}</label>
+                                        {{ cosecha_form.rendimiento }}{{ cosecha_form.rendimiento.errors }}
                                     </div>
-
                                     <div class="col-md-4">
-                                        <label for="{{ cosecha_form.comentarios_cosecha.id_for_label }}" class="form-label">
-                                            {{ cosecha_form.comentarios_cosecha.label }}
-                                        </label>
-                                        {{ cosecha_form.comentarios_cosecha }}
-                                        {{ cosecha_form.comentarios_cosecha.errors }}
+                                        <label for="{{ cosecha_form.comentarios_cosecha.id_for_label }}" class="form-label">{{ cosecha_form.comentarios_cosecha.label }}</label>
+                                        {{ cosecha_form.comentarios_cosecha }}{{ cosecha_form.comentarios_cosecha.errors }}
                                     </div>
-
                                     <div class="col-md-4">
-                                        <label for="{{ cosecha_form.observaciones.id_for_label }}" class="form-label">
-                                            {{ cosecha_form.observaciones.label }}
-                                        </label>
-                                        {{ cosecha_form.observaciones }}
-                                        {{ cosecha_form.observaciones.errors }}
+                                        <label for="{{ cosecha_form.observaciones.id_for_label }}" class="form-label">{{ cosecha_form.observaciones.label }}</label>
+                                        {{ cosecha_form.observaciones }}{{ cosecha_form.observaciones.errors }}
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         <div class="mt-4 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">
-                                {% translate "Guardar actividad" %}
-                            </button>
-
-                            <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">
-                                {% translate "Cancelar" %}
-                            </a>
+                            <button type="submit" class="btn btn-primary">{% translate "Guardar actividad" %}</button>
+                            <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">{% translate "Cancelar" %}</a>
                         </div>
                     </form>
                 </div>
@@ -437,7 +344,6 @@
 {% endblock %}
 
 {% block custom_js %}
-
 <script>
 $(document).ready(function () {
 
@@ -462,8 +368,16 @@ $(document).ready(function () {
     const templateElement = $("#empty-form-template");
 
     const cicloId = "{{ ciclo.id }}";
+    const superficieHa = parseFloat("{{ ciclo.superficie_ha|stringformat:'f' }}") || 0;
 
     let productosActuales = [];
+
+    // ─── Utilidades ───────────────────────────────────────────────
+    function formatCurrency(val) {
+        return 'R$ ' + val.toFixed(2)
+            .replace('.', ',')
+            .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
 
     function obtenerSelectsProducto() {
         return body.find('select[name$="-producto"]');
@@ -473,24 +387,101 @@ $(document).ready(function () {
         if (!subtipoContainer.length) return;
         subtipoContainer.hide();
     }
+    function calcularSubtotalManoObra() {
+        const cantidad = parseFloat(cantidadHombreInput.val()) || 0;
+        const valor = parseFloat(valorHombreInput.val()) || 0;
+        const totalHs = cantidad * superficieHa;
+        const subtotal = totalHs * valor;
+        if (cantidad > 0 && superficieHa > 0) {
+            $("#totalHsManoObra").val(totalHs.toFixed(2) + " hs");
+            $("#costoTotalManoObra").val(valor > 0 ? formatCurrency(subtotal) : "");
+        } else {
+            $("#totalHsManoObra").val("");
+            $("#costoTotalManoObra").val("");
+        }
+    }
+
+    function calcularSubtotalMaquinaria() {
+        const cantidad = parseFloat(cantidadMaqInput.val()) || 0;
+        const valor = parseFloat(valorMaqInput.val()) || 0;
+        const totalHs = cantidad * superficieHa;
+        const subtotal = totalHs * valor;
+        if (cantidad > 0 && superficieHa > 0) {
+            $("#totalHsMaquinaria").val(totalHs.toFixed(2) + " hs");
+            $("#costoTotalMaquinaria").val(valor > 0 ? formatCurrency(subtotal) : "");
+        } else {
+            $("#totalHsMaquinaria").val("");
+            $("#costoTotalMaquinaria").val("");
+        }
+    }
+
+    function calcularSubtotalInsumo(row) {
+        const selectProducto = row.find('select[name$="-producto"]');
+        const inputDosis = row.find('input[name$="-dosis"]');
+        const selectUm = row.find('select[name$="-um"]');
+        const inputTotal = row.find('.insumo-total-unidad');
+        const dosis = parseFloat(inputDosis.val()) || 0;
+        const umAbrevUm = selectUm.find("option:selected").text().trim();
+        const umAbrevProducto = selectProducto.find("option:selected").attr("data-unidad-abreviatura") || "";
+        const umAbrev = umAbrevUm || umAbrevProducto;
+
+        if (dosis > 0 && superficieHa > 0) {
+            const cantTotal = dosis * superficieHa;
+            inputTotal.val(cantTotal.toFixed(2) + (umAbrev ? " " + umAbrev : ""));
+        } else {
+            inputTotal.val("");
+        }
+    }
+
+    function recalcularTodosInsumos() {
+        body.find('.insumo-row:visible').each(function () {
+            calcularSubtotalInsumo($(this));
+        });
+    }
+
+    // Listeners
+    cantidadHombreInput.on("input change", calcularSubtotalManoObra);
+    valorHombreInput.on("input change", calcularSubtotalManoObra);
+    cantidadMaqInput.on("input change", calcularSubtotalMaquinaria);
+    valorMaqInput.on("input change", calcularSubtotalMaquinaria);
+
+    body.on("change", 'select[name$="-producto"]', function () {
+        proponerUnidadEnFila(this);
+        calcularSubtotalInsumo($(this).closest('.insumo-row'));
+    });
+
+    body.on("input change", 'input[name$="-dosis"]', function () {
+        calcularSubtotalInsumo($(this).closest('.insumo-row'));
+    });
+
+    body.on("change", 'select[name$="-um"]', function () {
+        calcularSubtotalInsumo($(this).closest('.insumo-row'));
+    });
+    function recalcularTodosInsumos() {
+        body.find('.insumo-row:visible').each(function () {
+            calcularSubtotalInsumo($(this));
+        });
+    }
 
     function limpiarValoresActividad() {
         cantidadHombreInput.val("");
         valorHombreInput.val("");
         cantidadMaqInput.val("");
         valorMaqInput.val("");
+        $("#totalHsManoObra").val("");
+        $("#costoTotalManoObra").val("");
+        $("#totalHsMaquinaria").val("");
+        $("#costoTotalMaquinaria").val("");
     }
 
+    // ─── Productos ────────────────────────────────────────────────
     function proponerUnidadEnFila(selectProducto) {
         const row = $(selectProducto).closest(".insumo-row");
         const selectUnidad = row.find('select[name$="-um"]');
-
         const selectedOption = selectProducto.options[selectProducto.selectedIndex];
         if (!selectedOption) return;
-
         const unidadId = selectedOption.dataset.unidadId;
         if (!unidadId) return;
-
         selectUnidad.val(unidadId);
     }
 
@@ -507,13 +498,13 @@ $(document).ready(function () {
             select.append($("<option>").val("").text("---------"));
 
             productosActuales.forEach(function (producto) {
-                const option = $("<option>")
-                    .val(producto.id)
-                    .text(producto.nombre)
-                    .attr("data-unidad-id", producto.unidad_id || "")
-                    .attr("data-unidad-abreviatura", producto.unidad_abreviatura || "");
-
-                select.append(option);
+                select.append(
+                    $("<option>")
+                        .val(producto.id)
+                        .text(producto.nombre)
+                        .attr("data-unidad-id", producto.unidad_id || "")
+                        .attr("data-unidad-abreviatura", producto.unidad_abreviatura || "")
+                );
             });
 
             if (valorActual && productosActuales.some(p => String(p.id) === String(valorActual))) {
@@ -521,8 +512,20 @@ $(document).ready(function () {
                 proponerUnidadEnFila(select[0]);
             }
         });
+
+        recalcularTodosInsumos();
     }
 
+    function limpiarProductos() {
+        obtenerSelectsProducto().each(function () {
+            const select = $(this);
+            select.empty();
+            select.append($("<option>").val("").text("---------"));
+        });
+        recalcularTodosInsumos();
+    }
+
+    // ─── Secciones ────────────────────────────────────────────────
     function ocultarSecciones() {
         manoObraSection.hide();
         maquinariaSection.hide();
@@ -533,29 +536,26 @@ $(document).ready(function () {
 
     function actualizarSeccionesPorTipo() {
         ocultarSecciones();
-
         if (!tipoSelect.val()) return;
 
         const texto = tipoSelect.find("option:selected").text().toLowerCase();
 
         if (
             texto.includes("siembra") ||
-            texto.includes("aplicación") ||
-            texto.includes("aplicacion") ||
-            texto.includes("fertilización") ||
-            texto.includes("fertilizacion") ||
+            texto.includes("aplicación") || texto.includes("aplicacion") ||
+            texto.includes("fertilización") || texto.includes("fertilizacion") ||
             texto.includes("cosecha")
         ) {
             manoObraSection.show();
             maquinariaSection.show();
+            calcularSubtotalManoObra();
+            calcularSubtotalMaquinaria();
         }
 
         if (
             texto.includes("siembra") ||
-            texto.includes("aplicación") ||
-            texto.includes("aplicacion") ||
-            texto.includes("fertilización") ||
-            texto.includes("fertilizacion")
+            texto.includes("aplicación") || texto.includes("aplicacion") ||
+            texto.includes("fertilización") || texto.includes("fertilizacion")
         ) {
             insumosSection.show();
         } else if (texto.includes("monitoreo")) {
@@ -565,120 +565,112 @@ $(document).ready(function () {
         }
     }
 
+    // ─── AJAX ─────────────────────────────────────────────────────
     function cargarProductos(tipoId, subtipoId = "") {
-        if (!tipoId) {
-            limpiarProductos();
-            return;
-        }
+        if (!tipoId) { limpiarProductos(); return; }
 
         $.ajax({
             url: "{% url 'ajax_productos_por_actividad' %}",
             type: "GET",
-            data: {
-                tipo_id: tipoId,
-                subtipo_id: subtipoId
-            },
+            data: { tipo_id: tipoId, subtipo_id: subtipoId },
             success: function (data) {
-                if (!data.ok) {
-                    limpiarProductos();
-                    return;
-                }
-
+                if (!data.ok) { limpiarProductos(); return; }
                 actualizarSelectsProducto(data.productos);
             },
-            error: function (xhr, status, error) {
-                console.error("ERROR productos:", error);
-                console.log(xhr.responseText);
+            error: function (xhr) {
+                console.error("ERROR productos:", xhr.responseText);
                 limpiarProductos();
             }
         });
     }
 
     function cargarValoresActividad(tipoId, subtipoId = "") {
-        if (!tipoId || !cicloId) {
-            limpiarValoresActividad();
-            return;
-        }
+        if (!tipoId || !cicloId) { limpiarValoresActividad(); return; }
 
         $.ajax({
             url: "{% url 'ajax_valores_actividad' %}",
             type: "GET",
-            data: {
-                tipo_id: tipoId,
-                subtipo_id: subtipoId,
-                ciclo_id: cicloId
-            },
+            data: { tipo_id: tipoId, subtipo_id: subtipoId, ciclo_id: cicloId },
             success: function (data) {
-                if (!data.ok) {
-                    limpiarValoresActividad();
-                    return;
-                }
-
+                if (!data.ok) { limpiarValoresActividad(); return; }
                 cantidadHombreInput.val(data.cantidad_hombre || "");
                 valorHombreInput.val(data.valor_hombre || "");
                 cantidadMaqInput.val(data.cantidad_h_maq || "");
                 valorMaqInput.val(data.valor_h_maq || "");
+                calcularSubtotalManoObra();
+                calcularSubtotalMaquinaria();
             },
-            error: function (xhr, status, error) {
-                console.error("ERROR valores actividad:", error);
-                console.log(xhr.responseText);
+            error: function (xhr) {
+                console.error("ERROR valores actividad:", xhr.responseText);
                 limpiarValoresActividad();
             }
         });
     }
-function cargarSubtipos(tipoId) {
-    if (!tipoId) {
-        ocultarSubtipo();
-        limpiarValoresActividad();
-        actualizarSeccionesPorTipo();
-        return;
-    }
 
-    $.ajax({
-        url: "{% url 'ajax_subtipos_tipo_actividad' %}",
-        type: "GET",
-        data: { tipo_id: tipoId },
-        success: function (data) {
-            if (!data.ok || data.subtipos.length === 0) {
-                subtipoSelect.empty();
-                subtipoContainer.hide();
-                cargarProductos(tipoId);
-                cargarValoresActividad(tipoId);
-                actualizarSeccionesPorTipo();
-                return;
-            }
-
-            subtipoSelect.empty();
-            subtipoSelect.append($("<option>").val("").text("---------"));
-
-            data.subtipos.forEach(function (s) {
-                subtipoSelect.append(
-                    $("<option>").val(s.id).text(s.nombre)
-                );
-            });
-
-            if (data.subtipo_auto_id) {
-                subtipoSelect.val(String(data.subtipo_auto_id));
-            } else if (data.subtipos.length === 1) {
-                subtipoSelect.val(String(data.subtipos[0].id));
-            } else {
-                subtipoSelect.val("");
-            }
-
-            subtipoContainer.show();
-            cargarProductos(tipoId, subtipoSelect.val());
-            cargarValoresActividad(tipoId, subtipoSelect.val());
-            actualizarSeccionesPorTipo();
-        },
-        error: function (xhr) {
-            console.error("ERROR subtipos", xhr.responseText);
+    function cargarSubtipos(tipoId) {
+        if (!tipoId) {
             ocultarSubtipo();
             limpiarValoresActividad();
+            actualizarSeccionesPorTipo();
+            return;
         }
+
+        $.ajax({
+            url: "{% url 'ajax_subtipos_tipo_actividad' %}",
+            type: "GET",
+            data: { tipo_id: tipoId },
+            success: function (data) {
+                if (!data.ok || data.subtipos.length === 0) {
+                    subtipoSelect.empty();
+                    subtipoContainer.hide();
+                    cargarProductos(tipoId);
+                    cargarValoresActividad(tipoId);
+                    actualizarSeccionesPorTipo();
+                    return;
+                }
+
+                subtipoSelect.empty();
+                subtipoSelect.append($("<option>").val("").text("---------"));
+
+                data.subtipos.forEach(function (s) {
+                    subtipoSelect.append($("<option>").val(s.id).text(s.nombre));
+                });
+
+                if (data.subtipo_auto_id) {
+                    subtipoSelect.val(String(data.subtipo_auto_id));
+                } else if (data.subtipos.length === 1) {
+                    subtipoSelect.val(String(data.subtipos[0].id));
+                } else {
+                    subtipoSelect.val("");
+                }
+
+                subtipoContainer.show();
+                cargarProductos(tipoId, subtipoSelect.val());
+                cargarValoresActividad(tipoId, subtipoSelect.val());
+                actualizarSeccionesPorTipo();
+            },
+            error: function (xhr) {
+                console.error("ERROR subtipos", xhr.responseText);
+                ocultarSubtipo();
+                limpiarValoresActividad();
+            }
+        });
+    }
+
+    // ─── Listeners ────────────────────────────────────────────────
+    cantidadHombreInput.on("input change", calcularSubtotalManoObra);
+    valorHombreInput.on("input change", calcularSubtotalManoObra);
+    cantidadMaqInput.on("input change", calcularSubtotalMaquinaria);
+    valorMaqInput.on("input change", calcularSubtotalMaquinaria);
+
+    body.on("change", 'select[name$="-producto"]', function () {
+        proponerUnidadEnFila(this);
+        calcularSubtotalInsumo($(this).closest('.insumo-row'));
     });
-}
 
-
+    body.on("input change", 'input[name$="-dosis"]', function () {
+        calcularSubtotalInsumo($(this).closest('.insumo-row'));
+    });
 
     tipoSelect.on("change", function () {
         cargarSubtipos(this.value);
@@ -690,24 +682,17 @@ function cargarSubtipos(tipoId) {
         cargarValoresActividad(tipoSelect.val(), this.value);
     });
 
-    body.on("change", 'select[name$="-producto"]', function () {
-        proponerUnidadEnFila(this);
-    });
-
     addBtn.on("click", function () {
         const index = parseInt(totalForms.val());
         const html = templateElement.html().replace(/__prefix__/g, index);
-
         body.append(html);
         totalForms.val(index + 1);
-
         actualizarSelectsProducto(productosActuales);
     });
 
     body.on("click", ".btn-remove-row", function () {
         const row = $(this).closest(".insumo-row");
         const del = row.find('input[name$="-DELETE"]');
-
         if (del.length) {
             del.prop("checked", true);
             row.hide();
@@ -716,6 +701,7 @@ function cargarSubtipos(tipoId) {
         }
     });
 
+    // ─── Init ─────────────────────────────────────────────────────
     if (tipoSelect.val()) {
         cargarSubtipos(tipoSelect.val());
         actualizarSeccionesPorTipo();
@@ -728,13 +714,9 @@ function cargarSubtipos(tipoId) {
 });
 
 setTimeout(function () {
-    const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(function(alert) {
-        const bsAlert = new bootstrap.Alert(alert);
-        bsAlert.close();
+    document.querySelectorAll('.alert').forEach(function(alert) {
+        new bootstrap.Alert(alert).close();
     });
 }, 5000);
-
 </script>
-
 {% endblock %}

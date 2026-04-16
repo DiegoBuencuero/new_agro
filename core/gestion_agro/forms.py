@@ -1,6 +1,6 @@
 from django import forms
 from django.utils.translation import gettext as _
-from django.forms import inlineformset_factory, formset_factory, BaseFormSet
+from django.forms import inlineformset_factory, formset_factory, BaseFormSet, BaseInlineFormSet
 from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User  
 from django.utils import timezone
@@ -8,7 +8,15 @@ from django.forms import ModelForm
 from agro.models import Ciudad, Unidad
 from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
                                 ActividadInsumo, CamposVistoria, CamposCosecha, Producto, CategoriaProducto, FacturaCompra,
-                                Proveedor, FacturaCompraItem, PresentacionProducto, Variedad)
+                                Proveedor, FacturaCompraItem, PresentacionProducto, Variedad, MovimientoStock)
+from django.db.models import Q, Sum
+
+
+from django.utils.translation import gettext_lazy as _
+from gestion_agro.models import (
+    CategoriaProducto, Cultivo, Variedad, Producto, PresentacionProducto
+)
+from agro.models import Unidad
 
 
 class BaseForm(ModelForm):
@@ -165,7 +173,7 @@ class ActividadProductivaForm(BaseForm):
             self.add_error("subtipo", _("El subtipo no corresponde al tipo seleccionado."))
 
         return cleaned_data
-    
+
 class ActividadInsumoForm(BaseForm):
     class Meta:
         model = ActividadInsumo
@@ -210,28 +218,60 @@ class ActividadInsumoForm(BaseForm):
         dosis = cleaned_data.get("dosis")
         um = cleaned_data.get("um")
 
-        hay_datos = bool(producto or dosis or um)
-
-        if not hay_datos:
+        if not any([producto, dosis, um]):
             return cleaned_data
 
         if not producto:
             self.add_error("producto", _("Debe seleccionar un producto."))
-
         if dosis in (None, ""):
             self.add_error("dosis", _("Debe ingresar la dosis."))
-
         if not um:
             self.add_error("um", _("Debe seleccionar la unidad."))
 
         return cleaned_data
-    
+
+class ActividadInsumoBaseFormSet(BaseInlineFormSet):
+
+    def __init__(self, *args, superficie=None, **kwargs):
+        self.superficie = superficie or 1
+        super().__init__(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+
+        for form in self.forms:
+            cd = form.cleaned_data
+            if not cd or cd.get("DELETE"):
+                continue
+
+            producto = cd.get("producto")
+            dosis = cd.get("dosis")
+
+            if not producto or dosis is None:
+                continue
+
+            cantidad_real = dosis * self.superficie  # igual que guardar_insumos_y_stock
+
+            agg = MovimientoStock.objects.filter(producto=producto).aggregate(
+                entradas=Sum("cantidad", filter=Q(tipo=MovimientoStock.Tipo.ENTRADA)),
+                salidas=Sum("cantidad", filter=Q(tipo=MovimientoStock.Tipo.SALIDA)),
+            )
+            disponible = (agg["entradas"] or 0) - (agg["salidas"] or 0)
+
+            if cantidad_real > disponible:
+                form.add_error(
+                    "dosis",
+                    _("Stock insuficiente. Necesario: %(n)s, disponible: %(d)s.")
+                    % {"n": cantidad_real, "d": disponible},
+                )
+
 ActividadInsumoFormSet = inlineformset_factory(
     ActividadProductiva,
     ActividadInsumo,
     form=ActividadInsumoForm,
+    formset=ActividadInsumoBaseFormSet,
     extra=1,
-    can_delete=True
+    can_delete=True,
 )
 
 class CamposVistoriaForm(BaseForm):
@@ -326,15 +366,6 @@ class StockFiltroForm(BaseSimpleForm):
             )
 
         return cleaned_data
-
-
-from django import forms
-from django.forms import formset_factory
-from django.utils.translation import gettext_lazy as _
-from gestion_agro.models import (
-    CategoriaProducto, Cultivo, Variedad, Producto, PresentacionProducto
-)
-from agro.models import Unidad
 
 
 UNIDAD_CHOICES = [

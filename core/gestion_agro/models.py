@@ -198,6 +198,10 @@ class ActividadProductiva(models.Model):
     cantidad_h_maq = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
     valor_h_maq = models.DecimalField(max_digits=18, decimal_places=2, default=0, null=True, blank=True)
 
+  # Para  historicos ─────────────────────────────────────────
+    total_mo  = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
+    total_maq = models.DecimalField(max_digits=8,decimal_places=2, null=True, blank=True)
+    total     = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     observaciones = models.TextField(blank=True, null=True)
 
     def __str__(self):

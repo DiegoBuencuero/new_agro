@@ -124,6 +124,7 @@ class Empresa(models.Model):
     lista_precio = models.ForeignKey(Lista_de_precios, on_delete=models.CASCADE, related_name="lista_de_precios", null=True, blank=True)
     valor_mobra = models.DecimalField(max_digits=18, decimal_places=2, default=0, verbose_name=_("Costo MO"))
     valor_maquina = models.DecimalField(max_digits=18, decimal_places=2, default=0, verbose_name=_("Costo Maquina"))
+    calculo_costo = models.CharField(max_length=1, choices=[('F', 'FIFO'), ('L', 'LIFO'),('P','PONDERADO') ], default='F', verbose_name=_("Cálculo de costo"))  
 
 class Unidad(models.Model):
     nombre = models.CharField(max_length=50, verbose_name=_("Nombre"))
