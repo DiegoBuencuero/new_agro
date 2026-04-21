@@ -328,10 +328,23 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="mt-4 d-flex gap-2">
-                            <button type="submit" class="btn btn-primary">{% translate "Guardar actividad" %}</button>
-                            <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">{% translate "Cancelar" %}</a>
+                        <div class="mt-3 d-flex gap-2">
+                            {% if modificacion %}
+                                <button type="submit" name="ok" class="btn btn-success">
+                                    <i class="mdi mdi-check me-1"></i>{% translate "Actualizar" %}
+                                </button>
+                                <button type="submit" name="borrar" class="btn btn-danger"
+                                        onclick="return confirm('{% translate "¿Confirmar eliminación?" %}')">
+                                    <i class="mdi mdi-delete me-1"></i>{% translate "Eliminar" %}
+                                </button>
+                            {% else %}
+                                <button type="submit" name="ok" class="btn btn-success">
+                                    <i class="mdi mdi-plus me-1"></i>{% translate "Guardar" %}
+                                </button>
+                            {% endif %}
+                            <a href="{% url 'vista_producto' %}" class="btn btn-dark">
+                                <i class="mdi mdi-arrow-left me-1"></i>{% translate "Cancelar" %}
+                            </a>
                         </div>
                     </form>
                 </div>

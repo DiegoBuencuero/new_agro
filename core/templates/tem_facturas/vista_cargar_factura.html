@@ -73,24 +73,21 @@
             {% translate "Tamaño máximo: 10MB" %}
           </div>
         </div>
-
         <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
-          <a href="{% url 'vista_lista_facturas' %}" class="btn btn-light">
-            <i class="fas fa-arrow-left me-2"></i>
-            {% translate "Volver" %}
-          </a>
-
-          <div class="d-flex gap-2 flex-wrap">
-            <a href="{% url 'vista_cargar_factura_manual' %}" class="btn btn-outline-secondary">
-              <i class="fas fa-keyboard me-2"></i>
-              {% translate "Cargar manual" %}
+            <a href="{% url 'vista_lista_facturas' %}" class="btn btn-dark">
+                <i class="mdi mdi-arrow-left me-1"></i>
+                {% translate "Volver" %}
             </a>
-
-            <button type="submit" class="btn btn-primary">
-              <i class="fas fa-cloud-upload-alt me-2"></i>
-              {% translate "Procesar Factura" %}
-            </button>
-          </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{% url 'vista_cargar_factura_manual' %}" class="btn btn-outline-secondary">
+                    <i class="mdi mdi-keyboard me-1"></i>
+                    {% translate "Cargar manual" %}
+                </a>
+                <button type="submit" class="btn btn-success">
+                    <i class="mdi mdi-cloud-upload me-1"></i>
+                    {% translate "Procesar Factura" %}
+                </button>
+            </div>
         </div>
       </form>
 

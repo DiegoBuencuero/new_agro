@@ -7,7 +7,8 @@ from gestion_agro.views import (vista_crear_campo, vista_editar_campo, vista_cre
 vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo, ajax_get_ciclos_data, vista_agregar_actividad,
  ajax_subtipos_tipo_actividad, ajax_productos_por_actividad, ajax_valores_actividad, vista_lista_stock,
  vista_lista_facturas, vista_cargar_factura, vista_cargar_factura_manual, vista_procesar_pdf_factura,
-vista_revisar_factura, vista_confirmar_factura
+vista_revisar_factura, vista_confirmar_factura, ajax_unidades_conversion, vista_producto, vista_editar_producto,
+ajax_presentaciones_producto, ajax_crear_producto, ajax_crear_presentacion, ajax_crear_producto
 )
 
 urlpatterns = [
@@ -26,6 +27,10 @@ urlpatterns = [
     path('campanas/', vista_crear_campana, name='vista_crear_campana'),
     path('campanas/<int:id_campana>/', vista_editar_campana, name='vista_editar_campana'),
 
+    
+    path('productos/', vista_producto, name='vista_producto'),
+    path('productos/<int:id_prod>/', vista_editar_producto, name='editar_producto'),
+
     path('ciclos/', vista_lista_ciclos, name='vista_lista_ciclos'),
     path('ciclos/nuevo/', vista_crear_ciclo, name='vista_crear_ciclo'),
     path('ajax/get_ciclos_data/', ajax_get_ciclos_data, name="ajax_get_ciclos_data"),
@@ -42,7 +47,11 @@ urlpatterns = [
     path('facturas/add-manual/', vista_cargar_factura_manual, name='vista_cargar_factura_manual'),
     path('facturas/revisar/', vista_revisar_factura, name='vista_revisar_factura'),
     path("facturas/procesar/", vista_procesar_pdf_factura, name="vista_procesar_pdf_factura"),
-     path("facturas/confirmar/", vista_confirmar_factura, name="vista_confirmar_factura"),
+    path("facturas/confirmar/", vista_confirmar_factura, name="vista_confirmar_factura"),
+    path("ajax/unidades-conversion/", ajax_unidades_conversion, name="ajax_unidades_conversion"),
+    path("ajax/presentaciones-producto/", ajax_presentaciones_producto, name="ajax_presentaciones_producto"),
+    path("ajax/crear-producto/", ajax_crear_producto, name="ajax_crear_producto"),
+    path("ajax/crear-presentacion/", ajax_crear_presentacion, name="ajax_crear_presentacion"),
   
 ]
 

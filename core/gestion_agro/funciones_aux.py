@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import pdfplumber
 from typing import Any, Dict, List, Optional, Tuple
 from django.http import JsonResponse
+from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from agro.models import ConversionUM, Unidad
@@ -291,13 +292,13 @@ def obtener_capas_stock(producto, unidad, metodo="FIFO"):
 
     capas = []
     for e in entradas:
-    
+        unidad_origen = Unidad.objects.get(id=e["um"])
         capas.append({
-            "movimiento_id": e["id"],
-            "fecha": e["fecha"],
-            "precio_unitario": convertir_unidad_precio(e["precio_unitario"], e["um"], unidad),
-            "cantidad_original": convertir_unidad(e["cantidad"], e["um"], unidad),
-            "cantidad_disponible": convertir_unidad(e["cantidad"], e["um"], unidad),
+            "movimiento_id":       e["id"],
+            "fecha":               e["fecha"],
+            "precio_unitario":     convertir_unidad_precio(e["precio_unitario"], unidad_origen, unidad),
+            "cantidad_original":   convertir_unidad(e["cantidad"], unidad_origen, unidad),
+            "cantidad_disponible": convertir_unidad(e["cantidad"], unidad_origen, unidad),
         })
 
     for s in salidas:
@@ -380,43 +381,39 @@ def calcular_costo_salida(producto, cantidad_salida, unidad, metodo="FIFO"):
     }
 
 def guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa):
-    # si no requiere insumos, no hace nada
     if not tipo.requiere_insumo:
         return []
 
-    insumo_formset.instance = actividad
-    insumos = insumo_formset.save()
+    with transaction.atomic():
+        insumo_formset.instance = actividad
+        insumos = insumo_formset.save()  # ← ahora adentro del atomic
 
-    # superficie desde relación
-    superficie = actividad.fase.ciclo.superficie_ha 
+        superficie = actividad.fase.ciclo.superficie_ha
 
-    if empresa.calculo_costo == "F":
-        metodo = "FIFO"
-    elif empresa.calculo_costo == "L":
-        metodo = "LIFO"
-    else:
-        metodo = "FIFO"  # default
+        if empresa.calculo_costo == "F":
+            metodo = "FIFO"
+        elif empresa.calculo_costo == "L":
+            metodo = "LIFO"
+        else:
+            metodo = "FIFO"
 
-    # registrar salida de stock
-    for insumo in insumos:
-        if insumo.producto:
-            cantidad = insumo.dosis * superficie
-
-            algo = calcular_costo_salida(insumo.producto, cantidad, insumo.um, metodo=metodo)  # valida que haya stock suficiente
-
-            MovimientoStock.objects.create(
-                producto=insumo.producto,
-                tipo="SALIDA",
-                cantidad=cantidad,
-                um=insumo.um,
-                fecha=timezone.now(),
-                actividad_item=insumo,
-                precio_unitario=algo["precio_promedio"],
-            )
-            insumo.cantidad_real = cantidad
-            insumo.costo_total   = algo["costo_total"]
-            insumo.costo_ha      = algo["costo_total"] / superficie if superficie else Decimal("0")
-            insumo.save()
+        for insumo in insumos:
+            if insumo.producto:
+                cantidad = insumo.dosis * superficie
+                algo = calcular_costo_salida(insumo.producto, cantidad, insumo.um, metodo=metodo)
+                MovimientoStock.objects.create(
+                    producto=insumo.producto,
+                    tipo="SALIDA",
+                    cantidad=cantidad,
+                    um=insumo.um,
+                    fecha=timezone.now(),
+                    actividad_item=insumo,
+                    precio_unitario=algo["precio_promedio"],
+                )
+                insumo.cantidad_real = cantidad
+                insumo.costo_total   = algo["costo_total"]
+                insumo.costo_ha      = algo["costo_total"] / superficie if superficie else Decimal("0")
+                insumo.save()
 
     return insumos
 
@@ -488,12 +485,15 @@ def registrar_actividad_aux(
         return False, msg
 
     # 9. guardar actividad
-    actividad = actividad_form.save(commit=False)
-    actividad.fase = fase
-    actividad.save()
+    try:
+        actividad = actividad_form.save(commit=False)
+        actividad.fase = fase
+        actividad.save()
 
-    # 10. guardar insumos y stock
-    insumos = guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa)
+        # 10. guardar insumos y stock
+        insumos = guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa)
+    except (ValueError, TypeError) as e:
+        return False, str(e)
 
     # 11. calcular costos
     costo_insumos, horas_hombre, costo_mo, horas_maquina, costo_mq, total = calcular_costos_actividad(
@@ -708,7 +708,7 @@ def parse_nfe_pdf(pdf_path: str) -> Dict[str, Any]:
             "items":        items,
         }
 
-# ── Helpers de matching ──────────────────────────────────────────────────────
+ # ── Helpers de matching ──────────────────────────────────────────────────────
 
 def _score(descripcion: str, producto) -> int:
     desc = descripcion.lower().strip()
@@ -749,9 +749,7 @@ def _buscar_candidatos(descripcion: str, empresa, top_n: int = 4, umbral: int = 
     return candidatos[:top_n]
 
 def _detectar_contenido_unidad(descripcion: str, unidad_factura: str):
-    """
-    Retorna (contenido, unidad_base, nombre_presentacion)
-    """
+
     desc = (descripcion or "").upper()
     unid = (unidad_factura or "").upper()
 
@@ -802,7 +800,7 @@ def _detectar_contenido_unidad(descripcion: str, unidad_factura: str):
 
     # Fallback
     return 1.0, "UN", unid.lower() or "un"
-
+ 
 # ── API AJAX ─────────────────────────────────────────────────────────────────
 
 @login_required
@@ -848,20 +846,19 @@ def br_to_float(valor):
     except ValueError:
         return None
 
-
 #---------------- Ayuda unidades-----------
 def convertir_unidad(cantidad, unidad_origen, unidad_destino):
-
     if unidad_origen == unidad_destino:
         return cantidad
-
     convercion = ConversionUM.objects.filter(um_origen=unidad_origen, um_destino=unidad_destino).first()
-    
     if convercion:
         return cantidad * convercion.factor
-    else:   
-        print("No se encontró conversión de unidad de medida de {} a {}".format(unidad_origen, unidad_destino)  )       
-        return None
+    raise ValueError(
+        _("Falta conversión de unidad: %(origen)s → %(destino)s. Configurala en el sistema antes de continuar.") % {
+            "origen":  unidad_origen,
+            "destino": unidad_destino,
+        }
+    )
     
 def convertir_unidad_precio(precio, unidad_origen, unidad_destino):
 

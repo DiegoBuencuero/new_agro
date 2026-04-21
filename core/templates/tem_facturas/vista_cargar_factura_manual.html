@@ -1,329 +1,671 @@
 {% extends 'base.html' %}
+{% load i18n %}
 {% load static %}
 
 {% block plugin_css %}
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
-    :root{
-        --agro-primary:#2e7d32;
-        --agro-secondary:#388e3c;
-        --agro-border:#e0e0e0;
-        --agro-card-bg:#fff;
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.78rem;
+        color: #374151;
+        white-space: nowrap;
     }
-    .container-fluid{ margin:0 auto; }
-    .manual-card{
-        background:var(--agro-card-bg);
-        border:1px solid var(--agro-border);
-        border-radius:12px;
-        overflow:hidden;
-        box-shadow:0 4px 20px rgba(0,0,0,.06);
-        margin-bottom:30px;
+    .factura-row td {
+        vertical-align: middle;
+        font-size: 0.82rem;
+        color: #1f2937;
     }
-    .manual-header{
-        background:linear-gradient(135deg,var(--agro-primary),var(--agro-secondary));
-        color:#fff;
-        padding:25px 30px;
+    .factura-header-box {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #f8f9fa;
+        padding: 1rem;
     }
-    .manual-body{ padding:30px; }
-    .items-table{
-        background:#fff;
-        border:1px solid var(--agro-border);
-        border-radius:10px;
-        overflow:hidden;
+    .paso-badge {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .75rem;
+        font-weight: 700;
+        flex-shrink: 0;
     }
-    .items-table thead{ background:#f8f9fa; }
-    .items-table th{
-        font-weight:600; color:#455a64; padding:14px 12px; white-space:nowrap;
-    }
-    .items-table td{ padding:10px 12px; vertical-align:top; border-top:1px solid #f0f0f0; }
-    .form-control,.form-select{ border-radius:8px; }
-    .subtotal-input{ background:#f8f9fa; }
-    .btn-add-item{
-        background:#e8f5e9;
-        color:var(--agro-primary);
-        border:1px solid var(--agro-border);
-        padding:10px 16px;
-        border-radius:8px;
-        font-weight:600;
-    }
-    .btn-remove-item{
-        color:#dc3545; background:none; border:none; padding:6px 10px; border-radius:6px;
-    }
-    .totales-section{
-        background:#f8f9fa; border:1px solid var(--agro-border);
-        border-radius:10px; padding:18px; margin-top:18px;
-    }
-    .total-row{ display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--agro-border); }
-    .total-row:last-child{ border-bottom:none; }
-    .total-value{ font-weight:700; color:var(--agro-primary); }
-    .total-grande{ font-size:1.2rem; color:var(--agro-secondary); }
-    .item-actions{ width:60px; text-align:center; }
-    .table-responsive{ overflow-x:auto; }
+    .paso-badge.activo   { background: #198754; color: #fff; }
+    .paso-badge.inactivo { background: #e5e7eb; color: #9ca3af; }
+    .paso-badge.completo { background: #d1fae5; color: #065f46; }
+    .paso-titulo          { font-weight: 600; font-size: .85rem; color: #374151; }
+    .paso-titulo.inactivo { color: #9ca3af; }
+    .divisor-pasos        { border-top: 1px solid #e5e7eb; margin: 1rem 0; }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
-    <div class="manual-card">
-        <div class="manual-header">
-            <h4 style="margin:0; display:flex; gap:10px; align-items:center;">
-                <i class="fas fa-keyboard"></i>
-                Cargar Factura Manualmente
-            </h4>
-            <div style="opacity:.9; margin-top:6px;">Ingresá la factura y sus productos manualmente</div>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+            <div>{{ message }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-card">
+        <div class="upload-header d-flex align-items-center justify-content-between mb-4">
+            <h3 class="mb-1">
+                <i class="mdi mdi-keyboard me-1"></i>
+                {% translate "Cargar factura manual" %}
+            </h3>
         </div>
 
-        <div class="manual-body">
-            <form method="post" id="factura-manual-form">
-                {% csrf_token %}
+        <div class="col-lg-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
 
-                <!-- DATOS FACTURA -->
-                <div class="mb-4 p-3" style="background:#f8f9fa; border-radius:10px;">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{{ factura_form.proveedor.label }}</label>
-                            {{ factura_form.proveedor }}
-                            {% if factura_form.proveedor.errors %}{{ factura_form.proveedor.errors }}{% endif %}
+                    <form id="form_manual" method="post" novalidate>
+                        {% csrf_token %}
+
+                        <div class="factura-header-box mb-4">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">{% translate "Proveedor" %} *</label>
+                                    <select name="proveedor" class="form-select form-select-sm" required>
+                                        <option value="">---------</option>
+                                        {% for p in proveedores %}
+                                            <option value="{{ p.id }}"
+                                                {% if proveedor_seleccionado == p.id %}selected{% endif %}>
+                                                {{ p.razon_social }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">{% translate "Nº Factura" %} *</label>
+                                    {{ factura_form.numero }}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">{% translate "Fecha" %} *</label>
+                                    {{ factura_form.fecha }}
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">{{ factura_form.numero.label }}</label>
-                            {{ factura_form.numero }}
-                            {% if factura_form.numero.errors %}{{ factura_form.numero.errors }}{% endif %}
+
+                        {{ formset.management_form }}
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle mb-0" style="min-width:900px;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:30%">{% translate "Producto" %}</th>
+                                        <th style="width:25%">{% translate "Presentación" %}</th>
+                                        <th style="width:13%">{% translate "Cantidad" %}</th>
+                                        <th style="width:15%">{% translate "Precio unit." %}</th>
+                                        <th style="width:12%">{% translate "Subtotal" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for form in formset %}
+                                    <tr class="factura-row {% cycle '' 'table-light' %}"
+                                        data-idx="{{ forloop.counter0 }}">
+
+                                        {# Producto #}
+                                        <td>
+                                            <select id="id_items-{{ forloop.counter0 }}-producto"
+                                                    name="{{ form.producto.html_name }}"
+                                                    class="form-select form-select-sm"
+                                                    onchange="cargarPresentaciones({{ forloop.counter0 }})">
+                                                <option value="">— {% translate "Seleccionar" %} —</option>
+                                                {% for prod in productos %}
+                                                    <option value="{{ prod.id }}"
+                                                        {% if form.producto.value == prod.id|stringformat:"s" %}selected{% endif %}>
+                                                        {{ prod.nombre|truncatewords:5 }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.producto.errors %}
+                                                <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.producto.errors.0 }}</div>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-link btn-sm p-0 mt-1"
+                                                    data-bs-toggle="modal" data-bs-target="#modal_nuevo">
+                                                + {% translate "nuevo producto" %}
+                                            </button>
+                                        </td>
+
+                                        {# Presentación #}
+                                        <td>
+                                            <select id="id_items-{{ forloop.counter0 }}-presentacion"
+                                                    name="{{ form.presentacion.html_name }}"
+                                                    class="form-select form-select-sm">
+                                                <option value="">— {% translate "Seleccionar producto" %} —</option>
+                                            </select>
+                                            {% if form.presentacion.errors %}
+                                                <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.presentacion.errors.0 }}</div>
+                                            {% endif %}
+                                            <button type="button" class="btn btn-link btn-sm p-0 mt-1"
+                                                    data-bs-toggle="modal" data-bs-target="#modal_nuevo"
+                                                    onclick="irAPaso2ConFila({{ forloop.counter0 }})">
+                                                + {% translate "nueva presentación" %}
+                                            </button>
+                                        </td>
+
+                                        {# Cantidad #}
+                                        <td>
+                                            <input type="number"
+                                                   id="id_items-{{ forloop.counter0 }}-cantidad"
+                                                   name="{{ form.cantidad.html_name }}"
+                                                   class="form-control form-control-sm"
+                                                   value="{{ form.cantidad.value|default:'' }}"
+                                                   step="0.001" min="0"
+                                                   oninput="recalcularFila({{ forloop.counter0 }})">
+                                            {% if form.cantidad.errors %}
+                                                <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.cantidad.errors.0 }}</div>
+                                            {% endif %}
+                                        </td>
+
+                                        {# Precio #}
+                                        <td>
+                                            <input type="number"
+                                                   id="id_items-{{ forloop.counter0 }}-precio_unitario"
+                                                   name="{{ form.precio_unitario.html_name }}"
+                                                   class="form-control form-control-sm"
+                                                   value="{{ form.precio_unitario.value|default:'' }}"
+                                                   step="0.01" min="0"
+                                                   oninput="recalcularFila({{ forloop.counter0 }})">
+                                            {% if form.precio_unitario.errors %}
+                                                <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.precio_unitario.errors.0 }}</div>
+                                            {% endif %}
+                                        </td>
+
+                                        {# Subtotal #}
+                                        <td>
+                                            <span id="subtotal_span_{{ forloop.counter0 }}"
+                                                  class="fw-semibold text-success">R$ 0.00</span>
+                                            <input type="hidden"
+                                                   id="id_items-{{ forloop.counter0 }}-subtotal"
+                                                   name="{{ form.subtotal.html_name }}"
+                                                   value="{{ form.subtotal.value|default:'0' }}">
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">
+                                            {% translate "No hay ítems. Usá el botón para agregar." %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+
+                                    <tr class="table-light fw-semibold">
+                                        <td colspan="4" class="text-end small">{% translate "Total" %}</td>
+                                        <td>
+                                            <span id="span_total_general" class="fw-semibold text-success">R$ 0.00</span>
+                                            <input type="hidden" name="total" id="id_total" value="0">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="col-md-3 mb-3">
-                            <label class="form-label">{{ factura_form.fecha.label }}</label>
-                            {{ factura_form.fecha }}
-                            {% if factura_form.fecha.errors %}{{ factura_form.fecha.errors }}{% endif %}
+
+                        <div class="mt-3 d-flex gap-2">
+                            <button type="submit" name="agregar_item" class="btn btn-outline-secondary btn-sm">
+                                <i class="mdi mdi-plus me-1"></i>{% translate "Agregar ítem" %}
+                            </button>
+                            <button type="submit" name="ok" class="btn btn-success">
+                                <i class="mdi mdi-check me-1"></i>{% translate "Guardar factura" %}
+                            </button>
+                            <a href="{% url 'vista_lista_facturas' %}" class="btn btn-dark">
+                                <i class="mdi mdi-arrow-left me-1"></i>{% translate "Cancelar" %}
+                            </a>
                         </div>
-                    </div>
+
+                    </form>
                 </div>
-
-                <!-- ITEMS -->
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 style="margin:0;">Productos</h5>
-                    <button type="button" class="btn-add-item" id="add-item-btn">
-                        <i class="fas fa-plus"></i> Agregar Producto
-                    </button>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table items-table" id="items-table">
-                        <thead>
-                            <tr>
-                                <th style="min-width:220px;">Producto *</th>
-                                <th style="min-width:170px;">Categoría *</th>
-                                <th style="min-width:140px;">Unidad base *</th>
-
-                                <th style="min-width:200px;">Presentación *</th>
-                                <th style="min-width:150px;">Contenido/envase *</th>
-                                <th style="min-width:160px;">Unidad contenido *</th>
-
-                                <th style="min-width:130px;">Cantidad envases *</th>
-                                <th style="min-width:140px;">Precio unit. *</th>
-                                <th style="min-width:130px;">Subtotal</th>
-                                <th class="item-actions"> </th>
-                            </tr>
-                        </thead>
-
-                        <tbody id="items-tbody">
-                            {{ formset.management_form }}
-                            
-                            {% for form in formset %}
-                            <tr class="item-row">
-                            
-                                <!-- PRODUCTO -->
-                                <td>{{ form.producto_nombre }}</td>
-                                <td>{{ form.categoria }}</td>
-                                <td>{{ form.unidad_base }}</td>
-                            
-                                <!-- PRESENTACIÓN -->
-                                <td>{{ form.presentacion_nombre }}</td>
-                                <td>{{ form.contenido_por_envase }}</td>
-                                <td>{{ form.unidad_contenido }}</td>
-                            
-                                <!-- FACTURA -->
-                                <td>{{ form.cantidad }}</td>
-                                <td>{{ form.precio_unitario }}</td>
-                                <td>{{ form.subtotal }}</td>
-                            
-                                <td class="item-actions">
-                                    <button type="button" onclick="removeItem(this)">🗑</button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                            </tbody>
-                            
-                    </table>
-                </div>
-
-                <!-- TOTALES -->
-                <div class="totales-section">
-                    <div class="total-row">
-                        <span>Subtotal</span>
-                        <span class="total-value" id="subtotal-total">$0.00</span>
-                    </div>
-                    <div class="total-row">
-                        <span>Total General</span>
-                        <span class="total-value total-grande" id="total-general">$0.00</span>
-                    </div>
-                </div>
-
-                <!-- TOTAL hidden -->
-                {{ factura_form.total }}
-
-                <div class="mt-4 d-flex justify-content-between">
-                    <a href="{% url 'lista_facturas' %}" class="btn btn-secondary">
-                        Cancelar
-                    </a>
-                    <button type="submit" class="btn btn-success" id="btn-submit">
-                        Guardar Factura
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- TEMPLATE NUEVA FILA (incluye opciones reales) -->
-<template id="item-template">
-    <tr class="item-row">
-    
-        <td><input name="items-__prefix__-producto_nombre" class="form-control" required></td>
-    
-        <td>
-            <select name="items-__prefix__-categoria" class="form-select" required>
-                {% for c in formset.empty_form.fields.categoria.queryset %}
-                <option value="{{ c.id }}">{{ c.nombre }}</option>
-                {% endfor %}
-            </select>
-        </td>
-    
-        <!-- UNIDAD BASE (Producto) -->
-        <td>
-            <select name="items-__prefix__-unidad_base" class="form-select" required>
-                {% for u in formset.empty_form.fields.unidad_base.queryset %}
-                <option value="{{ u.id }}">{{ u.abreviatura }}</option>
-                {% endfor %}
-            </select>
-        </td>
-    
-        <td><input name="items-__prefix__-presentacion_nombre" class="form-control" required></td>
-    
-        <td><input type="number" step="0.001" name="items-__prefix__-contenido_por_envase" class="form-control" required></td>
-    
-        <!-- UNIDAD CONTENIDO (Presentación) -->
-        <td>
-            <select name="items-__prefix__-unidad_contenido" class="form-select" required>
-                {% for u in formset.empty_form.fields.unidad_contenido.queryset %}
-                <option value="{{ u.id }}">{{ u.abreviatura }}</option>
-                {% endfor %}
-            </select>
-        </td>
-    
-        <td><input type="number" step="0.001" name="items-__prefix__-cantidad" class="form-control cantidad-input" required></td>
-        <td><input type="number" step="0.01" name="items-__prefix__-precio_unitario" class="form-control precio-input" required></td>
-        <td><input name="items-__prefix__-subtotal" class="form-control subtotal-input" readonly></td>
-    
-        <td class="item-actions">
-            <button type="button" onclick="removeItem(this)">🗑</button>
-        </td>
-    </tr>
-    </template>
-    
+{# ── Modal: producto (paso 1) + presentación (paso 2) ── #}
+<div class="modal fade" id="modal_nuevo" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="mdi mdi-plus-circle me-1"></i>
+                    {% translate "Nuevo producto / presentación" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                {# indicador de pasos #}
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div id="badge_paso1" class="paso-badge activo">1</div>
+                    <span id="titulo_paso1" class="paso-titulo">{% translate "Producto" %}</span>
+                    <div class="flex-grow-1" style="height:2px;background:#e5e7eb;margin:0 4px;"></div>
+                    <div id="badge_paso2" class="paso-badge inactivo">2</div>
+                    <span id="titulo_paso2" class="paso-titulo inactivo">{% translate "Presentación" %}</span>
+                </div>
+
+                {# PASO 1 #}
+                <div id="paso1">
+                    <div class="mb-3">
+                        <label class="form-label">{% translate "Código" %} *</label>
+                        <input type="text" id="mp_codigo" class="form-control form-control-sm"
+                               placeholder="Ej: PROD001">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% translate "Nombre" %} *</label>
+                        <input type="text" id="mp_nombre" class="form-control form-control-sm"
+                               placeholder="{% translate 'Nombre del producto' %}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% translate "Categoría" %} *</label>
+                        <select id="mp_categoria" class="form-select form-select-sm">
+                            <option value="">---------</option>
+                            {% for cat in categorias %}
+                                <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% translate "Unidad base" %} *</label>
+                        <select id="mp_unidad_base" class="form-select form-select-sm">
+                            <option value="">---------</option>
+                            {% for u in unidades %}
+                                <option value="{{ u.id }}">{{ u.abreviatura }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{% translate "Precio" %}</label>
+                        <input type="number" id="mp_precio" class="form-control form-control-sm"
+                               step="0.0001" min="0" value="0" placeholder="0.00">
+                    </div>
+                    <div id="mp_error" class="text-danger small"></div>
+                </div>
+
+                {# PASO 2 #}
+                <div id="paso2" style="display:none;">
+
+                    <div class="alert alert-success py-2 mb-3 d-flex align-items-center gap-2" style="font-size:.82rem;">
+                        <i class="mdi mdi-check-circle"></i>
+                        <span>{% translate "Producto" %} <strong id="mp_nombre_guardado"></strong> {% translate "guardado." %}</span>
+                    </div>
+
+                    {# presentaciones existentes — solo si las hay #}
+                    <div class="mb-3">
+                        <label class="form-label">{% translate "Presentaciones existentes" %}</label>
+                        <select id="mp_pres_existente" class="form-select form-select-sm"
+                                onchange="toggleCamposNuevaPres()">
+                            <option value="">— {% translate "Agregar nueva" %} —</option>
+                        </select>
+                        <div class="form-text text-muted" style="font-size:.75rem;">
+                            {% translate "Si ya existe la presentación seleccionála, sino completá los campos abajo." %}
+                        </div>
+                    </div>
+
+                    <div id="campos_nueva_pres">
+                        <div class="divisor-pasos"></div>
+                        <div class="small fw-semibold text-muted mb-2">{% translate "Nueva presentación" %}</div>
+                        <div class="mb-2">
+                            <label class="form-label">{% translate "Nombre" %} *</label>
+                            <input type="text" id="mp_pres_nombre" class="form-control form-control-sm"
+                                   placeholder="Ej: Bolsa 50kg, Bidón 20L">
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label">{% translate "Contenido" %} *</label>
+                                <input type="number" id="mp_pres_contenido" class="form-control form-control-sm"
+                                       step="0.001" min="0" placeholder="Ej: 50">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">{% translate "Unidad" %} *</label>
+                                <select id="mp_pres_unidad" class="form-select form-select-sm">
+                                    <option value="">---------</option>
+                                    {% for u in unidades %}
+                                        <option value="{{ u.id }}">{{ u.abreviatura }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-2 mb-2">
+                            <label class="form-label">
+                                {% translate "Unidad en factura" %}
+                                <span class="text-muted fw-normal">({% translate "opcional" %})</span>
+                            </label>
+                            <input type="text" id="mp_pres_uf" class="form-control form-control-sm"
+                                   placeholder="Ej: SC, BLD, GL">
+                        </div>
+                    </div>
+
+                    <div id="mp_pres_error" class="text-danger small mt-2"></div>
+                    <input type="hidden" id="mp_prod_id" value="">
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">
+                    {% translate "Cancelar" %}
+                </button>
+                <button type="button" class="btn btn-success btn-sm" id="btn_paso1"
+                        onclick="guardarProducto()">
+                    {% translate "Guardar producto" %}
+                    <i class="mdi mdi-arrow-right ms-1"></i>
+                </button>
+                <button type="button" class="btn btn-success btn-sm" id="btn_paso2"
+                        style="display:none;" onclick="guardarPresentacion()">
+                    <i class="mdi mdi-check me-1"></i>{% translate "Guardar presentación" %}
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+
+/* ══════════════════════════════════════
+   TABLA
+══════════════════════════════════════ */
+
+function cargarPresentaciones(idx) {
+    var sel_prod = document.getElementById("id_items-" + idx + "-producto");
+    var sel_pres = document.getElementById("id_items-" + idx + "-presentacion");
+    var prod_id  = sel_prod.value;
+
+    sel_pres.innerHTML = '<option value="">---------</option>';
+    if (!prod_id) return;
+
+    $.ajax({
+        url:  "{% url 'ajax_presentaciones_producto' %}",
+        type: "GET",
+        data: { producto_id: prod_id },
+        success: function(resp) {
+            if (!resp || !resp.ok) return;
+            var html = '<option value="">— {% translate "Seleccionar" %} —</option>';
+            var i;
+            for (i = 0; i < resp.presentaciones.length; i++) {
+                html += '<option value="' + resp.presentaciones[i].id + '">'
+                      + resp.presentaciones[i].nombre + '</option>';
+            }
+            sel_pres.innerHTML = html;
+        },
+        error: function() {
+            sel_pres.innerHTML = '<option value="">---------</option>';
+        }
+    });
+}
+
+function recalcularFila(idx) {
+    var cant = parseFloat(document.getElementById("id_items-" + idx + "-cantidad").value)        || 0;
+    var prec = parseFloat(document.getElementById("id_items-" + idx + "-precio_unitario").value) || 0;
+    var sub  = cant * prec;
+    document.getElementById("subtotal_span_" + idx).textContent   = "R$ " + sub.toFixed(2);
+    document.getElementById("id_items-" + idx + "-subtotal").value = sub.toFixed(2);
+    calcularTotal();
+}
+
+function calcularTotal() {
+    var filas = document.getElementsByClassName("factura-row");
+    var total = 0;
+    var i;
+    for (i = 0; i < filas.length; i++) {
+        var idx = filas[i].getAttribute("data-idx");
+        total  += parseFloat(document.getElementById("id_items-" + idx + "-subtotal").value) || 0;
+    }
+    document.getElementById("span_total_general").textContent = "R$ " + total.toFixed(2);
+    document.getElementById("id_total").value                 = total.toFixed(2);
+}
+
+function agregarPresentacionAFila(prod_id, pres_id, pres_nombre) {
+    var filas = document.getElementsByClassName("factura-row");
+    var i;
+    for (i = 0; i < filas.length; i++) {
+        var idx      = filas[i].getAttribute("data-idx");
+        var sel_prod = document.getElementById("id_items-" + idx + "-producto");
+        if (sel_prod && sel_prod.value == prod_id) {
+            var sel_pres    = document.getElementById("id_items-" + idx + "-presentacion");
+            var opt         = document.createElement("option");
+            opt.value       = pres_id;
+            opt.textContent = pres_nombre;
+            opt.selected    = true;
+            sel_pres.appendChild(opt);
+        }
+    }
+}
+
+/* ══════════════════════════════════════
+   MODAL — helpers
+══════════════════════════════════════ */
+
+function resetModal() {
+    document.getElementById("paso1").style.display     = "block";
+    document.getElementById("paso2").style.display     = "none";
+    document.getElementById("btn_paso1").style.display = "inline-block";
+    document.getElementById("btn_paso2").style.display = "none";
+
+    document.getElementById("badge_paso1").className  = "paso-badge activo";
+    document.getElementById("badge_paso2").className  = "paso-badge inactivo";
+    document.getElementById("titulo_paso1").className = "paso-titulo";
+    document.getElementById("titulo_paso2").className = "paso-titulo inactivo";
+
+    document.getElementById("mp_codigo").value      = "";
+    document.getElementById("mp_nombre").value      = "";
+    document.getElementById("mp_categoria").value   = "";
+    document.getElementById("mp_unidad_base").value = "";
+    document.getElementById("mp_precio").value      = "0";
+    document.getElementById("mp_error").textContent = "";
+
+    document.getElementById("mp_prod_id").value               = "";
+    document.getElementById("mp_nombre_guardado").textContent = "";
+    document.getElementById("mp_pres_existente").innerHTML    =
+        '<option value="">— {% translate "Agregar nueva" %} —</option>';
+    document.getElementById("mp_pres_nombre").value           = "";
+    document.getElementById("mp_pres_contenido").value        = "";
+    document.getElementById("mp_pres_unidad").value           = "";
+    document.getElementById("mp_pres_uf").value               = "";
+    document.getElementById("mp_pres_error").textContent      = "";
+    document.getElementById("campos_nueva_pres").style.display = "block";
+}
+
+function mostrarPaso2(prod_id, prod_nombre) {
+    document.getElementById("paso1").style.display     = "none";
+    document.getElementById("paso2").style.display     = "block";
+    document.getElementById("btn_paso1").style.display = "none";
+    document.getElementById("btn_paso2").style.display = "inline-block";
+
+    document.getElementById("badge_paso1").className  = "paso-badge completo";
+    document.getElementById("badge_paso2").className  = "paso-badge activo";
+    document.getElementById("titulo_paso1").className = "paso-titulo";
+    document.getElementById("titulo_paso2").className = "paso-titulo";
+
+    document.getElementById("mp_prod_id").value               = prod_id;
+    document.getElementById("mp_nombre_guardado").textContent = prod_nombre;
+
+    if (!prod_id) return;
+
+    $.ajax({
+        url:  "{% url 'ajax_presentaciones_producto' %}",
+        type: "GET",
+        data: { producto_id: prod_id },
+        success: function(r) {
+            if (!r || !r.ok) return;
+            var sel = document.getElementById("mp_pres_existente");
+            sel.innerHTML = '<option value="">— {% translate "Agregar nueva" %} —</option>';
+            var j;
+            for (j = 0; j < r.presentaciones.length; j++) {
+                sel.innerHTML += '<option value="' + r.presentaciones[j].id + '">'
+                               + r.presentaciones[j].nombre + '</option>';
+            }
+        }
+    });
+}
+
+function irAPaso2ConFila(idx) {
+    var sel_prod = document.getElementById("id_items-" + idx + "-producto");
+    var prod_id  = sel_prod ? sel_prod.value : "";
+
+    if (!prod_id) {
+        alert("{% translate 'Seleccioná un producto primero.' %}");
+        return;
+    }
+
+    var prod_nombre = sel_prod.options[sel_prod.selectedIndex].textContent.trim();
+    resetModal();
+    mostrarPaso2(prod_id, prod_nombre);
+}
+
+function toggleCamposNuevaPres() {
+    var sel    = document.getElementById("mp_pres_existente");
+    var campos = document.getElementById("campos_nueva_pres");
+    campos.style.display = sel.value ? "none" : "block";
+}
+
+document.getElementById("modal_nuevo").addEventListener("show.bs.modal", function() {
+    resetModal();
+});
+
+/* ══════════════════════════════════════
+   PASO 1: guardar producto
+══════════════════════════════════════ */
+
+function guardarProducto() {
+    var codigo    = document.getElementById("mp_codigo").value.trim();
+    var nombre    = document.getElementById("mp_nombre").value.trim();
+    var categoria = document.getElementById("mp_categoria").value;
+    var unidad    = document.getElementById("mp_unidad_base").value;
+    var precio    = document.getElementById("mp_precio").value;
+    var err       = document.getElementById("mp_error");
+    err.textContent = "";
+
+    if (!codigo || !nombre || !categoria || !unidad) {
+        err.textContent = "{% translate 'Completá todos los campos obligatorios.' %}";
+        return;
+    }
+
+    $.ajax({
+        url:  "{% url 'ajax_crear_producto' %}",
+        type: "POST",
+        data: {
+            csrfmiddlewaretoken: "{{ csrf_token }}",
+            codigo:      codigo,
+            nombre:      nombre,
+            categoria:   categoria,
+            unidad_base: unidad,
+            precio:      precio
+        },
+        success: function(resp) {
+            if (!resp || !resp.ok) {
+                err.textContent = resp.error || "{% translate 'Error al guardar.' %}";
+                return;
+            }
+            /* agregar a todos los selects de producto de la tabla */
+            var selects = document.querySelectorAll("select[name$='-producto']");
+            var i;
+            for (i = 0; i < selects.length; i++) {
+                var opt         = document.createElement("option");
+                opt.value       = resp.id;
+                opt.textContent = resp.nombre;
+                selects[i].appendChild(opt);
+            }
+            mostrarPaso2(resp.id, resp.nombre);
+        },
+        error: function() {
+            err.textContent = "{% translate 'Error al guardar.' %}";
+        }
+    });
+}
+
+/* ══════════════════════════════════════
+   PASO 2: guardar presentación
+══════════════════════════════════════ */
+
+function guardarPresentacion() {
+    var prod_id        = document.getElementById("mp_prod_id").value;
+    var pres_existente = document.getElementById("mp_pres_existente").value;
+    var err            = document.getElementById("mp_pres_error");
+    err.textContent    = "";
+
+    /* usar existente */
+    if (pres_existente) {
+        var sel    = document.getElementById("mp_pres_existente");
+        var nombre = sel.options[sel.selectedIndex].textContent;
+        agregarPresentacionAFila(prod_id, pres_existente, nombre);
+        bootstrap.Modal.getInstance(document.getElementById("modal_nuevo")).hide();
+        return;
+    }
+
+    /* crear nueva */
+    var nombre    = document.getElementById("mp_pres_nombre").value.trim();
+    var contenido = document.getElementById("mp_pres_contenido").value;
+    var unidad    = document.getElementById("mp_pres_unidad").value;
+    var uf        = document.getElementById("mp_pres_uf").value.trim();
+
+    if (!nombre || !contenido || !unidad) {
+        err.textContent = "{% translate 'Completá los campos obligatorios de la presentación.' %}";
+        return;
+    }
+
+    $.ajax({
+        url:  "{% url 'ajax_crear_presentacion' %}",
+        type: "POST",
+        data: {
+            csrfmiddlewaretoken: "{{ csrf_token }}",
+            producto_id:      prod_id,
+            nombre:           nombre,
+            contenido:        contenido,
+            unidad_contenido: unidad,
+            unidad_factura:   uf
+        },
+        success: function(resp) {
+            if (!resp || !resp.ok) {
+                err.textContent = resp.error || "{% translate 'Error al guardar.' %}";
+                return;
+            }
+            agregarPresentacionAFila(prod_id, resp.id, resp.nombre);
+            bootstrap.Modal.getInstance(document.getElementById("modal_nuevo")).hide();
+        },
+        error: function() {
+            err.textContent = "{% translate 'Error al guardar.' %}";
+        }
+    });
+}
+
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+
+window.onload = function() {
+    var filas = document.getElementsByClassName("factura-row");
+    var i;
+    for (i = 0; i < filas.length; i++) {
+        var idx      = filas[i].getAttribute("data-idx");
+        var sel_prod = document.getElementById("id_items-" + idx + "-producto");
+        if (sel_prod && sel_prod.value) {
+            cargarPresentaciones(idx);
+        }
+        recalcularFila(idx);
+    }
+    calcularTotal();
+};
+
+</script>
 {% endblock %}
 
-{% block custom_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('factura-manual-form');
-    const tbody = document.getElementById('items-tbody');
-    const addBtn = document.getElementById('add-item-btn');
-
-    const subtotalEl = document.getElementById('subtotal-total');
-    const totalEl = document.getElementById('total-general');
-
-    const totalHidden = document.getElementById('{{ factura_form.total.id_for_label }}');
-
-    const mgmtTotal =
-        document.querySelector('input[name="items-TOTAL_FORMS"]') ||
-        document.querySelector('input[name$="TOTAL_FORMS"]');
-
-    const mgmtInitial =
-        document.querySelector('input[name="items-INITIAL_FORMS"]') ||
-        document.querySelector('input[name$="INITIAL_FORMS"]');
-
-    let index = mgmtTotal ? parseInt(mgmtTotal.value || "0") : 0;
-
-    addBtn.addEventListener('click', () => {
-        const tpl = document.getElementById('item-template').innerHTML.replace(/__prefix__/g, index);
-        tbody.insertAdjacentHTML('beforeend', tpl);
-        index += 1;
-        if (mgmtTotal) mgmtTotal.value = index;
-        bindRowEvents(tbody.lastElementChild);
-        calcTotals();
-    });
-
-    function bindRowEvents(row){
-        const qty = row.querySelector('.cantidad-input') || row.querySelector('input[name$="-cantidad"]');
-        const price = row.querySelector('.precio-input') || row.querySelector('input[name$="-precio_unitario"]');
-
-        if (qty) qty.addEventListener('input', () => { calcRow(row); calcTotals(); });
-        if (price) price.addEventListener('input', () => { calcRow(row); calcTotals(); });
-    }
-
-    function calcRow(row){
-        const qty = parseFloat((row.querySelector('input[name$="-cantidad"]') || {}).value) || 0;
-        const price = parseFloat((row.querySelector('input[name$="-precio_unitario"]') || {}).value) || 0;
-        const sub = row.querySelector('input[name$="-subtotal"]');
-        if (sub) sub.value = (qty * price).toFixed(2);
-    }
-
-    function calcTotals(){
-        let total = 0;
-    
-        document.querySelectorAll('input[name$="-subtotal"]').forEach(inp => {
-            total += parseFloat(inp.value) || 0;
-        });
-    
-        subtotalEl.textContent = `$${total.toFixed(2)}`;
-        totalEl.textContent = `$${total.toFixed(2)}`;
-    
-        if (totalHidden) {
-            totalHidden.value = total.toFixed(2);
-        }
-    }
-    
-
-    window.removeItem = function(btn){
-        const row = btn.closest('tr');
-        if (row) row.remove();
-
-        // si borrás una fila, NO reindexamos porque Django formset no necesita que estén contiguas
-        // pero sí hay que ajustar TOTAL_FORMS si querés estricto.
-        // La forma segura: recalcular TOTAL_FORMS contando filas actuales.
-        const rows = tbody.querySelectorAll('tr.item-row').length;
-        index = rows;
-        if (mgmtTotal) mgmtTotal.value = rows;
-
-        calcTotals();
-    };
-
-    // init: bind filas existentes
-    tbody.querySelectorAll('tr.item-row').forEach(r => {
-        bindRowEvents(r);
-        calcRow(r);
-    });
-    calcTotals();
-
-    // validación mínima
-    form.addEventListener('submit', function(e){
-        const rows = tbody.querySelectorAll('tr.item-row').length;
-        if (rows === 0){
-            e.preventDefault();
-            alert('Debe agregar al menos un producto.');
-            return;
-        }
-    });
-});
-</script>
+{% block nav %}
+    {% include 'nav_home.html' %}
 {% endblock %}

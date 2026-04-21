@@ -52,6 +52,26 @@ class CampanaForm(BaseForm):
             "observaciones": forms.Textarea(attrs={"rows": 2}),
         }
 
+class ProductoForm(BaseForm):
+    class Meta:
+        model = Producto
+        fields = ["codigo", "nombre", "categoria", "unidad_base", "precio", "maneja_stock", "activo"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["maneja_stock"].widget.attrs["class"] = "form-check-input"
+        self.fields["activo"].widget.attrs["class"] = "form-check-input"
+
+class ProductoModalForm(BaseForm):
+    class Meta:
+        model = Producto
+        fields = ["codigo", "nombre", "categoria", "unidad_base", "precio"]
+
+class PresentacionProductoForm(BaseForm):
+    class Meta:
+        model = PresentacionProducto
+        fields = ["nombre", "contenido", "unidad_contenido", "unidad_factura"]
+
 class CicloForm(BaseForm):
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -390,7 +410,6 @@ UNIDAD_CHOICES = [
     ("UN",  "UN"),
 ]
 
-
 class FacturaCompraForm(BaseForm):
     class Meta:
         model = FacturaCompra
@@ -586,6 +605,52 @@ class FacturaCompraItemForm(forms.Form):
 
         return cleaned
 
+class ItemFacturaManualForm(forms.Form):
+    producto     = forms.ModelChoiceField(
+        queryset=Producto.objects.none(),
+        required=True,
+        empty_label="— Seleccionar —",
+        label=_("Producto"),
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+    presentacion = forms.ModelChoiceField(
+        queryset=PresentacionProducto.objects.none(),
+        required=True,
+        empty_label="— Seleccionar —",
+        label=_("Presentación"),
+        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
+    )
+    cantidad = forms.DecimalField(
+        min_value=0, decimal_places=3,
+        label=_("Cantidad"),
+        widget=forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.001"}),
+    )
+    precio_unitario = forms.DecimalField(
+        min_value=0, decimal_places=2,
+        label=_("Precio unit."),
+        widget=forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.01"}),
+    )
+    subtotal = forms.DecimalField(
+        required=False, decimal_places=2,
+        widget=forms.HiddenInput(),
+    )
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            self.fields["producto"].queryset = (
+                Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre")
+            )
+        # cargar presentaciones si hay producto seleccionado
+        producto_id = None
+        if self.is_bound:
+            producto_id = self.data.get(self.add_prefix("producto"))
+        if producto_id:
+            self.fields["presentacion"].queryset = (
+                PresentacionProducto.objects.filter(producto_id=producto_id)
+            )
+
+ItemFacturaManualFormSet = formset_factory(ItemFacturaManualForm, extra=0)
 
 FacturaCompraItemFormSet = formset_factory(
     FacturaCompraItemForm,

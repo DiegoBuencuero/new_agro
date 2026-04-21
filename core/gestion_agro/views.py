@@ -1,6 +1,7 @@
 from datetime import datetime
 import os, re
 import base64
+from django import forms
 from django.core.files.base import ContentFile
 from decimal import Decimal
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,21 +13,19 @@ from django.db.models import Prefetch, Q
 from django.urls import reverse
 from django.http import JsonResponse
 from django.utils import timezone
-from django.forms import formset_factory
-
 import tempfile as tempfile
-
 from .funciones_aux import parse_nfe_pdf, br_to_float, _buscar_candidatos, _score, _detectar_contenido_unidad, convertir_unidad
+from agro.models import (ConversionUM, Unidad, Pais, Provincia, Ciudad, Nacionalidad, Genero, Tipodoc, Empresa)
 
 from .funciones_aux import ( registrar_actividad_aux, obtener_valores_costos, _detectar_contenido_unidad  )
-from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm,
-                                ActividadProductivaForm, ActividadInsumoForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm,
-                                StockFiltroForm, FacturaCompraForm, FacturaCompraItemFormSet)
+from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm, ProductoForm, ProductoModalForm,PresentacionProductoForm,
+                                ActividadProductivaForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm,
+                                StockFiltroForm, FacturaCompraForm, FacturaCompraItemFormSet,  ItemFacturaManualFormSet)
 from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
                                 ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
                                 ActividadInsumo, CategoriaProducto, MovimientoStock, 
-                                FacturaCompra, Proveedor,  PresentacionProducto, FacturaCompraItem, Variedad
-                                )
+                                FacturaCompra, Proveedor,  PresentacionProducto, FacturaCompraItem, Variedad,
+                                Proveedor)
 
 
 @login_required
@@ -145,6 +144,48 @@ def vista_editar_campana(request, id_campana):
     else:
         return redirect('vista_campana')
    
+@login_required
+def vista_producto(request):
+    empresa = request.user.profile.empresa
+    productos = Producto.objects.filter(empresa=empresa).select_related("categoria", "unidad_base")
+    if request.method == 'POST':
+        form = ProductoForm(request.POST)
+        if form.is_valid():
+            producto = form.save(commit=False)
+            producto.empresa = empresa
+            producto.save()
+            messages.success(request, _("Producto guardado correctamente."))
+            return redirect('vista_producto')
+    else:
+        form = ProductoForm()
+    return render(request, 'vista_producto.html', {'form': form, 'productos': productos, 'empresa': empresa})
+
+@login_required
+def vista_editar_producto(request, id_prod):
+    empresa = request.user.profile.empresa
+    productos = Producto.objects.filter(empresa=empresa).select_related("categoria", "unidad_base")
+    try:
+        producto = Producto.objects.get(id=id_prod, empresa=empresa)
+    except Producto.DoesNotExist:
+        messages.error(request, _("Producto no encontrado."))
+        return redirect('vista_producto')
+    if request.method == 'POST':
+        form = ProductoForm(request.POST, instance=producto)
+        if form.is_valid():
+            if request.POST.get('borrar') == '':
+                producto.delete()
+                messages.success(request, _("Producto eliminado."))
+            else:
+                form.save()
+                messages.success(request, _("Producto actualizado."))
+            return redirect('vista_producto')
+    else:
+        form = ProductoForm(instance=producto)
+    return render(request, 'vista_producto.html', {
+        'form': form, 'empresa': empresa, 'productos': productos,
+        'prod': producto, 'modificacion': True
+    })
+
 @login_required
 def vista_lista_ciclos(request):
     empresa = request.user.profile.empresa
@@ -708,7 +749,237 @@ def vista_cargar_factura(request):
 
 @login_required
 def vista_cargar_factura_manual(request):
-    return render(request, "tem_facturas/vista_cargar_factura_manual.html")
+    empresa = request.user.profile.empresa
+
+    if request.method == "POST":
+        factura_form = FacturaCompraForm(request.POST)
+        formset = ItemFacturaManualFormSet(
+            request.POST, prefix="items",
+            form_kwargs={"empresa": empresa}
+        )
+
+        # ── agregar item: no validar, solo agregar fila ──
+        if "agregar_item" in request.POST:
+            data = request.POST.copy()
+            total = int(data.get("items-TOTAL_FORMS", 0))
+            data["items-TOTAL_FORMS"] = total + 1
+            formset = ItemFacturaManualFormSet(
+                data, prefix="items",
+                form_kwargs={"empresa": empresa}
+            )
+            return render(request, "tem_facturas/cargar_factura_manual.html", {
+                "factura_form":        FacturaCompraForm(request.POST),
+                "formset":             formset,
+                "proveedores":         Proveedor.objects.filter(empresa=empresa).order_by("razon_social"),
+                "productos":           Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre"),
+                "categorias":          CategoriaProducto.objects.all().order_by("nombre"),
+                "unidades":            Unidad.objects.all().order_by("abreviatura"),
+                "proveedor_seleccionado": int(request.POST.get("proveedor", 0)),
+            })
+
+        # ── guardar factura ──
+        if "ok" in request.POST:
+            if factura_form.is_valid() and formset.is_valid():
+                with transaction.atomic():
+                    factura = factura_form.save(commit=False)
+                    factura.empresa      = empresa
+                    factura.proveedor_id = request.POST.get("proveedor")
+                    factura.total        = sum(
+                        (f.cleaned_data.get("cantidad") or 0) *
+                        (f.cleaned_data.get("precio_unitario") or 0)
+                        for f in formset
+                        if f.cleaned_data
+                    )
+                    factura.save()
+
+                    for form in formset:
+                        if not form.cleaned_data:
+                            continue
+                        producto     = form.cleaned_data["producto"]
+                        presentacion = form.cleaned_data["presentacion"]
+                        cantidad     = form.cleaned_data["cantidad"]
+                        precio       = form.cleaned_data["precio_unitario"]
+                        subtotal     = cantidad * precio
+
+                        item = FacturaCompraItem.objects.create(
+                            factura=factura,
+                            producto=producto,
+                            presentacion=presentacion,
+                            cantidad_facturada=cantidad,
+                            cantidad_base=cantidad * presentacion.contenido,
+                            precio_unitario=precio,
+                            subtotal=subtotal,
+                        )
+                        MovimientoStock.objects.create(
+                            producto=producto,
+                            tipo=MovimientoStock.Tipo.ENTRADA,
+                            cantidad=item.cantidad_base,
+                            um=presentacion.unidad_contenido,
+                            fecha=factura.fecha,
+                            precio_unitario=precio,
+                        )
+
+                messages.success(request, _("Factura cargada correctamente."))
+                return redirect("vista_lista_facturas")
+            else:
+                messages.error(request, _("Revisá los errores del formulario."))
+
+    else:
+        factura_form = FacturaCompraForm()
+        formset = ItemFacturaManualFormSet(
+            prefix="items", form_kwargs={"empresa": empresa}
+        )
+
+    return render(request, "tem_facturas/cargar_factura_manual.html", {
+        "factura_form": factura_form,
+        "formset":      formset,
+        "proveedores":  Proveedor.objects.filter(empresa=empresa).order_by("razon_social"),
+        "productos":    Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre"),
+        "categorias":   CategoriaProducto.objects.all().order_by("nombre"),
+        "unidades":     Unidad.objects.all().order_by("abreviatura"),
+        "proveedor_seleccionado": 0,
+    })
+
+@login_required
+def vista_cargar_factura_manual(request):
+    empresa = request.user.profile.empresa
+
+    if request.method == "POST":
+        factura_form = FacturaCompraForm(request.POST)
+        formset = ItemFacturaManualFormSet(
+            request.POST, prefix="items",
+            form_kwargs={"empresa": empresa}
+        )
+
+        if "agregar_item" in request.POST:
+            data = request.POST.copy()
+            data["items-TOTAL_FORMS"] = int(data.get("items-TOTAL_FORMS", 0)) + 1
+            formset = ItemFacturaManualFormSet(
+                data, prefix="items",
+                form_kwargs={"empresa": empresa}
+            )
+            return render(request, "tem_facturas/vista_cargar_factura_manual.html", {
+                "factura_form":          FacturaCompraForm(request.POST),
+                "formset":               formset,
+                "proveedores":           Proveedor.objects.filter(empresa=empresa).order_by("razon_social"),
+                "productos":             Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre"),
+                "categorias":            CategoriaProducto.objects.all().order_by("nombre"),
+                "unidades":              Unidad.objects.all().order_by("abreviatura"),
+                "proveedor_seleccionado": int(request.POST.get("proveedor", 0) or 0),
+            })
+
+        if "ok" in request.POST:
+            if factura_form.is_valid() and formset.is_valid():
+                with transaction.atomic():
+                    factura = factura_form.save(commit=False)
+                    factura.empresa      = empresa
+                    factura.proveedor_id = request.POST.get("proveedor")
+                    factura.total        = sum(
+                        (f.cleaned_data.get("cantidad") or 0) *
+                        (f.cleaned_data.get("precio_unitario") or 0)
+                        for f in formset if f.cleaned_data
+                    )
+                    factura.save()
+
+                    for form in formset:
+                        if not form.cleaned_data:
+                            continue
+                        producto     = form.cleaned_data["producto"]
+                        presentacion = form.cleaned_data["presentacion"]
+                        cantidad     = form.cleaned_data["cantidad"]
+                        precio       = form.cleaned_data["precio_unitario"]
+                        subtotal     = cantidad * precio
+
+                        item = FacturaCompraItem.objects.create(
+                            factura=factura,
+                            producto=producto,
+                            presentacion=presentacion,
+                            cantidad_facturada=cantidad,
+                            cantidad_base=cantidad * presentacion.contenido,
+                            precio_unitario=precio,
+                            subtotal=subtotal,
+                        )
+                        MovimientoStock.objects.create(
+                            producto=producto,
+                            tipo=MovimientoStock.Tipo.ENTRADA,
+                            cantidad=item.cantidad_base,
+                            um=presentacion.unidad_contenido,
+                            fecha=factura.fecha,
+                            precio_unitario=precio,
+                        )
+
+                messages.success(request, _("Factura cargada correctamente."))
+                return redirect("vista_lista_facturas")
+            else:
+                messages.error(request, _("Revisá los errores del formulario."))
+
+    else:
+        factura_form = FacturaCompraForm()
+        formset = ItemFacturaManualFormSet(prefix="items", form_kwargs={"empresa": empresa})
+
+    return render(request, "tem_facturas/vista_cargar_factura_manual.html", {
+        "factura_form":          factura_form,
+        "formset":               formset,
+        "proveedores":           Proveedor.objects.filter(empresa=empresa).order_by("razon_social"),
+        "productos":             Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre"),
+        "categorias":            CategoriaProducto.objects.all().order_by("nombre"),
+        "unidades":              Unidad.objects.all().order_by("abreviatura"),
+        "proveedor_seleccionado": 0,
+    })
+@login_required
+def ajax_presentaciones_producto(request):
+    producto_id = request.GET.get("producto_id")
+    if not producto_id:
+        return JsonResponse({"ok": False}, status=400)
+    try:
+        producto = Producto.objects.get(id=producto_id, empresa=request.user.profile.empresa)
+    except Producto.DoesNotExist:
+        return JsonResponse({"ok": False}, status=404)
+    presentaciones = list(
+        PresentacionProducto.objects.filter(producto=producto).values("id", "nombre")
+    )
+    return JsonResponse({"ok": True, "presentaciones": presentaciones})
+
+
+@login_required
+def ajax_crear_producto(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False}, status=405)
+    empresa = request.user.profile.empresa
+    form = ProductoModalForm(request.POST)
+    if form.is_valid():
+        producto = form.save(commit=False)
+        producto.empresa = empresa
+        producto.save()
+        return JsonResponse({"ok": True, "id": producto.id, "nombre": producto.nombre})
+    errores = []
+    for field, errors in form.errors.items():
+        for error in errors:
+            errores.append(field + ": " + error)
+    return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
+
+
+@login_required
+def ajax_crear_presentacion(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False}, status=405)
+    empresa = request.user.profile.empresa
+    try:
+        producto = Producto.objects.get(id=request.POST.get("producto_id"), empresa=empresa)
+    except Producto.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Producto no encontrado"}, status=404)
+    form = PresentacionProductoForm(request.POST)
+    if form.is_valid():
+        pres = form.save(commit=False)
+        pres.producto = producto
+        pres.save()
+        return JsonResponse({"ok": True, "id": pres.id, "nombre": pres.nombre})
+    errores = []
+    for field, errors in form.errors.items():
+        for error in errors:
+            errores.append(field + ": " + error)
+    return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
+
 
 @login_required
 def vista_procesar_pdf_factura(request):
@@ -819,6 +1090,8 @@ def vista_revisar_factura(request):
     # ── Datos iniciales + matching ────────────────────────────────────────
     initial_data = []
     match_info   = []
+
+    print('print nuestro',items)
 
     for item in items:
         desc         = item.get("descricao", "")
@@ -1126,3 +1399,34 @@ def vista_confirmar_factura(request):
 
     messages.success(request, _(f"Factura {factura.numero} guardada correctamente."))
     return redirect("vista_lista_facturas")
+    
+@login_required
+def ajax_unidades_conversion(request):
+    producto_id = request.GET.get("producto_id")
+    if not producto_id:
+        return JsonResponse({"ok": False, "error": "falta producto_id"}, status=400)
+
+    try:
+        producto = Producto.objects.get(id=producto_id)
+    except Producto.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "producto no encontrado"}, status=404)
+
+    unidad_base = producto.unidad_base
+    conversiones = ConversionUM.objects.filter(um_destino=unidad_base)
+
+    lista = []
+    for c in conversiones:
+        lista.append({
+            "abreviatura": c.um_origen.abreviatura,
+            "nombre":      c.um_origen.nombre,
+            "factor":      str(c.factor),
+        })
+
+    return JsonResponse({
+        "ok":                 True,
+        "unidad_base_abrev":  unidad_base.abreviatura,
+        "unidad_base_nombre": unidad_base.nombre,
+        "categoria_id":       producto.categoria.id,
+        "categoria_nombre":   producto.categoria.nombre,
+        "unidades":           lista,
+    })

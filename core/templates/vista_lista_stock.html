@@ -83,15 +83,14 @@
                                     class="form-control"
                                     value="{{ request.GET.fecha_entrada_hasta }}">
                             </div>
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    Filtrar
-                                </button>
-
-                                <a href="{% url 'vista_lista_stock' %}" class="btn btn-outline-secondary btn-sm">
-                                    Limpiar
-                                </a>
-                            </div>
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-success btn-sm">
+                                        <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
+                                    </button>
+                                    <a href="{% url 'vista_lista_stock' %}" class="btn btn-dark btn-sm">
+                                        <i class="mdi mdi-close me-1"></i>{% translate "Limpiar" %}
+                                    </a>
+                                </div>
                         </form>
                     </div>
                 </div>

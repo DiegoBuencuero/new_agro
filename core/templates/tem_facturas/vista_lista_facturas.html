@@ -32,13 +32,12 @@
       <p class="card-description">
         {% trans "Listado de facturas ingresadas" %}
       </p>
-
-      <div class="mb-3">
-        <a href="{% url 'vista_cargar_factura' %}" class="btn btn-primary">
-          <i class="fas fa-plus"></i> {% trans "Nueva Factura" %}
+      <div>
+        <a href="{% url 'vista_cargar_factura' %}" class="btn btn-success">
+            <i class="mdi mdi-plus-circle-outline me-2"></i>
+            {% translate "Nueva Factura" %}
         </a>
       </div>
-
       <!-- TABLA -->
       <div class="table-responsive">
         <table class="table table-striped">
