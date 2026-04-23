@@ -3,6 +3,74 @@
 {% load i18n %}
 
 {% block plugin_css %}
+<style>
+    .ciclo-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 1rem;
+        background: #fff;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+    }
+
+    .ciclo-section-title {
+        font-size: .95rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+
+    .ciclo-help {
+        font-size: .78rem;
+        color: #6b7280;
+        margin-top: .35rem;
+    }
+
+    .ciclo-box {
+        border: 1px solid #e5e7eb;
+        border-radius: .85rem;
+        background: #f9fafb;
+        padding: 1rem;
+        height: 100%;
+    }
+
+    .ciclo-box .label-mini {
+        font-size: .75rem;
+        color: #6b7280;
+        margin-bottom: .2rem;
+    }
+
+    .ciclo-box .value-mini {
+        font-size: .95rem;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .form-error-text {
+        font-size: .76rem;
+        color: #dc3545;
+        margin-top: .3rem;
+    }
+
+    .readonly-lote {
+        background: #f3f4f6;
+        border: 1px dashed #d1d5db;
+        color: #374151;
+        font-weight: 600;
+    }
+
+    .page-subtitle {
+        font-size: .92rem;
+        color: #6b7280;
+    }
+
+    @media (max-width: 991px) {
+        .ciclo-box {
+            margin-bottom: 1rem;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
@@ -11,16 +79,14 @@
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
-        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="mdi 
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi
                 {% if 'success' in message.tags %}mdi-check-circle
                 {% elif 'danger' in message.tags %}mdi-alert-circle
                 {% elif 'warning' in message.tags %}mdi-alert
                 {% else %}mdi-information{% endif %}
                 me-2"></i>
-
             <div>{{ message }}</div>
-
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
@@ -32,16 +98,19 @@
             <div>
                 <h3 class="mb-1">
                     <i class="mdi mdi-sprout icon-agro me-2"></i>
-                    {% translate "Ciclos Productivos" %}
+                    {% if modificacion %}
+                        {% translate "Editar ciclo productivo" %}
+                    {% else %}
+                        {% translate "Nuevo ciclo productivo" %}
+                    {% endif %}
                 </h3>
-                <div class="small">
-                    <h6 class="mb-1 mt-2">
-                        {% if modificacion %}
-                            {% translate "Edición de ciclo agrícola" %}
-                        {% else %}
-                            {% translate "Creación de nuevo ciclo agrícola" %}
-                        {% endif %}
-                    </h6>
+
+                <div class="page-subtitle">
+                    {% if modificacion %}
+                        {% translate "Actualizá la información general del lote y su planificación productiva." %}
+                    {% else %}
+                        {% translate "Registrá un nuevo ciclo agrícola para comenzar a cargar actividades, insumos y producción." %}
+                    {% endif %}
                 </div>
             </div>
 
@@ -53,112 +122,202 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-lg-12 grid-margin stretch-card">
-                <div class="card">
-                    <div class="card-body">
-                        <form class="form-sample" method="post">
-                            {% csrf_token %}
-
-                            <p class="card-description">
-                                {% translate "Información general" %}
-                            </p>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group row">
-                                        <label class="col-sm-3 col-form-label">
-                                            {% translate "Campo" %}
-                                        </label>
-                                        <div class="col-sm-9">
-                                            {{ form.campo }}
-                                            {{ form.campo.errors }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-group row">
-                                        <label class="col-sm-3 col-form-label">
-                                            {% translate "Campaña" %}
-                                        </label>
-                                        <div class="col-sm-9">
-                                            {{ form.campana }}
-                                            {{ form.campana.errors }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group row">
-                                        <label class="col-sm-3 col-form-label">
-                                            {% translate "Cultivo" %}
-                                        </label>
-                                        <div class="col-sm-9">
-                                            {{ form.cultivo }}
-                                            {{ form.cultivo.errors }}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="form-group row">
-                                        <label class="col-sm-3 col-form-label">
-                                            {% translate "Superficie (ha)" %}
-                                        </label>
-                                        <div class="col-sm-9">
-                                            {{ form.superficie_ha }}
-                                            {{ form.superficie_ha.errors }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group row">
-                                        <label class="col-sm-3 col-form-label">
-                                            {% translate "Fecha de inicio" %}
-                                        </label>
-                                        <div class="col-sm-9">
-                                            {{ form.fecha_inicio }}
-                                            {{ form.fecha_inicio.errors }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {% if form.non_field_errors %}
-                            <div class="alert alert-danger mt-3">
-                                {{ form.non_field_errors }}
-                            </div>
-                            {% endif %}
-
-                            <div class="mt-4 d-flex gap-2">
-                                {% if modificacion %}
-                                    <button type="submit" name="ok" class="btn btn-primary">
-                                        {% translate "Actualizar" %}
-                                    </button>
-
-                                    <button type="submit" name="borrar" class="btn btn-danger">
-                                        {% translate "Borrar" %}
-                                    </button>
-                                {% else %}
-                                    <button type="submit" name="ok" class="btn btn-primary">
-                                        {% translate "Crear ciclo" %}
-                                    </button>
-                                {% endif %}
-
-                                <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-dark">
-                                    {% translate "Cancelar" %}
-                                </a>
-                            </div>
-
-                        </form>
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="ciclo-box">
+                    <div class="label-mini">{% translate "Lote" %}</div>
+                    <div class="value-mini">
+                        {% if modificacion and form.instance.nombre_lote %}
+                            {{ form.instance.nombre_lote }}
+                        {% else %}
+                            {% translate "Se genera automáticamente al guardar" %}
+                        {% endif %}
                     </div>
                 </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="ciclo-box">
+                    <div class="label-mini">{% translate "Empresa" %}</div>
+                    <div class="value-mini">{{ empresa }}</div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="ciclo-box">
+                    <div class="label-mini">{% translate "Estado inicial" %}</div>
+                    <div class="value-mini">
+                        {% if modificacion %}
+                            {% if form.instance.activa %}
+                                {% translate "Activo" %}
+                            {% else %}
+                                {% translate "Inactivo" %}
+                            {% endif %}
+                        {% else %}
+                            {% translate "Activo al crear" %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card ciclo-card">
+            <div class="card-body">
+                <form class="form-sample" method="post" novalidate>
+                    {% csrf_token %}
+
+                    <div class="ciclo-section-title">
+                        <i class="mdi mdi-information-outline"></i>
+                        {% translate "Información general" %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% translate "Campo" %} *</label>
+                            {{ form.campo }}
+                            {% if form.campo.errors %}
+                                <div class="form-error-text">{{ form.campo.errors.0 }}</div>
+                            {% endif %}
+                            <div class="ciclo-help">
+                                {% translate "Seleccioná el campo donde se desarrollará el ciclo." %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% translate "Campaña" %} *</label>
+                            {{ form.campana }}
+                            {% if form.campana.errors %}
+                                <div class="form-error-text">{{ form.campana.errors.0 }}</div>
+                            {% endif %}
+                            <div class="ciclo-help">
+                                {% translate "Se propone automáticamente la campaña activa de la empresa." %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% translate "Cultivo" %} *</label>
+                            {{ form.cultivo }}
+                            {% if form.cultivo.errors %}
+                                <div class="form-error-text">{{ form.cultivo.errors.0 }}</div>
+                            {% endif %}
+                            <div class="ciclo-help">
+                                {% translate "Seleccioná el cultivo. El producto final se completa automáticamente desde su configuración." %}
+                            </div>
+
+                            <div class="mt-2">
+                                <label class="form-label">{% translate "Producto final" %}</label>
+                                <input
+                                    type="text"
+                                    id="id_producto_final_preview"
+                                    class="form-control readonly-lote"
+                                    value="{% if form.instance.producto_final %}{{ form.instance.producto_final.nombre }}{% endif %}"
+                                    readonly
+                                >
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% translate "Superficie (ha)" %} *</label>
+                            {{ form.superficie_ha }}
+                            {% if form.superficie_ha.errors %}
+                                <div class="form-error-text">{{ form.superficie_ha.errors.0 }}</div>
+                            {% endif %}
+                            <div class="ciclo-help">
+                                {% translate "Indicá la superficie estimada o comprometida para este lote." %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ciclo-section-title mt-2">
+                        <i class="mdi mdi-calendar-range"></i>
+                        {% translate "Fechas del ciclo" %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% translate "Fecha de inicio" %} *</label>
+                            {{ form.fecha_inicio }}
+                            {% if form.fecha_inicio.errors %}
+                                <div class="form-error-text">{{ form.fecha_inicio.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% translate "Fecha de fin" %}</label>
+                            {{ form.fecha_fin }}
+                            {% if form.fecha_fin.errors %}
+                                <div class="form-error-text">{{ form.fecha_fin.errors.0 }}</div>
+                            {% endif %}
+                            <div class="ciclo-help">
+                                {% translate "Podés dejarla vacía al inicio y completarla cuando el ciclo termine." %}
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if modificacion %}
+                    <div class="ciclo-section-title mt-2">
+                        <i class="mdi mdi-tag-outline"></i>
+                        {% translate "Datos del lote" %}
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% translate "Nombre del lote" %}</label>
+                            <input
+                                type="text"
+                                class="form-control readonly-lote"
+                                value="{{ form.instance.nombre_lote }}"
+                                readonly
+                            >
+                            <div class="ciclo-help">
+                                {% translate "Este valor se genera automáticamente al crear el ciclo." %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{% translate "Estado" %}</label>
+                            <input
+                                type="text"
+                                class="form-control readonly-lote"
+                                value="{% if form.instance.activa %}{% translate 'Activo' %}{% else %}{% translate 'Inactivo' %}{% endif %}"
+                                readonly
+                            >
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger mt-3">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="mt-4 d-flex flex-wrap gap-2">
+                        {% if modificacion %}
+                            <button type="submit" name="ok" class="btn btn-primary">
+                                <i class="mdi mdi-content-save me-1"></i>
+                                {% translate "Actualizar" %}
+                            </button>
+
+                            <button type="submit" name="borrar" class="btn btn-danger">
+                                <i class="mdi mdi-delete me-1"></i>
+                                {% translate "Borrar" %}
+                            </button>
+                        {% else %}
+                            <button type="submit" name="ok" class="btn btn-primary">
+                                <i class="mdi mdi-check me-1"></i>
+                                {% translate "Crear ciclo" %}
+                            </button>
+                        {% endif %}
+
+                        <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-dark">
+                            <i class="mdi mdi-close me-1"></i>
+                            {% translate "Cancelar" %}
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -166,4 +325,44 @@
 {% endblock %}
 
 {% block custom_js %}
+<script>
+function cargarProductoFinalCultivo() {
+    var cultivoSel = document.getElementById("id_cultivo");
+    var inputProducto = document.getElementById("id_producto_final_preview");
+
+    if (!cultivoSel || !inputProducto) return;
+
+    var cultivoId = cultivoSel.value;
+    if (!cultivoId) {
+        inputProducto.value = "";
+        return;
+    }
+
+    $.ajax({
+        url: "{% url 'ajax_info_cultivo' %}",
+        type: "GET",
+        data: { cultivo_id: cultivoId },
+        success: function(resp) {
+            if (!resp || !resp.ok) {
+                inputProducto.value = "";
+                return;
+            }
+            inputProducto.value = resp.producto_default ? resp.producto_default.nombre : "";
+        },
+        error: function() {
+            inputProducto.value = "";
+        }
+    });
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    var cultivoSel = document.getElementById("id_cultivo");
+    if (cultivoSel) {
+        cultivoSel.addEventListener("change", cargarProductoFinalCultivo);
+        if (cultivoSel.value) {
+            cargarProductoFinalCultivo();
+        }
+    }
+});
+</script>
 {% endblock %}

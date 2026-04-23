@@ -1,6 +1,7 @@
 from datetime import datetime
 import os, re
 import base64
+from urllib import request
 from django import forms
 from django.core.files.base import ContentFile
 from decimal import Decimal
@@ -13,6 +14,7 @@ from django.db.models import Prefetch, Q
 from django.urls import reverse
 from django.http import JsonResponse
 from django.utils import timezone
+from django.template.loader import render_to_string
 import tempfile as tempfile
 from .funciones_aux import parse_nfe_pdf, br_to_float, _buscar_candidatos, _score, _detectar_contenido_unidad, convertir_unidad
 from agro.models import (ConversionUM, Unidad, Pais, Provincia, Ciudad, Nacionalidad, Genero, Tipodoc, Empresa)
@@ -20,13 +22,15 @@ from agro.models import (ConversionUM, Unidad, Pais, Provincia, Ciudad, Nacional
 from .funciones_aux import ( registrar_actividad_aux, obtener_valores_costos, _detectar_contenido_unidad  )
 from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm, ProductoForm, ProductoModalForm,PresentacionProductoForm,
                                 ActividadProductivaForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm,
-                                StockFiltroForm, FacturaCompraForm, FacturaCompraItemFormSet,  ItemFacturaManualFormSet)
+                                StockFiltroForm,CultivoProductoFinalForm, FacturaCompraForm, FacturaCompraItemFormSet, FacturaManualItemFormSet,  
+                                CultivoForm,CultivoEditarForm, CultivoProductoFinalForm
+                                )
 from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
                                 ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
                                 ActividadInsumo, CategoriaProducto, MovimientoStock, 
                                 FacturaCompra, Proveedor,  PresentacionProducto, FacturaCompraItem, Variedad,
-                                Proveedor)
-
+                                Proveedor, Cultivo, ProductoSemilla
+                                )
 
 @login_required
 def vista_crear_campo(request):
@@ -143,7 +147,163 @@ def vista_editar_campana(request, id_campana):
         return render(request, 'vista_campana.html', {'form': form, 'empresa': empresa, 'campanas':campanas, 'modificacion': 'S'})
     else:
         return redirect('vista_campana')
-   
+
+
+@login_required
+def vista_crear_cultivo(request):
+    empresa = request.user.profile.empresa
+
+    cultivos = (
+        Cultivo.objects.filter(empresa=empresa)
+        .select_related("producto_default")
+        .prefetch_related(
+            "productos_finales",
+            "productos_finales__categoria",
+            "productos_finales__unidad_base",
+        )
+        .order_by("nombre")
+    )
+
+    if request.method == "POST":
+        form = CultivoForm(request.POST)
+
+        if form.is_valid():
+            form.save(empresa=empresa)
+            messages.success(request, _("Cultivo creado correctamente"))
+            return redirect("vista_crear_cultivo")
+        else:
+            print("ERRORES CREAR CULTIVO:", form.errors)
+            messages.error(request, _("Revisá los datos del formulario."))
+    else:
+        form = CultivoForm()
+
+    producto_final_form = CultivoProductoFinalForm()
+
+    return render(
+        request,
+        "vista_crear_cultivo.html",
+        {
+            "form": form,
+            "producto_final_form": producto_final_form,
+            "cultivos": cultivos,
+            "empresa": empresa,
+            "modificacion": False,
+        },
+    )
+
+
+@login_required
+def vista_editar_cultivo(request, id_cultivo):
+    empresa = request.user.profile.empresa
+
+    cultivos = (
+        Cultivo.objects.filter(empresa=empresa)
+        .select_related("producto_default")
+        .prefetch_related(
+            "productos_finales",
+            "productos_finales__categoria",
+            "productos_finales__unidad_base",
+        )
+        .order_by("nombre")
+    )
+
+    try:
+        cultivo = Cultivo.objects.get(id=id_cultivo, empresa=empresa)
+    except Cultivo.DoesNotExist:
+        messages.error(request, _("El cultivo no existe."))
+        return redirect("vista_crear_cultivo")
+
+    if request.method == "POST":
+        form = CultivoEditarForm(request.POST, instance=cultivo)
+
+        if form.is_valid():
+            if "borrar" in request.POST:
+                cultivo.delete()
+                messages.success(request, _("Cultivo eliminado correctamente."))
+            else:
+                cultivo = form.save(commit=False)
+                cultivo.empresa = empresa
+                cultivo.save()
+                messages.success(request, _("Cultivo actualizado correctamente."))
+
+            return redirect("vista_crear_cultivo")
+        else:
+            print("ERRORES EDITAR CULTIVO:", form.errors)
+            messages.error(request, _("Revisá los datos del formulario."))
+    else:
+        form = CultivoEditarForm(instance=cultivo)
+
+    producto_final_form = CultivoProductoFinalForm()
+
+    return render(
+        request,
+        "vista_crear_cultivo.html",
+        {
+            "form": form,
+            "producto_final_form": producto_final_form,
+            "cultivos": cultivos,
+            "empresa": empresa,
+            "modificacion": True,
+            "cultivo_actual": cultivo,
+        },
+    )
+
+@login_required
+def ajax_agregar_producto_final(request, cultivo_id):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido"}, status=405)
+
+    empresa = request.user.profile.empresa
+
+    try:
+        cultivo = Cultivo.objects.get(id=cultivo_id, empresa=empresa)
+    except Cultivo.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Cultivo no encontrado"}, status=404)
+
+    form = CultivoProductoFinalForm(request.POST)
+
+    if form.is_valid():
+        producto = form.save(empresa=empresa, cultivo=cultivo)
+
+        cultivo = (
+            Cultivo.objects.filter(id=cultivo.id, empresa=empresa)
+            .select_related("producto_default")
+            .prefetch_related("productos_finales")
+            .first()
+        )
+
+        productos = []
+        for p in cultivo.productos_finales.all():
+            productos.append({
+                "id": p.id,
+                "nombre": p.nombre,
+                "default": cultivo.producto_default_id == p.id,
+            })
+
+        return JsonResponse({
+            "ok": True,
+            "message": "Producto final agregado correctamente",
+            "cultivo": {
+                "id": cultivo.id,
+                "nombre": cultivo.nombre,
+                "producto_default_id": cultivo.producto_default_id,
+                "producto_default_nombre": cultivo.producto_default.nombre if cultivo.producto_default else "",
+                "productos_finales": productos,
+                "editar_url": "/cultivos/editar/{}/".format(cultivo.id),
+            }
+        })
+
+    errores = []
+    for field, field_errors in form.errors.items():
+        for error in field_errors:
+            errores.append(str(field) + ": " + str(error))
+
+    return JsonResponse({
+        "ok": False,
+        "error": " | ".join(errores)
+    }, status=400)
+
+
 @login_required
 def vista_producto(request):
     empresa = request.user.profile.empresa
@@ -262,7 +422,7 @@ def ajax_get_ciclos_data(request):
 
 @login_required
 def vista_crear_ciclo(request):
-    empresa = request.user.profile.empresa
+    empresa = getattr(request.user.profile, "empresa", None)
 
     if not empresa:
         messages.error(request, _("El usuario no tiene una empresa asociada."))
@@ -276,6 +436,7 @@ def vista_crear_ciclo(request):
 
             campo = ciclo.campo
             campana = ciclo.campana
+            cultivo = ciclo.cultivo
 
             numero_lote = (
                 CicloAgricola.objects
@@ -286,6 +447,7 @@ def vista_crear_ciclo(request):
             ciclo.nombre_lote = _("Lote-%(numero)s") % {
                 "numero": numero_lote
             }
+            ciclo.producto_final = cultivo.producto_default
             ciclo.activa = True
             ciclo.save()
 
@@ -300,9 +462,40 @@ def vista_crear_ciclo(request):
     context = {
         "form": form,
         "empresa": empresa,
+        "modificacion": False,
     }
-
     return render(request, "vista_crear_ciclo.html", context)
+
+@login_required
+def ajax_info_cultivo(request):
+    empresa = getattr(request.user.profile, "empresa", None)
+    cultivo_id = request.GET.get("cultivo_id")
+
+    if not empresa:
+        return JsonResponse({"ok": False, "error": _("Usuario sin empresa asociada.")}, status=400)
+
+    if not cultivo_id:
+        return JsonResponse({"ok": False, "error": _("Cultivo no informado.")}, status=400)
+
+    try:
+        cultivo = Cultivo.objects.select_related("producto_default").get(
+            id=cultivo_id,
+            empresa=empresa
+        )
+    except Cultivo.DoesNotExist:
+        return JsonResponse({"ok": False, "error": _("Cultivo no encontrado.")}, status=404)
+
+    return JsonResponse({
+        "ok": True,
+        "cultivo": {
+            "id": cultivo.id,
+            "nombre": cultivo.nombre,
+        },
+        "producto_default": {
+            "id": cultivo.producto_default.id,
+            "nombre": cultivo.producto_default.nombre,
+        } if cultivo.producto_default else None,
+    })
 
 @login_required
 def vista_detalle_ciclo(request, id_ciclo):
@@ -637,30 +830,47 @@ def ajax_valores_actividad(request):
 
 @login_required
 def vista_lista_stock(request):
+    empresa = request.user.profile.empresa
+
     form = StockFiltroForm(request.GET or None)
 
-    productos = Producto.objects.select_related("categoria", "unidad_base").order_by("nombre")
+    productos = Producto.objects.select_related(
+        "categoria",
+        "unidad_base"
+    ).filter(
+        empresa=empresa
+    ).order_by("nombre")
+
     categorias = CategoriaProducto.objects.order_by("nombre")
 
-    producto_txt = request.GET.get("producto")
-    categoria = request.GET.get("categoria")
-    fecha_desde = request.GET.get("fecha_entrada_desde")
-    fecha_hasta = request.GET.get("fecha_entrada_hasta")
+    producto_txt = ""
+    categoria = None
+    fecha_desde = None
+    fecha_hasta = None
+
+    if form.is_valid():
+        producto_txt = (form.cleaned_data.get("producto") or "").strip()
+        categoria = form.cleaned_data.get("categoria")
+        fecha_desde = form.cleaned_data.get("fecha_entrada_desde")
+        fecha_hasta = form.cleaned_data.get("fecha_entrada_hasta")
 
     if producto_txt:
-        productos = productos.filter(nombre__icontains=producto_txt)
+        productos_por_nombre = productos.filter(nombre__icontains=producto_txt)
+        productos_por_codigo = productos.filter(codigo__icontains=producto_txt)
+        productos = (productos_por_nombre | productos_por_codigo).distinct().order_by("nombre")
 
     if categoria:
-        productos = productos.filter(categoria_id=categoria)
+        productos = productos.filter(categoria=categoria)
 
     lista_productos = []
-    total_ingresado = 0
-    total_consumido = 0
-    total_restante = 0
+    total_ingresado = Decimal("0")
+    total_consumido = Decimal("0")
+    total_restante = Decimal("0")
 
     for producto in productos:
-
-        movimientos = MovimientoStock.objects.filter(producto=producto)
+        movimientos = MovimientoStock.objects.filter(
+            producto=producto
+        ).select_related("um")
 
         if fecha_desde:
             movimientos = movimientos.filter(fecha__gte=fecha_desde)
@@ -668,22 +878,20 @@ def vista_lista_stock(request):
         if fecha_hasta:
             movimientos = movimientos.filter(fecha__lte=fecha_hasta)
 
-        ingresado = 0
-        consumido = 0
+        if not movimientos.exists():
+            continue
 
+        ingresado = Decimal("0")
+        consumido = Decimal("0")
         unidad_base = producto.unidad_base
-        
+
         for mov in movimientos:
             cantidad = convertir_unidad(mov.cantidad, mov.um, unidad_base)
-            if cantidad is None:
-                raise Exception('Falta la conversión entre unidades: %s a %s' % (mov.um, unidad_base))
 
             if mov.tipo == "ENTRADA":
                 ingresado += cantidad
             elif mov.tipo == "SALIDA":
                 consumido += cantidad
-
-
 
         restante = ingresado - consumido
 
@@ -697,18 +905,165 @@ def vista_lista_stock(request):
             "consumido": consumido,
             "restante": restante,
         })
-
     context = {
-        "form": form,                 
-        "categorias": categorias,    
+        "form": form,
+        "categorias": categorias,
         "productos": lista_productos,
         "total_productos": len(lista_productos),
         "total_ingresado": total_ingresado,
         "total_consumido": total_consumido,
         "total_restante": total_restante,
     }
-
+    print("ENTRO A vista_lista_stock")
     return render(request, "vista_lista_stock.html", context)
+
+@login_required
+def vista_movimientos_producto(request, producto_id):
+    empresa = request.user.profile.empresa
+
+    producto = get_object_or_404(
+        Producto,
+        id=producto_id,
+        empresa=empresa,
+    )
+
+    movimientos = MovimientoStock.objects.filter(
+        producto=producto
+    ).select_related(
+        "um",
+        "factura_item__factura",
+        "actividad_item__actividad__fase__ciclo__campo",
+        "actividad_item__actividad__fase__ciclo__cultivo",
+        "actividad_item__actividad__fase__ciclo__campana",
+    ).order_by("fecha", "id")
+
+    fecha_desde = request.GET.get("fecha_desde")
+    fecha_hasta = request.GET.get("fecha_hasta")
+    tipo = request.GET.get("tipo")
+    origen = request.GET.get("origen")
+    texto = request.GET.get("texto", "").strip().lower()
+
+    if fecha_desde:
+        movimientos = movimientos.filter(fecha__date__gte=fecha_desde)
+
+    if fecha_hasta:
+        movimientos = movimientos.filter(fecha__date__lte=fecha_hasta)
+
+    if tipo in ["ENTRADA", "SALIDA"]:
+        movimientos = movimientos.filter(tipo=tipo)
+
+    movimientos_lista = []
+    saldo = Decimal("0")
+    total_entrada = Decimal("0")
+    total_salida = Decimal("0")
+
+    for mov in movimientos:
+        cantidad = convertir_unidad(mov.cantidad, mov.um, producto.unidad_base)
+        if cantidad is None:
+            cantidad = Decimal("0")
+
+        origen_mov = "Manual"
+        observacion = "-"
+
+        if mov.actividad_item:
+            origen_mov = "Actividad"
+
+            actividad = mov.actividad_item.actividad
+
+            if actividad and actividad.fase and actividad.fase.ciclo:
+                ciclo = actividad.fase.ciclo
+
+                campo = ""
+                lote = ""
+                cultivo = ""
+
+                if ciclo.campo:
+                    campo = ciclo.campo.nombre
+
+                if ciclo.nombre_lote:
+                    lote = ciclo.nombre_lote
+
+                if ciclo.cultivo:
+                    cultivo = str(ciclo.cultivo)
+
+                observacion = campo
+
+                if lote:
+                    if observacion:
+                        observacion = observacion + " - " + lote
+                    else:
+                        observacion = lote
+
+                if cultivo:
+                    if observacion:
+                        observacion = observacion + " - " + cultivo
+                    else:
+                        observacion = cultivo
+
+                if not observacion:
+                    observacion = "-"
+
+        elif mov.factura_item and mov.factura_item.factura:
+            numero = mov.factura_item.factura.numero or ""
+            print(numero)
+            if numero:
+                observacion = "Fact: " + str(numero)
+            else:
+                observacion = "-"
+
+            if mov.factura_item.factura.numero:
+                origen_mov = "Factura manual"
+            else:
+                origen_mov = "Factura"
+
+        else:
+            origen_mov = "Manual"
+            observacion = "-"
+
+        if origen and origen != origen_mov:
+            continue
+
+        if texto and texto not in observacion.lower():
+            continue
+
+        entrada = Decimal("0")
+        salida = Decimal("0")
+
+        if mov.tipo == "ENTRADA":
+            entrada = cantidad
+            saldo += cantidad
+            total_entrada += cantidad
+        else:
+            salida = cantidad
+            saldo -= cantidad
+            total_salida += cantidad
+
+        movimientos_lista.append({
+            "id": mov.id,
+            "fecha": mov.fecha,
+            "tipo": mov.tipo,
+            "origen": origen_mov,
+            "observacion": observacion,
+            "entrada": entrada,
+            "salida": salida,
+            "saldo": saldo,
+            "precio_unitario": mov.precio_unitario,
+        })
+
+    context = {
+        "producto": producto,
+        "movimientos": movimientos_lista,
+        "total_entrada": total_entrada,
+        "total_salida": total_salida,
+        "saldo_actual": saldo,
+        "fecha_desde": fecha_desde,
+        "fecha_hasta": fecha_hasta,
+        "tipo": tipo,
+        "origen": origen,
+        "texto": request.GET.get("texto", "").strip(),
+    }
+
+    return render(request, "vista_movimientos_producto.html", context)
 
 @login_required
 def vista_lista_facturas(request):
@@ -751,123 +1106,42 @@ def vista_cargar_factura(request):
 def vista_cargar_factura_manual(request):
     empresa = request.user.profile.empresa
 
+    def _context_base(factura_form, formset, proveedor_seleccionado=0):
+        return {
+            "factura_form":           factura_form,
+            "formset":                formset,
+            "proveedores":            Proveedor.objects.filter(empresa=empresa).order_by("razon_social"),
+            "productos":              Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre"),
+            "categorias":             CategoriaProducto.objects.all().order_by("nombre"),
+            "unidades":               Unidad.objects.all().order_by("abreviatura"),
+            "cultivos":               Cultivo.objects.all().order_by("nombre"),
+            "proveedor_seleccionado": proveedor_seleccionado,
+        }
+
+    TEMPLATE = "tem_facturas/vista_cargar_factura_manual.html"
+
     if request.method == "POST":
         factura_form = FacturaCompraForm(request.POST)
-        formset = ItemFacturaManualFormSet(
+        formset = FacturaManualItemFormSet(
             request.POST, prefix="items",
             form_kwargs={"empresa": empresa}
         )
 
-        # ── agregar item: no validar, solo agregar fila ──
-        if "agregar_item" in request.POST:
-            data = request.POST.copy()
-            total = int(data.get("items-TOTAL_FORMS", 0))
-            data["items-TOTAL_FORMS"] = total + 1
-            formset = ItemFacturaManualFormSet(
-                data, prefix="items",
-                form_kwargs={"empresa": empresa}
-            )
-            return render(request, "tem_facturas/cargar_factura_manual.html", {
-                "factura_form":        FacturaCompraForm(request.POST),
-                "formset":             formset,
-                "proveedores":         Proveedor.objects.filter(empresa=empresa).order_by("razon_social"),
-                "productos":           Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre"),
-                "categorias":          CategoriaProducto.objects.all().order_by("nombre"),
-                "unidades":            Unidad.objects.all().order_by("abreviatura"),
-                "proveedor_seleccionado": int(request.POST.get("proveedor", 0)),
-            })
-
-        # ── guardar factura ──
-        if "ok" in request.POST:
-            if factura_form.is_valid() and formset.is_valid():
-                with transaction.atomic():
-                    factura = factura_form.save(commit=False)
-                    factura.empresa      = empresa
-                    factura.proveedor_id = request.POST.get("proveedor")
-                    factura.total        = sum(
-                        (f.cleaned_data.get("cantidad") or 0) *
-                        (f.cleaned_data.get("precio_unitario") or 0)
-                        for f in formset
-                        if f.cleaned_data
-                    )
-                    factura.save()
-
-                    for form in formset:
-                        if not form.cleaned_data:
-                            continue
-                        producto     = form.cleaned_data["producto"]
-                        presentacion = form.cleaned_data["presentacion"]
-                        cantidad     = form.cleaned_data["cantidad"]
-                        precio       = form.cleaned_data["precio_unitario"]
-                        subtotal     = cantidad * precio
-
-                        item = FacturaCompraItem.objects.create(
-                            factura=factura,
-                            producto=producto,
-                            presentacion=presentacion,
-                            cantidad_facturada=cantidad,
-                            cantidad_base=cantidad * presentacion.contenido,
-                            precio_unitario=precio,
-                            subtotal=subtotal,
-                        )
-                        MovimientoStock.objects.create(
-                            producto=producto,
-                            tipo=MovimientoStock.Tipo.ENTRADA,
-                            cantidad=item.cantidad_base,
-                            um=presentacion.unidad_contenido,
-                            fecha=factura.fecha,
-                            precio_unitario=precio,
-                        )
-
-                messages.success(request, _("Factura cargada correctamente."))
-                return redirect("vista_lista_facturas")
-            else:
-                messages.error(request, _("Revisá los errores del formulario."))
-
-    else:
-        factura_form = FacturaCompraForm()
-        formset = ItemFacturaManualFormSet(
-            prefix="items", form_kwargs={"empresa": empresa}
-        )
-
-    return render(request, "tem_facturas/cargar_factura_manual.html", {
-        "factura_form": factura_form,
-        "formset":      formset,
-        "proveedores":  Proveedor.objects.filter(empresa=empresa).order_by("razon_social"),
-        "productos":    Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre"),
-        "categorias":   CategoriaProducto.objects.all().order_by("nombre"),
-        "unidades":     Unidad.objects.all().order_by("abreviatura"),
-        "proveedor_seleccionado": 0,
-    })
-
-@login_required
-def vista_cargar_factura_manual(request):
-    empresa = request.user.profile.empresa
-
-    if request.method == "POST":
-        factura_form = FacturaCompraForm(request.POST)
-        formset = ItemFacturaManualFormSet(
-            request.POST, prefix="items",
-            form_kwargs={"empresa": empresa}
-        )
-
+        # ── Agregar ítem ──
         if "agregar_item" in request.POST:
             data = request.POST.copy()
             data["items-TOTAL_FORMS"] = int(data.get("items-TOTAL_FORMS", 0)) + 1
-            formset = ItemFacturaManualFormSet(
+            formset = FacturaManualItemFormSet(
                 data, prefix="items",
                 form_kwargs={"empresa": empresa}
             )
-            return render(request, "tem_facturas/vista_cargar_factura_manual.html", {
-                "factura_form":          FacturaCompraForm(request.POST),
-                "formset":               formset,
-                "proveedores":           Proveedor.objects.filter(empresa=empresa).order_by("razon_social"),
-                "productos":             Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre"),
-                "categorias":            CategoriaProducto.objects.all().order_by("nombre"),
-                "unidades":              Unidad.objects.all().order_by("abreviatura"),
-                "proveedor_seleccionado": int(request.POST.get("proveedor", 0) or 0),
-            })
+            return render(request, TEMPLATE, _context_base(
+                FacturaCompraForm(request.POST),
+                formset,
+                int(request.POST.get("proveedor", 0) or 0),
+            ))
 
+        # ── Guardar factura ──
         if "ok" in request.POST:
             if factura_form.is_valid() and formset.is_valid():
                 with transaction.atomic():
@@ -875,8 +1149,7 @@ def vista_cargar_factura_manual(request):
                     factura.empresa      = empresa
                     factura.proveedor_id = request.POST.get("proveedor")
                     factura.total        = sum(
-                        (f.cleaned_data.get("cantidad") or 0) *
-                        (f.cleaned_data.get("precio_unitario") or 0)
+                        f.cleaned_data.get("subtotal") or 0
                         for f in formset if f.cleaned_data
                     )
                     factura.save()
@@ -884,26 +1157,31 @@ def vista_cargar_factura_manual(request):
                     for form in formset:
                         if not form.cleaned_data:
                             continue
-                        producto     = form.cleaned_data["producto"]
-                        presentacion = form.cleaned_data["presentacion"]
+
+                        producto     = form.cleaned_data["producto_existente"]
+                        presentacion = form.cleaned_data["presentacion_existente"]
                         cantidad     = form.cleaned_data["cantidad"]
                         precio       = form.cleaned_data["precio_unitario"]
-                        subtotal     = cantidad * precio
+                        subtotal     = form.cleaned_data["subtotal"]
+
+                        cantidad_base = cantidad * presentacion.contenido
 
                         item = FacturaCompraItem.objects.create(
                             factura=factura,
                             producto=producto,
                             presentacion=presentacion,
                             cantidad_facturada=cantidad,
-                            cantidad_base=cantidad * presentacion.contenido,
+                            cantidad_base=cantidad_base,
                             precio_unitario=precio,
                             subtotal=subtotal,
                         )
+
                         MovimientoStock.objects.create(
                             producto=producto,
                             tipo=MovimientoStock.Tipo.ENTRADA,
-                            cantidad=item.cantidad_base,
+                            cantidad=cantidad_base,
                             um=presentacion.unidad_contenido,
+                            factura_item=item,
                             fecha=factura.fecha,
                             precio_unitario=precio,
                         )
@@ -915,49 +1193,274 @@ def vista_cargar_factura_manual(request):
 
     else:
         factura_form = FacturaCompraForm()
-        formset = ItemFacturaManualFormSet(prefix="items", form_kwargs={"empresa": empresa})
+        formset = FacturaManualItemFormSet(prefix="items", form_kwargs={"empresa": empresa})
 
-    return render(request, "tem_facturas/vista_cargar_factura_manual.html", {
-        "factura_form":          factura_form,
-        "formset":               formset,
-        "proveedores":           Proveedor.objects.filter(empresa=empresa).order_by("razon_social"),
-        "productos":             Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre"),
-        "categorias":            CategoriaProducto.objects.all().order_by("nombre"),
-        "unidades":              Unidad.objects.all().order_by("abreviatura"),
-        "proveedor_seleccionado": 0,
-    })
+    return render(request, TEMPLATE, _context_base(factura_form, formset))
+
 @login_required
 def ajax_presentaciones_producto(request):
     producto_id = request.GET.get("producto_id")
     if not producto_id:
         return JsonResponse({"ok": False}, status=400)
     try:
-        producto = Producto.objects.get(id=producto_id, empresa=request.user.profile.empresa)
+        producto = Producto.objects.select_related(
+            "categoria",
+            "datos_semilla__cultivo",
+            "datos_semilla__variedad",
+        ).get(id=producto_id, empresa=request.user.profile.empresa)
     except Producto.DoesNotExist:
         return JsonResponse({"ok": False}, status=404)
+
     presentaciones = list(
         PresentacionProducto.objects.filter(producto=producto).values("id", "nombre")
     )
-    return JsonResponse({"ok": True, "presentaciones": presentaciones})
 
+    # Datos de semilla si aplica
+    semilla = None
+    if hasattr(producto, "datos_semilla"):
+        semilla = {
+            "cultivo_id":    producto.datos_semilla.cultivo_id,
+            "cultivo_nombre": producto.datos_semilla.cultivo.nombre,
+            "variedad_id":   producto.datos_semilla.variedad_id,
+            "variedad_nombre": producto.datos_semilla.variedad.nombre,
+        }
+
+    return JsonResponse({
+        "ok":            True,
+        "presentaciones": presentaciones,
+        "default_id":    producto.presentacion_defualt_id,
+        "es_semilla":    semilla is not None,
+        "semilla":       semilla,
+    })
+
+@login_required
+def ajax_variedades_cultivo(request):
+    cultivo_id = request.GET.get("cultivo_id")
+    if not cultivo_id:
+        return JsonResponse({"ok": False, "variedades": []})
+    variedades = list(
+        Variedad.objects.filter(cultivo_id=cultivo_id).order_by("nombre").values("id", "nombre")
+    )
+    return JsonResponse({"ok": True, "variedades": variedades})
 
 @login_required
 def ajax_crear_producto(request):
     if request.method != "POST":
         return JsonResponse({"ok": False}, status=405)
-    empresa = request.user.profile.empresa
-    form = ProductoModalForm(request.POST)
-    if form.is_valid():
-        producto = form.save(commit=False)
-        producto.empresa = empresa
-        producto.save()
-        return JsonResponse({"ok": True, "id": producto.id, "nombre": producto.nombre})
-    errores = []
-    for field, errors in form.errors.items():
-        for error in errors:
-            errores.append(field + ": " + error)
-    return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
 
+    empresa = request.user.profile.empresa
+    modo_cultivo = request.POST.get("producto_final") == "1"
+
+    form = ProductoModalForm(request.POST)
+    if not form.is_valid():
+        errores = [f"{f}: {e}" for f, errs in form.errors.items() for e in errs]
+        return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
+
+    producto = form.save(commit=False)
+    producto.empresa = empresa
+    producto.producto_final = modo_cultivo
+    producto.save()
+
+    es_semilla = producto.categoria.es_semilla
+    cultivo = None
+    variedad = None
+
+    if es_semilla:
+        cultivo_id = request.POST.get("cultivo")
+        variedad_id = request.POST.get("variedad")
+        variedad_nueva = (request.POST.get("variedad_nueva") or "").strip()
+
+        if not cultivo_id:
+            producto.delete()
+            return JsonResponse({"ok": False, "error": "Seleccioná el cultivo."}, status=400)
+
+        try:
+            cultivo = Cultivo.objects.get(id=cultivo_id, empresa=empresa)
+        except Cultivo.DoesNotExist:
+            producto.delete()
+            return JsonResponse({"ok": False, "error": "Cultivo no encontrado."}, status=400)
+
+        # FACTURA / flujo normal
+        if not modo_cultivo:
+            if variedad_id:
+                try:
+                    variedad = Variedad.objects.get(id=variedad_id, cultivo=cultivo)
+                except Variedad.DoesNotExist:
+                    producto.delete()
+                    return JsonResponse({"ok": False, "error": "La variedad no pertenece al cultivo."}, status=400)
+            elif variedad_nueva:
+                variedad, _ = Variedad.objects.get_or_create(
+                    cultivo=cultivo,
+                    nombre=variedad_nueva
+                )
+            else:
+                producto.delete()
+                return JsonResponse({"ok": False, "error": "Seleccioná o escribí una variedad."}, status=400)
+
+        # CREAR CULTIVO / producto final
+        else:
+            variedad, _ = Variedad.objects.get_or_create(
+                cultivo=cultivo,
+                nombre="GENERAL"
+            )
+
+        producto.nombre = (request.POST.get("nombre") or producto.nombre).strip()
+        producto.save(update_fields=["nombre"])
+
+        try:
+            ProductoSemilla.objects.create(
+                producto=producto,
+                cultivo=cultivo,
+                variedad=variedad
+            )
+        except Exception as e:
+            producto.delete()
+            return JsonResponse({"ok": False, "error": str(e)}, status=400)
+
+    pres_nombre = (request.POST.get("pres_nombre") or "").strip()
+    pres_contenido = request.POST.get("pres_contenido")
+    pres_unidad_id = request.POST.get("pres_unidad")
+
+    presentacion = None
+    if pres_nombre and pres_contenido and pres_unidad_id:
+        try:
+            unidad_contenido = Unidad.objects.get(id=pres_unidad_id)
+            presentacion = PresentacionProducto.objects.create(
+                producto=producto,
+                nombre=pres_nombre,
+                contenido=pres_contenido,
+                unidad_contenido=unidad_contenido,
+                unidad_factura=unidad_contenido.abreviatura,
+            )
+            producto.presentacion_defualt = presentacion
+            producto.save(update_fields=["presentacion_defualt"])
+        except Exception:
+            presentacion = None
+
+    return JsonResponse({
+        "ok": True,
+        "id": producto.id,
+        "nombre": producto.nombre,
+        "producto_final": producto.producto_final,
+        "es_semilla": es_semilla,
+        "semilla": {
+            "cultivo_id": cultivo.id,
+            "cultivo_nombre": cultivo.nombre,
+            "variedad_id": variedad.id,
+            "variedad_nombre": variedad.nombre,
+        } if es_semilla and cultivo and variedad else None,
+        "presentacion": {
+            "id": presentacion.id,
+            "nombre": presentacion.nombre,
+        } if presentacion else None,
+    })
+
+@login_required
+def ajax_crear_producto_desde_cultivo(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False}, status=405)
+
+    empresa = request.user.profile.empresa
+
+    codigo = (request.POST.get("codigo") or "").strip()
+    cultivo_id = request.POST.get("cultivo")
+
+    if not codigo:
+        return JsonResponse({"ok": False, "error": "Completá el código."}, status=400)
+
+    if not cultivo_id:
+        return JsonResponse({"ok": False, "error": "Seleccioná el cultivo."}, status=400)
+
+    try:
+        cultivo = Cultivo.objects.get(id=cultivo_id, empresa=empresa)
+    except Cultivo.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Cultivo no encontrado."}, status=400)
+
+    categoria_semilla = CategoriaProducto.objects.filter(es_semilla=True).first()
+    if not categoria_semilla:
+        return JsonResponse({"ok": False, "error": "No existe una categoría de semilla configurada."}, status=400)
+
+    unidad_kg = Unidad.objects.filter(abreviatura__iexact="kg").first()
+    if not unidad_kg:
+        return JsonResponse({"ok": False, "error": "No existe una unidad KG configurada."}, status=400)
+
+    nombre = f"SEMILLA DE {cultivo.nombre}".strip().upper()
+
+    try:
+        producto = Producto.objects.create(
+            empresa=empresa,
+            codigo=codigo,
+            nombre=nombre,
+            categoria=categoria_semilla,
+            unidad_base=unidad_kg,
+            producto_final=True,
+        )
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=400)
+
+    try:
+        variedad, _ = Variedad.objects.get_or_create(
+            cultivo=cultivo,
+            nombre="GENERAL"
+        )
+
+        ProductoSemilla.objects.create(
+            producto=producto,
+            cultivo=cultivo,
+            variedad=variedad
+        )
+
+        presentacion = PresentacionProducto.objects.create(
+            producto=producto,
+            nombre="Kilogramo",
+            contenido=1,
+            unidad_contenido=unidad_kg,
+            unidad_factura=unidad_kg.abreviatura,
+        )
+
+        producto.presentacion_defualt = presentacion
+        producto.save(update_fields=["presentacion_defualt"])
+
+    except Exception as e:
+        producto.delete()
+        return JsonResponse({"ok": False, "error": str(e)}, status=400)
+
+    return JsonResponse({
+        "ok": True,
+        "id": producto.id,
+        "nombre": producto.nombre,
+        "producto_final": True,
+        "es_semilla": True,
+        "semilla": {
+            "cultivo_id": cultivo.id,
+            "cultivo_nombre": cultivo.nombre,
+            "variedad_id": variedad.id,
+            "variedad_nombre": variedad.nombre,
+        },
+        "presentacion": {
+            "id": presentacion.id,
+            "nombre": presentacion.nombre,
+        }
+    })
+@login_required
+def ajax_unidades_por_base(request):
+    unidad_base_id = request.GET.get("unidad_base_id")
+    if not unidad_base_id:
+        return JsonResponse({"ok": False}, status=400)
+    try:
+        unidad_base = Unidad.objects.get(id=unidad_base_id)
+    except Unidad.DoesNotExist:
+        return JsonResponse({"ok": False}, status=404)
+
+    conversiones = ConversionUM.objects.filter(um_destino=unidad_base).select_related("um_origen")
+    lista = [{"id": c.um_origen.id, "abreviatura": c.um_origen.abreviatura, "factor": str(c.factor)} for c in conversiones]
+
+    return JsonResponse({
+        "ok":                True,
+        "unidad_base_id":    unidad_base.id,
+        "unidad_base_abrev": unidad_base.abreviatura,
+        "unidades":          lista,
+    })
 
 @login_required
 def ajax_crear_presentacion(request):
@@ -979,7 +1482,6 @@ def ajax_crear_presentacion(request):
         for error in errors:
             errores.append(field + ": " + error)
     return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
-
 
 @login_required
 def vista_procesar_pdf_factura(request):
@@ -1405,18 +1907,18 @@ def ajax_unidades_conversion(request):
     producto_id = request.GET.get("producto_id")
     if not producto_id:
         return JsonResponse({"ok": False, "error": "falta producto_id"}, status=400)
-
     try:
         producto = Producto.objects.get(id=producto_id)
     except Producto.DoesNotExist:
         return JsonResponse({"ok": False, "error": "producto no encontrado"}, status=404)
 
     unidad_base = producto.unidad_base
-    conversiones = ConversionUM.objects.filter(um_destino=unidad_base)
+    conversiones = ConversionUM.objects.filter(um_destino=unidad_base).select_related("um_origen")
 
     lista = []
     for c in conversiones:
         lista.append({
+            "id":          c.um_origen.id,
             "abreviatura": c.um_origen.abreviatura,
             "nombre":      c.um_origen.nombre,
             "factor":      str(c.factor),
@@ -1424,9 +1926,11 @@ def ajax_unidades_conversion(request):
 
     return JsonResponse({
         "ok":                 True,
+        "unidad_base_id":     unidad_base.id,
         "unidad_base_abrev":  unidad_base.abreviatura,
         "unidad_base_nombre": unidad_base.nombre,
         "categoria_id":       producto.categoria.id,
         "categoria_nombre":   producto.categoria.nombre,
         "unidades":           lista,
     })
+

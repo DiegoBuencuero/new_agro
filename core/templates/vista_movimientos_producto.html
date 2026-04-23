@@ -1,0 +1,272 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block plugin_css %}
+<link rel="stylesheet" href="{% static 'css/detalleCiclo.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="mb-3">
+        <a href="{% url 'vista_lista_stock' %}" class="text-decoration-none small text-success">
+            <i class="mdi mdi-arrow-left"></i> {% translate "Volver a stock" %}
+        </a>
+    </div>
+
+    <div class="upload-card">
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-cube-outline icon-agro"></i>
+                    {% translate "Movimientos de producto" %}
+                </h3>
+                <div class="text-muted small">
+                    {% translate "Detalle completo de entradas y salidas" %}
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-lg-3">
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body">
+                        <div class="fw-semibold mb-2">{{ producto.nombre }}</div>
+
+                        <div class="small text-muted">
+                            <strong>{% translate "Código" %}:</strong> {{ producto.codigo }}
+                        </div>
+
+                        <div class="small text-muted">
+                            <strong>{% translate "Categoría" %}:</strong> {{ producto.categoria.nombre }}
+                        </div>
+
+                        <div class="small text-muted">
+                            <strong>{% translate "Unidad base" %}:</strong> {{ producto.unidad_base }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-3">
+                            <i class="mdi mdi-filter-variant me-2"></i>
+                            {% translate "Filtros" %}
+                        </h5>
+
+                        <form method="get">
+                            <div class="mb-3">
+                                <label>{% translate "Fecha desde" %}</label>
+                                <input
+                                    type="date"
+                                    name="fecha_desde"
+                                    class="form-control"
+                                    value="{{ fecha_desde }}"
+                                >
+                            </div>
+
+                            <div class="mb-3">
+                                <label>{% translate "Fecha hasta" %}</label>
+                                <input
+                                    type="date"
+                                    name="fecha_hasta"
+                                    class="form-control"
+                                    value="{{ fecha_hasta }}"
+                                >
+                            </div>
+
+                            <div class="mb-3">
+                                <label>{% translate "Tipo" %}</label>
+                                <select name="tipo" class="form-select">
+                                    <option value="">{% translate "Todos" %}</option>
+                                    <option value="ENTRADA" {% if tipo == "ENTRADA" %}selected{% endif %}>
+                                        {% translate "Entrada" %}
+                                    </option>
+                                    <option value="SALIDA" {% if tipo == "SALIDA" %}selected{% endif %}>
+                                        {% translate "Salida" %}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label>{% translate "Origen" %}</label>
+                                <select name="origen" class="form-select">
+                                    <option value="">{% translate "Todos" %}</option>
+                                    <option value="Factura" {% if origen == "Factura" %}selected{% endif %}>
+                                        {% translate "Factura" %}
+                                    </option>
+                                    <option value="Manual" {% if origen == "Manual" %}selected{% endif %}>
+                                        {% translate "Factura manual" %}
+                                    </option>
+                                    <option value="Actividad" {% if origen == "Actividad" %}selected{% endif %}>
+                                        {% translate "Actividad" %}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label>{% translate "Buscar" %}</label>
+                                <input
+                                    type="text"
+                                    name="texto"
+                                    class="form-control"
+                                    placeholder="{% translate 'Referencia u observación' %}"
+                                    value="{{ texto }}"
+                                >
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
+                                </button>
+                                <a href="{% url 'vista_movimientos_producto' producto.id %}" class="btn btn-dark btn-sm">
+                                    <i class="mdi mdi-close me-1"></i>{% translate "Limpiar" %}
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-9">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <div class="card text-center h-100 border-0 shadow-sm">
+                            <div class="card-body">
+                                <i class="mdi mdi-arrow-down-bold fs-4 text-muted"></i>
+                                <div class="mt-2 small text-muted">{% translate "Total ingresado" %}</div>
+                                <div class="fw-semibold text-success">{{ total_entrada }} {{ producto.unidad_base }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card text-center h-100 border-0 shadow-sm">
+                            <div class="card-body">
+                                <i class="mdi mdi-arrow-up-bold fs-4 text-muted"></i>
+                                <div class="mt-2 small text-muted">{% translate "Total consumido" %}</div>
+                                <div class="fw-semibold text-danger">{{ total_salida }} {{ producto.unidad_base }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card text-center h-100 border-0 shadow-sm">
+                            <div class="card-body">
+                                <i class="mdi mdi-cube-outline fs-4 text-muted"></i>
+                                <div class="mt-2 small text-muted">{% translate "Stock actual" %}</div>
+                                <div class="fw-semibold {% if saldo_actual > 0 %}text-success{% elif saldo_actual == 0 %}text-warning{% else %}text-danger{% endif %}">
+                                    {{ saldo_actual }} {{ producto.unidad_base }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-1">
+                                <i class="mdi mdi-swap-vertical me-1"></i>
+                                {% translate "Movimientos" %}
+                            </h5>
+                            <p class="text-muted small mb-0">
+                                {{ movimientos|length }} {% translate "registros" %}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 tabla-movimientos">
+                                <thead>
+                                    <tr>
+                                        <th>{% translate "Fecha" %}</th>
+                                        <th>{% translate "Tipo" %}</th>
+                                        <th>{% translate "Origen" %}</th>
+                                        <th class="col-obs">{% translate "Observación" %}</th>
+                                        <th class="text-end">{% translate "Entrada" %}</th>
+                                        <th class="text-end">{% translate "Salida" %}</th>
+                                        <th class="text-end">{% translate "Saldo" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mov in movimientos %}
+                                        <tr>
+                                            <td>{{ mov.fecha|date:"d/m/Y" }}</td>
+
+                                            <td>
+                                                {% if mov.tipo == "ENTRADA" %}
+                                                    <span class="mov-badge mov-entrada">{% translate "Entrada" %}</span>
+                                                {% else %}
+                                                    <span class="mov-badge mov-salida">{% translate "Salida" %}</span>
+                                                {% endif %}
+                                            </td>
+
+                                            <td>
+                                                <span class="badge bg-light text-dark border">
+                                                    {% if mov.origen == "Manual" %}
+                                                        {% translate "Factura manual" %}
+                                                    {% else %}
+                                                        {{ mov.origen }}
+                                                    {% endif %}
+                                                </span>
+                                            </td>
+
+                                            <td>{{ mov.observacion|default:"-" }}</td>
+
+                                            <td class="text-num text-success text-end">
+                                                {% if mov.entrada > 0 %}
+                                                    {{ mov.entrada }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+
+                                            <td class="text-num text-danger text-end">
+                                                {% if mov.salida > 0 %}
+                                                    {{ mov.salida }}
+                                                {% else %}
+                                                    -
+                                                {% endif %}
+                                            </td>
+
+                                            <td class="text-num fw-semibold text-end">
+                                                {{ mov.saldo }}
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="8" class="text-center py-5 text-muted">
+                                                <i class="mdi mdi-package-variant-closed-remove display-6 d-block mb-2"></i>
+                                                {% translate "No hay movimientos registrados" %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        });
+    }, 5000);
+});
+</script>
+{% endblock %}

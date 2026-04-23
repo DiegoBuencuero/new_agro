@@ -51,58 +51,72 @@
 
                         <form method="get">
                             <div class="mb-3">
-                                <label>Producto</label>
-                                <input type="text" name="producto" class="form-control"
-                                    placeholder="Nombre o código"
-                                    value="{{ request.GET.producto }}">
+                                <label>{% translate "Producto" %}</label>
+                                <input
+                                    type="text"
+                                    name="producto"
+                                    class="form-control"
+                                    placeholder="{% translate 'Nombre o código' %}"
+                                    value="{{ request.GET.producto }}"
+                                >
                             </div>
+
                             <div class="mb-3">
-                                <label>Categoría</label>
+                                <label>{% translate "Categoría" %}</label>
                                 <select name="categoria" class="form-select">
-                                    <option value="">Todas</option>
+                                    <option value="">{% translate "Todas" %}</option>
                                     {% for cat in categorias %}
                                         <option value="{{ cat.id }}"
                                             {% if request.GET.categoria == cat.id|stringformat:"s" %}
                                                 selected
-                                            {% endif %}
-                                        >
+                                            {% endif %}>
                                             {{ cat.nombre }}
                                         </option>
                                     {% endfor %}
                                 </select>
                             </div>
+
                             <div class="mb-3">
-                                <label>Fecha desde</label>
-                                <input type="date" name="fecha_entrada_desde"
+                                <label>{% translate "Fecha desde" %}</label>
+                                <input
+                                    type="date"
+                                    name="fecha_entrada_desde"
                                     class="form-control"
-                                    value="{{ request.GET.fecha_entrada_desde }}">
+                                    value="{{ request.GET.fecha_entrada_desde }}"
+                                >
                             </div>
+
                             <div class="mb-3">
-                                <label>Fecha hasta</label>
-                                <input type="date" name="fecha_entrada_hasta"
+                                <label>{% translate "Fecha hasta" %}</label>
+                                <input
+                                    type="date"
+                                    name="fecha_entrada_hasta"
                                     class="form-control"
-                                    value="{{ request.GET.fecha_entrada_hasta }}">
+                                    value="{{ request.GET.fecha_entrada_hasta }}"
+                                >
                             </div>
-                                <div class="d-flex gap-2">
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
-                                    </button>
-                                    <a href="{% url 'vista_lista_stock' %}" class="btn btn-dark btn-sm">
-                                        <i class="mdi mdi-close me-1"></i>{% translate "Limpiar" %}
-                                    </a>
-                                </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
+                                </button>
+                                <a href="{% url 'vista_lista_stock' %}" class="btn btn-dark btn-sm">
+                                    <i class="mdi mdi-close me-1"></i>{% translate "Limpiar" %}
+                                </a>
+                            </div>
                         </form>
                     </div>
                 </div>
             </div>
+
             <div class="col-lg-9">
                 <div class="row g-3 mb-4">
                     <div class="col-md-3">
                         <div class="card text-center h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <i class="mdi mdi-format-list-bulleted fs-4 text-muted"></i>
-                                <div class="mt-2 small text-muted">Productos</div>
-                                {% comment %} <div class="fw-semibold">{{ total_productos }}</div> {% endcomment %}
+                                <div class="mt-2 small text-muted">{% translate "Productos" %}</div>
+                                <div class="fw-semibold">{{ total_productos }}</div>
                             </div>
                         </div>
                     </div>
@@ -111,8 +125,8 @@
                         <div class="card text-center h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <i class="mdi mdi-arrow-down-bold fs-4 text-muted"></i>
-                                <div class="mt-2 small text-muted">Total ingresado</div>
-                                {% comment %} <div class="fw-semibold">{{ total_ingresado }}</div> {% endcomment %}
+                                <div class="mt-2 small text-muted">{% translate "Total ingresado" %}</div>
+                                <div class="fw-semibold">{{ total_ingresado }}</div>
                             </div>
                         </div>
                     </div>
@@ -121,8 +135,8 @@
                         <div class="card text-center h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <i class="mdi mdi-arrow-up-bold fs-4 text-muted"></i>
-                                <div class="mt-2 small text-muted">Total consumido</div>
-                                {% comment %} <div class="fw-semibold">{{ total_consumido }}</div> {% endcomment %}
+                                <div class="mt-2 small text-muted">{% translate "Total consumido" %}</div>
+                                <div class="fw-semibold">{{ total_consumido }}</div>
                             </div>
                         </div>
                     </div>
@@ -131,12 +145,13 @@
                         <div class="card text-center h-100 border-0 shadow-sm">
                             <div class="card-body">
                                 <i class="mdi mdi-cube-outline fs-4 text-muted"></i>
-                                <div class="mt-2 small text-muted">Restante</div>
-{% comment %}                                 <div class="fw-semibold">{{ total_restante }}</div> {% endcomment %}
+                                <div class="mt-2 small text-muted">{% translate "Restante" %}</div>
+                                <div class="fw-semibold">{{ total_restante }}</div>
                             </div>
                         </div>
                     </div>
                 </div>
+
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                         <div>
@@ -155,14 +170,17 @@
                             {% for item in productos %}
                                 {% with prod=item.obj %}
                                     <div class="border-bottom px-4 py-3">
+                                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
 
-                                        <!-- FILA SUPERIOR -->
-                                        <div class="d-flex justify-content-between align-items-start">
-
-                                            <!-- IZQUIERDA -->
                                             <div>
                                                 <div class="fw-semibold">
-                                                {{ prod.nombre|truncatewords:6 }}
+                                                <a href="{% url 'vista_movimientos_producto' prod.id %}" class="text-decoration-none text-dark">
+                                                    {{ prod.nombre|truncatewords:7 }}
+                                                </a>
+                                                </div>
+
+                                                <div class="small text-muted">
+                                                    {% translate "Ver movimientos" %}
                                                 </div>
 
                                                 <div class="small text-muted mt-2">
@@ -185,15 +203,11 @@
                                                 </div>
                                             </div>
 
-                                            <!-- DERECHA -->
                                             <div class="text-end">
-
-                                                <!-- CATEGORIA -->
                                                 <span class="badge bg-light text-dark border d-block mb-1">
                                                     {{ prod.categoria.nombre }}
                                                 </span>
 
-                                                <!-- DISPONIBLE -->
                                                 <div class="small text-muted">
                                                     {% translate "Disponible" %}
                                                 </div>
@@ -209,11 +223,9 @@
                                                 ">
                                                     {{ item.restante }} {{ prod.unidad_base }}
                                                 </div>
-
                                             </div>
 
                                         </div>
-
                                     </div>
                                 {% endwith %}
                             {% endfor %}

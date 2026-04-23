@@ -14,6 +14,7 @@
         vertical-align: middle;
         font-size: 0.82rem;
         color: #1f2937;
+        padding: 0.35rem 0.5rem;
     }
     .factura-header-box {
         border: 1px solid #e5e7eb;
@@ -22,15 +23,9 @@
         padding: 1rem;
     }
     .paso-badge {
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: .75rem;
-        font-weight: 700;
-        flex-shrink: 0;
+        width: 26px; height: 26px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: .75rem; font-weight: 700; flex-shrink: 0;
     }
     .paso-badge.activo   { background: #198754; color: #fff; }
     .paso-badge.inactivo { background: #e5e7eb; color: #9ca3af; }
@@ -38,6 +33,22 @@
     .paso-titulo          { font-weight: 600; font-size: .85rem; color: #374151; }
     .paso-titulo.inactivo { color: #9ca3af; }
     .divisor-pasos        { border-top: 1px solid #e5e7eb; margin: 1rem 0; }
+
+    .semilla-info {
+        display: none;
+        font-size: .68rem;
+        color: #198754;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+    }
+
+    @media (max-width: 1400px) {
+        .table thead th, .factura-row td { font-size: 0.72rem; }
+        .form-select-sm, .form-control-sm { font-size: 0.72rem; }
+        .btn-link.btn-sm { font-size: 0.68rem; }
+    }
 </style>
 {% endblock %}
 
@@ -72,94 +83,110 @@
         <div class="col-lg-12 grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
-
                     <form id="form_manual" method="post" novalidate>
                         {% csrf_token %}
 
+                        {# ── Cabecera ── #}
                         <div class="factura-header-box mb-4">
                             <div class="row g-3 align-items-end">
                                 <div class="col-md-4">
                                     <label class="form-label">{% translate "Proveedor" %} *</label>
-                                    <select name="proveedor" class="form-select form-select-sm" required>
-                                        <option value="">---------</option>
+                                    <select name="proveedor" class="form-select form-select-sm {% if not proveedor_seleccionado and request.method == 'POST' %}is-invalid{% endif %}" required>
+                                        <option value="">— {% translate "Seleccionar" %} —</option>
                                         {% for p in proveedores %}
-                                            <option value="{{ p.id }}"
-                                                {% if proveedor_seleccionado == p.id %}selected{% endif %}>
+                                            <option value="{{ p.id }}" {% if proveedor_seleccionado == p.id %}selected{% endif %}>
                                                 {{ p.razon_social }}
                                             </option>
                                         {% endfor %}
                                     </select>
+                                    {% if not proveedor_seleccionado and request.method == 'POST' %}
+                                        <div class="invalid-feedback">{% translate "Seleccioná un proveedor." %}</div>
+                                    {% endif %}
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">{% translate "Nº Factura" %} *</label>
                                     {{ factura_form.numero }}
+                                    {% if factura_form.numero.errors %}
+                                        <div class="text-danger" style="font-size:.75rem">{{ factura_form.numero.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">{% translate "Fecha" %} *</label>
                                     {{ factura_form.fecha }}
+                                    {% if factura_form.fecha.errors %}
+                                        <div class="text-danger" style="font-size:.75rem">{{ factura_form.fecha.errors.0 }}</div>
+                                    {% endif %}
                                 </div>
+                            </div>
+                        </div>
+
+                        {# ── Toast éxito ── #}
+                        <div id="toast_exito" style="display:none; position:fixed; bottom:2rem; right:2rem; z-index:9999;">
+                            <div class="alert alert-success d-flex align-items-center gap-2 shadow" style="font-size:.85rem; min-width:260px;">
+                                <i class="mdi mdi-check-circle fs-5"></i>
+                                <span id="toast_exito_msg"></span>
                             </div>
                         </div>
 
                         {{ formset.management_form }}
 
                         <div class="table-responsive">
-                            <table class="table table-bordered align-middle mb-0" style="min-width:900px;">
+                            <table class="table table-bordered align-middle mb-0" style="width:100%; table-layout:fixed;">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="width:30%">{% translate "Producto" %}</th>
-                                        <th style="width:25%">{% translate "Presentación" %}</th>
-                                        <th style="width:13%">{% translate "Cantidad" %}</th>
-                                        <th style="width:15%">{% translate "Precio unit." %}</th>
-                                        <th style="width:12%">{% translate "Subtotal" %}</th>
+                                        <th style="width:32%">{% translate "Producto" %}</th>
+                                        <th style="width:28%">{% translate "Presentación" %}</th>
+                                        <th style="width:12%">{% translate "Cantidad" %}</th>
+                                        <th style="width:14%">{% translate "Precio unit." %}</th>
+                                        <th style="width:14%">{% translate "Subtotal" %}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for form in formset %}
-                                    <tr class="factura-row {% cycle '' 'table-light' %}"
-                                        data-idx="{{ forloop.counter0 }}">
+                                    <tr class="factura-row {% cycle '' 'table-light' %}" data-idx="{{ forloop.counter0 }}">
 
-                                        {# Producto #}
+                                        {# ══ Producto ══ #}
                                         <td>
-                                            <select id="id_items-{{ forloop.counter0 }}-producto"
-                                                    name="{{ form.producto.html_name }}"
-                                                    class="form-select form-select-sm"
-                                                    onchange="cargarPresentaciones({{ forloop.counter0 }})">
+                                            <select id="id_items-{{ forloop.counter0 }}-producto_existente"
+                                                    name="{{ form.producto_existente.html_name }}"
+                                                    class="form-select form-select-sm sel-producto"
+                                                    onchange="cargarPresentaciones(this, {{ forloop.counter0 }})">
                                                 <option value="">— {% translate "Seleccionar" %} —</option>
                                                 {% for prod in productos %}
                                                     <option value="{{ prod.id }}"
-                                                        {% if form.producto.value == prod.id|stringformat:"s" %}selected{% endif %}>
+                                                        {% if form.producto_existente.value == prod.id|stringformat:"s" %}selected{% endif %}>
                                                         {{ prod.nombre|truncatewords:5 }}
                                                     </option>
                                                 {% endfor %}
                                             </select>
-                                            {% if form.producto.errors %}
-                                                <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.producto.errors.0 }}</div>
+                                            {% if form.producto_existente.errors %}
+                                                <div class="text-danger" style="font-size:.7rem">{{ form.producto_existente.errors.0 }}</div>
                                             {% endif %}
-                                            <button type="button" class="btn btn-link btn-sm p-0 mt-1"
+                                            <button type="button" class="btn btn-link btn-sm p-0"
+                                                    onclick="abrirModalNuevoProducto({{ forloop.counter0 }})"
                                                     data-bs-toggle="modal" data-bs-target="#modal_nuevo">
                                                 + {% translate "nuevo producto" %}
                                             </button>
                                         </td>
 
-                                        {# Presentación #}
+                                        {# ══ Presentación ══ #}
                                         <td>
-                                            <select id="id_items-{{ forloop.counter0 }}-presentacion"
-                                                    name="{{ form.presentacion.html_name }}"
+                                            <select id="id_items-{{ forloop.counter0 }}-presentacion_existente"
+                                                    name="{{ form.presentacion_existente.html_name }}"
                                                     class="form-select form-select-sm">
                                                 <option value="">— {% translate "Seleccionar producto" %} —</option>
                                             </select>
-                                            {% if form.presentacion.errors %}
-                                                <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.presentacion.errors.0 }}</div>
+                                            {% if form.presentacion_existente.errors %}
+                                                <div class="text-danger" style="font-size:.7rem">{{ form.presentacion_existente.errors.0 }}</div>
                                             {% endif %}
-                                            <button type="button" class="btn btn-link btn-sm p-0 mt-1"
-                                                    data-bs-toggle="modal" data-bs-target="#modal_nuevo"
-                                                    onclick="irAPaso2ConFila({{ forloop.counter0 }})">
+                                            <button type="button" class="btn btn-link btn-sm p-0"
+                                                    onclick="irAPaso2ConFila({{ forloop.counter0 }})"
+                                                    data-bs-toggle="modal" data-bs-target="#modal_nuevo">
                                                 + {% translate "nueva presentación" %}
                                             </button>
                                         </td>
 
-                                        {# Cantidad #}
+                                        {# ══ Cantidad ══ #}
                                         <td>
                                             <input type="number"
                                                    id="id_items-{{ forloop.counter0 }}-cantidad"
@@ -169,11 +196,11 @@
                                                    step="0.001" min="0"
                                                    oninput="recalcularFila({{ forloop.counter0 }})">
                                             {% if form.cantidad.errors %}
-                                                <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.cantidad.errors.0 }}</div>
+                                                <div class="text-danger" style="font-size:.7rem">{{ form.cantidad.errors.0 }}</div>
                                             {% endif %}
                                         </td>
 
-                                        {# Precio #}
+                                        {# ══ Precio ══ #}
                                         <td>
                                             <input type="number"
                                                    id="id_items-{{ forloop.counter0 }}-precio_unitario"
@@ -183,14 +210,13 @@
                                                    step="0.01" min="0"
                                                    oninput="recalcularFila({{ forloop.counter0 }})">
                                             {% if form.precio_unitario.errors %}
-                                                <div class="text-danger" style="font-size:.7rem;margin-top:2px">{{ form.precio_unitario.errors.0 }}</div>
+                                                <div class="text-danger" style="font-size:.7rem">{{ form.precio_unitario.errors.0 }}</div>
                                             {% endif %}
                                         </td>
 
-                                        {# Subtotal #}
+                                        {# ══ Subtotal ══ #}
                                         <td>
-                                            <span id="subtotal_span_{{ forloop.counter0 }}"
-                                                  class="fw-semibold text-success">R$ 0.00</span>
+                                            <span id="subtotal_span_{{ forloop.counter0 }}" class="fw-semibold text-success">R$ 0.00</span>
                                             <input type="hidden"
                                                    id="id_items-{{ forloop.counter0 }}-subtotal"
                                                    name="{{ form.subtotal.html_name }}"
@@ -216,6 +242,27 @@
                             </table>
                         </div>
 
+                        {# ── Errores globales del formset ── #}
+                        {% if formset.non_form_errors %}
+                        <div class="alert alert-danger mt-3 py-2" style="font-size:.82rem;">
+                            {% for error in formset.non_form_errors %}
+                                <div><i class="mdi mdi-alert-circle me-1"></i>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% for form in formset %}
+                            {% if form.errors %}
+                            <div class="alert alert-danger mt-2 py-2" style="font-size:.8rem;">
+                                <strong>{% translate "Ítem" %} {{ forloop.counter }}:</strong>
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <div>— {{ field }}: {{ error }}</div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+
                         <div class="mt-3 d-flex gap-2">
                             <button type="submit" name="agregar_item" class="btn btn-outline-secondary btn-sm">
                                 <i class="mdi mdi-plus me-1"></i>{% translate "Agregar ítem" %}
@@ -227,7 +274,6 @@
                                 <i class="mdi mdi-arrow-left me-1"></i>{% translate "Cancelar" %}
                             </a>
                         </div>
-
                     </form>
                 </div>
             </div>
@@ -235,183 +281,182 @@
     </div>
 </div>
 
-{# ── Modal: producto (paso 1) + presentación (paso 2) ── #}
 <div class="modal fade" id="modal_nuevo" tabindex="-1">
+    <input type="hidden" id="mp_modo_cultivo" value="0">
+    <input type="hidden" id="mp_producto_final" value="0">
+
     <div class="modal-dialog">
         <div class="modal-content">
-
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="mdi mdi-plus-circle me-1"></i>
-                    {% translate "Nuevo producto / presentación" %}
+                    {% translate "Nuevo producto" %}
                 </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
             <div class="modal-body">
 
-                {# indicador de pasos #}
-                <div class="d-flex align-items-center gap-2 mb-3">
-                    <div id="badge_paso1" class="paso-badge activo">1</div>
-                    <span id="titulo_paso1" class="paso-titulo">{% translate "Producto" %}</span>
-                    <div class="flex-grow-1" style="height:2px;background:#e5e7eb;margin:0 4px;"></div>
-                    <div id="badge_paso2" class="paso-badge inactivo">2</div>
-                    <span id="titulo_paso2" class="paso-titulo inactivo">{% translate "Presentación" %}</span>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="mp_producto_final_check">
+                    <label class="form-check-label" for="mp_producto_final_check">
+                        {% translate "Producto final" %}
+                    </label>
                 </div>
 
-                {# PASO 1 #}
-                <div id="paso1">
-                    <div class="mb-3">
+                <div class="row g-2">
+                    <div class="col-6">
                         <label class="form-label">{% translate "Código" %} *</label>
-                        <input type="text" id="mp_codigo" class="form-control form-control-sm"
-                               placeholder="Ej: PROD001">
+                        <input type="text" id="mp_codigo" class="form-control form-control-sm" placeholder="Ej: PROD001">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{% translate "Nombre" %} *</label>
-                        <input type="text" id="mp_nombre" class="form-control form-control-sm"
-                               placeholder="{% translate 'Nombre del producto' %}">
-                    </div>
-                    <div class="mb-3">
+
+                    <div class="col-6">
                         <label class="form-label">{% translate "Categoría" %} *</label>
-                        <select id="mp_categoria" class="form-select form-select-sm">
+                        <select id="mp_categoria" class="form-select form-select-sm" onchange="toggleCamposSemilla()">
                             <option value="">---------</option>
                             {% for cat in categorias %}
-                                <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+                                <option value="{{ cat.id }}" data-es-semilla="{{ cat.es_semilla|yesno:'1,0' }}">
+                                    {{ cat.nombre }}
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">{% translate "Unidad base" %} *</label>
-                        <select id="mp_unidad_base" class="form-select form-select-sm">
-                            <option value="">---------</option>
-                            {% for u in unidades %}
-                                <option value="{{ u.id }}">{{ u.abreviatura }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">{% translate "Precio" %}</label>
-                        <input type="number" id="mp_precio" class="form-control form-control-sm"
-                               step="0.0001" min="0" value="0" placeholder="0.00">
-                    </div>
-                    <div id="mp_error" class="text-danger small"></div>
                 </div>
 
-                {# PASO 2 #}
-                <div id="paso2" style="display:none;">
-
-                    <div class="alert alert-success py-2 mb-3 d-flex align-items-center gap-2" style="font-size:.82rem;">
-                        <i class="mdi mdi-check-circle"></i>
-                        <span>{% translate "Producto" %} <strong id="mp_nombre_guardado"></strong> {% translate "guardado." %}</span>
-                    </div>
-
-                    {# presentaciones existentes — solo si las hay #}
-                    <div class="mb-3">
-                        <label class="form-label">{% translate "Presentaciones existentes" %}</label>
-                        <select id="mp_pres_existente" class="form-select form-select-sm"
-                                onchange="toggleCamposNuevaPres()">
-                            <option value="">— {% translate "Agregar nueva" %} —</option>
-                        </select>
-                        <div class="form-text text-muted" style="font-size:.75rem;">
-                            {% translate "Si ya existe la presentación seleccionála, sino completá los campos abajo." %}
-                        </div>
-                    </div>
-
-                    <div id="campos_nueva_pres">
-                        <div class="divisor-pasos"></div>
-                        <div class="small fw-semibold text-muted mb-2">{% translate "Nueva presentación" %}</div>
-                        <div class="mb-2">
-                            <label class="form-label">{% translate "Nombre" %} *</label>
-                            <input type="text" id="mp_pres_nombre" class="form-control form-control-sm"
-                                   placeholder="Ej: Bolsa 50kg, Bidón 20L">
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label">{% translate "Contenido" %} *</label>
-                                <input type="number" id="mp_pres_contenido" class="form-control form-control-sm"
-                                       step="0.001" min="0" placeholder="Ej: 50">
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label">{% translate "Unidad" %} *</label>
-                                <select id="mp_pres_unidad" class="form-select form-select-sm">
-                                    <option value="">---------</option>
-                                    {% for u in unidades %}
-                                        <option value="{{ u.id }}">{{ u.abreviatura }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mt-2 mb-2">
-                            <label class="form-label">
-                                {% translate "Unidad en factura" %}
-                                <span class="text-muted fw-normal">({% translate "opcional" %})</span>
-                            </label>
-                            <input type="text" id="mp_pres_uf" class="form-control form-control-sm"
-                                   placeholder="Ej: SC, BLD, GL">
-                        </div>
-                    </div>
-
-                    <div id="mp_pres_error" class="text-danger small mt-2"></div>
-                    <input type="hidden" id="mp_prod_id" value="">
+                <div class="mt-2 mb-2">
+                    <label class="form-label">{% translate "Nombre" %} *</label>
+                    <input type="text" id="mp_nombre" class="form-control form-control-sm">
                 </div>
 
+                <div class="mb-2">
+                    <label class="form-label">{% translate "Unidad base" %} *</label>
+                    <select id="mp_unidad_base" class="form-select form-select-sm" onchange="cargarUnidadesPresentacion()">
+                        <option value="">---------</option>
+                        {% for u in unidades %}
+                            <option value="{{ u.id }}" data-abrev="{{ u.abreviatura }}">{{ u.abreviatura }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div id="campos_semilla" style="display:none;">
+                    <hr class="my-2">
+                    <div class="small fw-semibold text-muted mb-2">
+                        <i class="mdi mdi-leaf me-1"></i>{% translate "Datos de semilla" %}
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label">{% translate "Cultivo" %} *</label>
+                            <select id="mp_cultivo" class="form-select form-select-sm" onchange="cargarVariedades()">
+                                <option value="">---------</option>
+                                {% for c in cultivos %}
+                                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-6">
+                            <label class="form-label">{% translate "Variedad" %} *</label>
+                            <select id="mp_variedad" class="form-select form-select-sm">
+                                <option value="">— {% translate "Seleccionar cultivo" %} —</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-2">
+                        <input
+                            type="text"
+                            id="mp_variedad_nueva"
+                            class="form-control form-control-sm"
+                            placeholder="{% translate 'O escribí una variedad nueva' %}"
+                            style="display:none;"
+                        >
+                        <button type="button" class="btn btn-link btn-sm p-0" onclick="toggleVariedadNueva()">
+                            + {% translate "variedad nueva" %}
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="my-2">
+                <div class="small fw-semibold text-muted mb-2">{% translate "Presentación" %}</div>
+
+                <div class="row g-2">
+                    <div class="col-5">
+                        <label class="form-label">{% translate "Nombre" %} *</label>
+                        <input type="text" id="mp_pres_nombre" class="form-control form-control-sm" placeholder="Ej: Bolsa 50kg">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">{% translate "Contenido" %} *</label>
+                        <input type="number" id="mp_pres_contenido" class="form-control form-control-sm" step="0.001" min="0" placeholder="Ej: 50">
+                    </div>
+                    <div class="col-3">
+                        <label class="form-label">{% translate "Unidad" %} *</label>
+                        <select id="mp_pres_unidad" class="form-select form-select-sm">
+                            <option value="">---</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="mp_error" class="text-danger small mt-2"></div>
             </div>
 
             <div class="modal-footer">
                 <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">
                     {% translate "Cancelar" %}
                 </button>
-                <button type="button" class="btn btn-success btn-sm" id="btn_paso1"
-                        onclick="guardarProducto()">
-                    {% translate "Guardar producto" %}
-                    <i class="mdi mdi-arrow-right ms-1"></i>
-                </button>
-                <button type="button" class="btn btn-success btn-sm" id="btn_paso2"
-                        style="display:none;" onclick="guardarPresentacion()">
-                    <i class="mdi mdi-check me-1"></i>{% translate "Guardar presentación" %}
+                <button type="button" class="btn btn-success btn-sm" onclick="guardarProductoCompleto()">
+                    <i class="mdi mdi-check me-1"></i>{% translate "Guardar" %}
                 </button>
             </div>
-
         </div>
     </div>
 </div>
 
 <script>
+var _filaActual = null;
 
-/* ══════════════════════════════════════
-   TABLA
-══════════════════════════════════════ */
+function mostrarToast(msg) {
+    var t = document.getElementById("toast_exito");
+    document.getElementById("toast_exito_msg").textContent = msg;
+    t.style.display = "block";
+    setTimeout(function() { t.style.display = "none"; }, 3500);
+}
 
-function cargarPresentaciones(idx) {
-    var sel_prod = document.getElementById("id_items-" + idx + "-producto");
-    var sel_pres = document.getElementById("id_items-" + idx + "-presentacion");
+// ── Cargar presentaciones al elegir producto existente ──
+function cargarPresentaciones(sel_prod, idx) {
     var prod_id  = sel_prod.value;
+    var sel_pres = document.getElementById("id_items-" + idx + "-presentacion_existente");
+    var divSem   = document.getElementById("semilla-info-" + idx);
 
-    sel_pres.innerHTML = '<option value="">---------</option>';
+    sel_pres.innerHTML = '<option value="">— {% translate "Seleccionar" %} —</option>';
+    if (divSem) divSem.style.display = "none";
     if (!prod_id) return;
 
     $.ajax({
-        url:  "{% url 'ajax_presentaciones_producto' %}",
-        type: "GET",
-        data: { producto_id: prod_id },
+        url: "{% url 'ajax_presentaciones_producto' %}", type: "GET", data: { producto_id: prod_id },
         success: function(resp) {
             if (!resp || !resp.ok) return;
             var html = '<option value="">— {% translate "Seleccionar" %} —</option>';
-            var i;
-            for (i = 0; i < resp.presentaciones.length; i++) {
-                html += '<option value="' + resp.presentaciones[i].id + '">'
-                      + resp.presentaciones[i].nombre + '</option>';
-            }
+            resp.presentaciones.forEach(function(p) {
+                html += '<option value="' + p.id + '"' + (p.id == resp.default_id ? ' selected' : '') + '>' + p.nombre + '</option>';
+            });
             sel_pres.innerHTML = html;
+
+            if (divSem && resp.es_semilla && resp.semilla) {
+            
+                divSem.querySelector(".sem-variedad").textContent = resp.semilla.variedad_nombre;
+                divSem.querySelector("input[name$='-cultivo']").value  = resp.semilla.cultivo_id;
+                divSem.querySelector("input[name$='-variedad']").value = resp.semilla.variedad_id;
+                divSem.style.display = "block";
+            }
         },
-        error: function() {
-            sel_pres.innerHTML = '<option value="">---------</option>';
-        }
+        error: function() { sel_pres.innerHTML = '<option value="">---------</option>'; }
     });
 }
 
+// ── Cálculo ──
 function recalcularFila(idx) {
-    var cant = parseFloat(document.getElementById("id_items-" + idx + "-cantidad").value)        || 0;
+    var cant = parseFloat(document.getElementById("id_items-" + idx + "-cantidad").value) || 0;
     var prec = parseFloat(document.getElementById("id_items-" + idx + "-precio_unitario").value) || 0;
     var sub  = cant * prec;
     document.getElementById("subtotal_span_" + idx).textContent   = "R$ " + sub.toFixed(2);
@@ -420,249 +465,246 @@ function recalcularFila(idx) {
 }
 
 function calcularTotal() {
-    var filas = document.getElementsByClassName("factura-row");
     var total = 0;
-    var i;
-    for (i = 0; i < filas.length; i++) {
-        var idx = filas[i].getAttribute("data-idx");
-        total  += parseFloat(document.getElementById("id_items-" + idx + "-subtotal").value) || 0;
-    }
+    document.querySelectorAll(".factura-row").forEach(function(fila) {
+        var idx = fila.getAttribute("data-idx");
+        total += parseFloat(document.getElementById("id_items-" + idx + "-subtotal").value) || 0;
+    });
     document.getElementById("span_total_general").textContent = "R$ " + total.toFixed(2);
-    document.getElementById("id_total").value                 = total.toFixed(2);
+    document.getElementById("id_total").value = total.toFixed(2);
 }
 
-function agregarPresentacionAFila(prod_id, pres_id, pres_nombre) {
-    var filas = document.getElementsByClassName("factura-row");
-    var i;
-    for (i = 0; i < filas.length; i++) {
-        var idx      = filas[i].getAttribute("data-idx");
-        var sel_prod = document.getElementById("id_items-" + idx + "-producto");
-        if (sel_prod && sel_prod.value == prod_id) {
-            var sel_pres    = document.getElementById("id_items-" + idx + "-presentacion");
-            var opt         = document.createElement("option");
-            opt.value       = pres_id;
-            opt.textContent = pres_nombre;
-            opt.selected    = true;
-            sel_pres.appendChild(opt);
-        }
+// ── Modal: abrir ──
+function abrirModalNuevoProducto(idx) {
+    _filaActual = idx;
+    resetModal();
+}
+
+{% comment %} function irAPaso2ConFila(idx) {
+    var sel_prod = document.getElementById("id_items-" + idx + "-producto_existente");
+    if (!sel_prod || !sel_prod.value) {
+        alert("{% translate 'Seleccioná un producto primero.' %}"); return;
     }
-}
-
-/* ══════════════════════════════════════
-   MODAL — helpers
-══════════════════════════════════════ */
+    _filaActual = idx;
+    resetModal();
+} {% endcomment %}
 
 function resetModal() {
-    document.getElementById("paso1").style.display     = "block";
-    document.getElementById("paso2").style.display     = "none";
-    document.getElementById("btn_paso1").style.display = "inline-block";
-    document.getElementById("btn_paso2").style.display = "none";
-
-    document.getElementById("badge_paso1").className  = "paso-badge activo";
-    document.getElementById("badge_paso2").className  = "paso-badge inactivo";
-    document.getElementById("titulo_paso1").className = "paso-titulo";
-    document.getElementById("titulo_paso2").className = "paso-titulo inactivo";
-
-    document.getElementById("mp_codigo").value      = "";
-    document.getElementById("mp_nombre").value      = "";
-    document.getElementById("mp_categoria").value   = "";
-    document.getElementById("mp_unidad_base").value = "";
-    document.getElementById("mp_precio").value      = "0";
-    document.getElementById("mp_error").textContent = "";
-
-    document.getElementById("mp_prod_id").value               = "";
-    document.getElementById("mp_nombre_guardado").textContent = "";
-    document.getElementById("mp_pres_existente").innerHTML    =
-        '<option value="">— {% translate "Agregar nueva" %} —</option>';
-    document.getElementById("mp_pres_nombre").value           = "";
-    document.getElementById("mp_pres_contenido").value        = "";
-    document.getElementById("mp_pres_unidad").value           = "";
-    document.getElementById("mp_pres_uf").value               = "";
-    document.getElementById("mp_pres_error").textContent      = "";
-    document.getElementById("campos_nueva_pres").style.display = "block";
+    ["mp_codigo","mp_nombre","mp_pres_nombre","mp_pres_contenido"].forEach(function(id) {
+        var el = document.getElementById(id); if (el) el.value = "";
+    });
+    document.getElementById("mp_categoria").value    = "";
+    document.getElementById("mp_unidad_base").value  = "";
+    document.getElementById("mp_cultivo").value      = "";
+    document.getElementById("mp_variedad").innerHTML = '<option value="">— {% translate "Seleccionar cultivo" %} —</option>';
+    document.getElementById("mp_variedad_nueva").value         = "";
+    document.getElementById("mp_variedad_nueva").style.display = "none";
+    document.getElementById("mp_pres_unidad").innerHTML        = '<option value="">---</option>';
+    document.getElementById("mp_error").textContent            = "";
+    document.getElementById("campos_semilla").style.display    = "none";
 }
 
-function mostrarPaso2(prod_id, prod_nombre) {
-    document.getElementById("paso1").style.display     = "none";
-    document.getElementById("paso2").style.display     = "block";
-    document.getElementById("btn_paso1").style.display = "none";
-    document.getElementById("btn_paso2").style.display = "inline-block";
+document.getElementById("modal_nuevo").addEventListener("show.bs.modal", resetModal);
 
-    document.getElementById("badge_paso1").className  = "paso-badge completo";
-    document.getElementById("badge_paso2").className  = "paso-badge activo";
-    document.getElementById("titulo_paso1").className = "paso-titulo";
-    document.getElementById("titulo_paso2").className = "paso-titulo";
+// ── Semilla ──
+function toggleCamposSemilla() {
+    var sel = document.getElementById("mp_categoria");
+    var opt = sel ? sel.selectedOptions[0] : null;
+    var esSem = opt && opt.getAttribute("data-es-semilla") === "1";
 
-    document.getElementById("mp_prod_id").value               = prod_id;
-    document.getElementById("mp_nombre_guardado").textContent = prod_nombre;
+    document.getElementById("campos_semilla").style.display = esSem ? "block" : "none";
+}
 
-    if (!prod_id) return;
-
+function cargarVariedades() {
+    var cultivo_id = document.getElementById("mp_cultivo").value;
+    var sel = document.getElementById("mp_variedad");
+    sel.innerHTML = '<option value="">— {% translate "Cargando..." %} —</option>';
+    if (!cultivo_id) { sel.innerHTML = '<option value="">— {% translate "Seleccionar cultivo" %} —</option>'; return; }
     $.ajax({
-        url:  "{% url 'ajax_presentaciones_producto' %}",
-        type: "GET",
-        data: { producto_id: prod_id },
+        url: "{% url 'ajax_variedades_cultivo' %}", type: "GET", data: { cultivo_id: cultivo_id },
+        success: function(r) {
+            sel.innerHTML = '<option value="">— {% translate "Seleccionar" %} —</option>';
+            r.variedades.forEach(function(v) { sel.innerHTML += '<option value="' + v.id + '">' + v.nombre + '</option>'; });
+        }
+    });
+}
+
+function toggleVariedadNueva() {
+    var inp = document.getElementById("mp_variedad_nueva");
+    inp.style.display = inp.style.display === "none" ? "block" : "none";
+    if (inp.style.display === "block") document.getElementById("mp_variedad").value = "";
+}
+
+// ── Cargar unidades según unidad base seleccionada ──
+function cargarUnidadesPresentacion() {
+    var sel_unidad_base = document.getElementById("mp_unidad_base");
+    var unidad_base_id  = sel_unidad_base.value;
+    var sel = document.getElementById("mp_pres_unidad");
+    sel.innerHTML = '<option value="">---</option>';
+    if (!unidad_base_id) return;
+
+    // Buscar un producto temporal con esa unidad base para usar ajax_unidades_conversion
+    // Alternativa simple: filtrar unidades que tengan conversión a esa unidad base
+    $.ajax({
+        url: "{% url 'ajax_unidades_por_base' %}", type: "GET", data: { unidad_base_id: unidad_base_id },
         success: function(r) {
             if (!r || !r.ok) return;
-            var sel = document.getElementById("mp_pres_existente");
-            sel.innerHTML = '<option value="">— {% translate "Agregar nueva" %} —</option>';
-            var j;
-            for (j = 0; j < r.presentaciones.length; j++) {
-                sel.innerHTML += '<option value="' + r.presentaciones[j].id + '">'
-                               + r.presentaciones[j].nombre + '</option>';
-            }
-        }
+            var html = '<option value="">---</option>';
+            html += '<option value="' + r.unidad_base_id + '" selected>' + r.unidad_base_abrev + ' (base)</option>';
+            r.unidades.forEach(function(u) {
+                html += '<option value="' + u.id + '">' + u.abreviatura + ' (×' + u.factor + ')</option>';
+            });
+            sel.innerHTML = html;
+        },
+        error: function() { sel.innerHTML = '<option value="">---</option>'; }
     });
 }
 
-function irAPaso2ConFila(idx) {
-    var sel_prod = document.getElementById("id_items-" + idx + "-producto");
-    var prod_id  = sel_prod ? sel_prod.value : "";
-
-    if (!prod_id) {
-        alert("{% translate 'Seleccioná un producto primero.' %}");
-        return;
-    }
-
-    var prod_nombre = sel_prod.options[sel_prod.selectedIndex].textContent.trim();
-    resetModal();
-    mostrarPaso2(prod_id, prod_nombre);
-}
-
-function toggleCamposNuevaPres() {
-    var sel    = document.getElementById("mp_pres_existente");
-    var campos = document.getElementById("campos_nueva_pres");
-    campos.style.display = sel.value ? "none" : "block";
-}
-
-document.getElementById("modal_nuevo").addEventListener("show.bs.modal", function() {
-    resetModal();
-});
-
-/* ══════════════════════════════════════
-   PASO 1: guardar producto
-══════════════════════════════════════ */
-
-function guardarProducto() {
-    var codigo    = document.getElementById("mp_codigo").value.trim();
-    var nombre    = document.getElementById("mp_nombre").value.trim();
-    var categoria = document.getElementById("mp_categoria").value;
-    var unidad    = document.getElementById("mp_unidad_base").value;
-    var precio    = document.getElementById("mp_precio").value;
-    var err       = document.getElementById("mp_error");
+// ── Guardar todo junto ──
+function guardarProductoCompleto() {
+    var codigo  = document.getElementById("mp_codigo").value.trim();
+    var nombre  = document.getElementById("mp_nombre").value.trim();
+    var cat     = document.getElementById("mp_categoria").value;
+    var unidad  = document.getElementById("mp_unidad_base").value;
+    var pnombre = document.getElementById("mp_pres_nombre").value.trim();
+    var pcont   = document.getElementById("mp_pres_contenido").value;
+    var punidad = document.getElementById("mp_pres_unidad").value;
+    var err     = document.getElementById("mp_error");
     err.textContent = "";
 
-    if (!codigo || !nombre || !categoria || !unidad) {
-        err.textContent = "{% translate 'Completá todos los campos obligatorios.' %}";
+    var opt   = document.getElementById("mp_categoria").selectedOptions[0];
+    var esSem = opt && opt.getAttribute("data-es-semilla") === "1";
+
+    var cultivo       = document.getElementById("mp_cultivo").value;
+    var variedad      = document.getElementById("mp_variedad").value;
+    var variedadNueva = document.getElementById("mp_variedad_nueva").value.trim();
+
+    if (!codigo || !cat || !unidad || (!esSem && !nombre)) {
+        err.textContent = "{% translate 'Completá código, nombre, categoría y unidad base.' %}";
         return;
     }
 
+    if (!pnombre || !pcont || !punidad) {
+        err.textContent = "{% translate 'Completá los datos de la presentación.' %}";
+        return;
+    }
+
+    if (esSem && !cultivo) {
+        err.textContent = "{% translate 'Seleccioná el cultivo.' %}";
+        return;
+    }
+
+    if (esSem && !variedad && !variedadNueva) {
+        err.textContent = "{% translate 'Seleccioná o escribí la variedad.' %}";
+        return;
+    }
+
+    if (esSem) {
+        var cultivoTxt = "";
+        var variedadTxt = "";
+
+        var cultivoSel = document.getElementById("mp_cultivo");
+        if (cultivoSel && cultivoSel.selectedOptions.length) {
+            cultivoTxt = cultivoSel.selectedOptions[0].text.trim();
+        }
+
+        if (variedadNueva) {
+            variedadTxt = variedadNueva;
+        } else {
+            var variedadSel = document.getElementById("mp_variedad");
+            if (variedadSel && variedadSel.selectedOptions.length && variedadSel.value) {
+                variedadTxt = variedadSel.selectedOptions[0].text.trim();
+            }
+        }
+
+        nombre = (cultivoTxt + " " + variedadTxt).trim();
+        document.getElementById("mp_nombre").value = nombre;
+    }
+
+    var data = {
+        csrfmiddlewaretoken: "{{ csrf_token }}",
+        codigo: codigo,
+        nombre: nombre,
+        categoria: cat,
+        unidad_base: unidad,
+        pres_nombre: pnombre,
+        pres_contenido: pcont,
+        pres_unidad: punidad
+    };
+
+    if (esSem) {
+        data.cultivo = cultivo;
+        data.variedad = variedad;
+        data.variedad_nueva = variedadNueva;
+    }
+
     $.ajax({
-        url:  "{% url 'ajax_crear_producto' %}",
+        url: "{% url 'ajax_crear_producto' %}",
         type: "POST",
-        data: {
-            csrfmiddlewaretoken: "{{ csrf_token }}",
-            codigo:      codigo,
-            nombre:      nombre,
-            categoria:   categoria,
-            unidad_base: unidad,
-            precio:      precio
-        },
+        data: data,
         success: function(resp) {
             if (!resp || !resp.ok) {
                 err.textContent = resp.error || "{% translate 'Error al guardar.' %}";
                 return;
             }
-            /* agregar a todos los selects de producto de la tabla */
-            var selects = document.querySelectorAll("select[name$='-producto']");
-            var i;
-            for (i = 0; i < selects.length; i++) {
-                var opt         = document.createElement("option");
-                opt.value       = resp.id;
+
+            document.querySelectorAll(".sel-producto").forEach(function(sel) {
+                var opt = document.createElement("option");
+                opt.value = resp.id;
                 opt.textContent = resp.nombre;
-                selects[i].appendChild(opt);
+                sel.appendChild(opt);
+            });
+
+            if (_filaActual !== null) {
+                var selProd = document.getElementById("id_items-" + _filaActual + "-producto_existente");
+                if (selProd) selProd.value = resp.id;
+
+                var selPres = document.getElementById("id_items-" + _filaActual + "-presentacion_existente");
+                if (selPres && resp.presentacion) {
+                    var optPres = document.createElement("option");
+                    optPres.value = resp.presentacion.id;
+                    optPres.textContent = resp.presentacion.nombre;
+                    optPres.selected = true;
+                    selPres.innerHTML = '';
+                    selPres.appendChild(optPres);
+                }
+
+                if (resp.es_semilla && resp.semilla) {
+                    var divSem = document.getElementById("semilla-info-" + _filaActual);
+                    if (divSem) {
+                    
+                        divSem.querySelector(".sem-variedad").textContent = resp.semilla.variedad_nombre;
+                        divSem.querySelector("input[name$='-cultivo']").value  = resp.semilla.cultivo_id;
+                        divSem.querySelector("input[name$='-variedad']").value = resp.semilla.variedad_id;
+                        divSem.style.display = "block";
+                    }
+                }
             }
-            mostrarPaso2(resp.id, resp.nombre);
-        },
-        error: function() {
-            err.textContent = "{% translate 'Error al guardar.' %}";
-        }
-    });
-}
 
-/* ══════════════════════════════════════
-   PASO 2: guardar presentación
-══════════════════════════════════════ */
-
-function guardarPresentacion() {
-    var prod_id        = document.getElementById("mp_prod_id").value;
-    var pres_existente = document.getElementById("mp_pres_existente").value;
-    var err            = document.getElementById("mp_pres_error");
-    err.textContent    = "";
-
-    /* usar existente */
-    if (pres_existente) {
-        var sel    = document.getElementById("mp_pres_existente");
-        var nombre = sel.options[sel.selectedIndex].textContent;
-        agregarPresentacionAFila(prod_id, pres_existente, nombre);
-        bootstrap.Modal.getInstance(document.getElementById("modal_nuevo")).hide();
-        return;
-    }
-
-    /* crear nueva */
-    var nombre    = document.getElementById("mp_pres_nombre").value.trim();
-    var contenido = document.getElementById("mp_pres_contenido").value;
-    var unidad    = document.getElementById("mp_pres_unidad").value;
-    var uf        = document.getElementById("mp_pres_uf").value.trim();
-
-    if (!nombre || !contenido || !unidad) {
-        err.textContent = "{% translate 'Completá los campos obligatorios de la presentación.' %}";
-        return;
-    }
-
-    $.ajax({
-        url:  "{% url 'ajax_crear_presentacion' %}",
-        type: "POST",
-        data: {
-            csrfmiddlewaretoken: "{{ csrf_token }}",
-            producto_id:      prod_id,
-            nombre:           nombre,
-            contenido:        contenido,
-            unidad_contenido: unidad,
-            unidad_factura:   uf
-        },
-        success: function(resp) {
-            if (!resp || !resp.ok) {
-                err.textContent = resp.error || "{% translate 'Error al guardar.' %}";
-                return;
-            }
-            agregarPresentacionAFila(prod_id, resp.id, resp.nombre);
             bootstrap.Modal.getInstance(document.getElementById("modal_nuevo")).hide();
+            mostrarToast("{% translate 'Producto creado correctamente.' %}");
         },
-        error: function() {
-            err.textContent = "{% translate 'Error al guardar.' %}";
+        error: function(xhr) {
+            try {
+                var resp = JSON.parse(xhr.responseText);
+                err.textContent = resp.error || "{% translate 'Error al guardar.' %}";
+            } catch(e) {
+                err.textContent = "{% translate 'Error al guardar.' %}";
+            }
         }
     });
 }
 
-/* ══════════════════════════════════════
-   INIT
-══════════════════════════════════════ */
-
-window.onload = function() {
-    var filas = document.getElementsByClassName("factura-row");
-    var i;
-    for (i = 0; i < filas.length; i++) {
-        var idx      = filas[i].getAttribute("data-idx");
-        var sel_prod = document.getElementById("id_items-" + idx + "-producto");
-        if (sel_prod && sel_prod.value) {
-            cargarPresentaciones(idx);
-        }
+// ── Init ──
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".factura-row").forEach(function(fila) {
+        var idx      = fila.getAttribute("data-idx");
+        var sel_prod = document.getElementById("id_items-" + idx + "-producto_existente");
+        if (sel_prod && sel_prod.value) cargarPresentaciones(sel_prod, idx);
         recalcularFila(idx);
-    }
+    });
     calcularTotal();
-};
-
+});
 </script>
 {% endblock %}
 

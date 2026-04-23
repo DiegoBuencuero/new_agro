@@ -1,8 +1,6 @@
 from django import forms
 from django.utils.translation import gettext as _
 from django.forms import inlineformset_factory, formset_factory, BaseFormSet, BaseInlineFormSet
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
-from django.contrib.auth.models import User  
 from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad, Unidad
@@ -10,15 +8,12 @@ from gestion_agro.funciones_aux import convertir_unidad
 
 from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
                                 ActividadInsumo, CamposVistoria, CamposCosecha, Producto, CategoriaProducto, FacturaCompra,
-                                Proveedor, FacturaCompraItem, PresentacionProducto, Variedad, MovimientoStock)
-from django.db.models import Q, Sum
-
+                                Proveedor, Cultivo, PresentacionProducto, Variedad, MovimientoStock)
 
 from django.utils.translation import gettext_lazy as _
 from gestion_agro.models import (
     CategoriaProducto, Cultivo, Variedad, Producto, PresentacionProducto
 )
-from agro.models import Unidad
 
 
 class BaseForm(ModelForm):
@@ -52,6 +47,101 @@ class CampanaForm(BaseForm):
             "observaciones": forms.Textarea(attrs={"rows": 2}),
         }
 
+
+class CultivoForm(BaseForm):
+    class Meta:
+        model = Cultivo
+        fields = ["nombre"]
+
+    def save(self, empresa, commit=True):
+        cultivo = super().save(commit=False)
+        cultivo.empresa = empresa
+
+        if commit:
+            cultivo.save()
+
+        return cultivo
+
+
+class CultivoEditarForm(BaseForm):
+    class Meta:
+        model = Cultivo
+        fields = ["nombre"]
+
+
+class CultivoProductoFinalForm(BaseSimpleForm):
+    codigo = forms.CharField(
+        label=_("Código"),
+        max_length=50,
+        required=False,
+        widget=forms.TextInput(attrs={
+            "class": "form-control form-control-sm",
+            "placeholder": "Ej: TRI-BOLSA-40",
+        }),
+    )
+
+    detalle = forms.CharField(
+        label=_("Detalle"),
+        max_length=120,
+        widget=forms.TextInput(attrs={
+            "class": "form-control form-control-sm",
+            "placeholder": "Ej: Bolsa 40 kg / Fiscalizada / Primera",
+        }),
+    )
+
+    unidad_base = forms.ModelChoiceField(
+        queryset=Unidad.objects.all(),
+        label=_("Unidad base"),
+        widget=forms.Select(attrs={
+            "class": "form-select form-select-sm",
+        }),
+    )
+
+    dejar_como_default = forms.BooleanField(
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            "class": "form-check-input",
+        }),
+    )
+
+    def save(self, empresa, cultivo):
+        detalle = self.cleaned_data["detalle"].strip()
+        nombre = f"{cultivo.nombre} - {detalle}"
+
+        codigo = (self.cleaned_data.get("codigo") or "").strip()
+        if not codigo:
+            codigo = f"PF-{cultivo.nombre[:15].upper().replace(' ', '-')}"
+
+        base_codigo = codigo
+        i = 1
+        while Producto.objects.filter(empresa=empresa, codigo=codigo).exists():
+            i += 1
+            codigo = f"{base_codigo}-{i}"
+
+        try:
+            categoria_producto_final = CategoriaProducto.objects.get(codigo="PRODUCTO_FINAL")
+        except CategoriaProducto.DoesNotExist:
+            categoria_producto_final = CategoriaProducto.objects.first()
+
+        producto = Producto.objects.create(
+            empresa=empresa,
+            codigo=codigo,
+            nombre=nombre,
+            categoria=categoria_producto_final,
+            unidad_base=self.cleaned_data["unidad_base"],
+            producto_final=True,
+            maneja_stock=True,
+            activo=True,
+        )
+
+        cultivo.productos_finales.add(producto)
+
+        if self.cleaned_data.get("dejar_como_default") or not cultivo.producto_default_id:
+            cultivo.producto_default = producto
+            cultivo.save(update_fields=["producto_default"])
+
+        return producto
+
 class ProductoForm(BaseForm):
     class Meta:
         model = Producto
@@ -65,23 +155,42 @@ class ProductoForm(BaseForm):
 class ProductoModalForm(BaseForm):
     class Meta:
         model = Producto
-        fields = ["codigo", "nombre", "categoria", "unidad_base", "precio"]
+        fields = ["codigo", "nombre", "categoria", "unidad_base", "precio", "presentacion_defualt"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["presentacion_defualt"].required = False
+        self.fields["precio"].required = False
 
 class PresentacionProductoForm(BaseForm):
     class Meta:
         model = PresentacionProducto
         fields = ["nombre", "contenido", "unidad_contenido", "unidad_factura"]
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["unidad_factura"].required = False
+
 class CicloForm(BaseForm):
     def __init__(self, *args, empresa=None, **kwargs):
+        self.empresa = empresa
         super().__init__(*args, **kwargs)
 
-        if not self.instance.pk:
-           self.fields["fecha_inicio"].initial = timezone.localdate()
+        if not self.instance.pk and "fecha_inicio" in self.fields:
+            self.fields["fecha_inicio"].initial = timezone.localdate()
 
         if empresa:
-            self.fields["campo"].queryset = Campo.objects.filter(empresa=empresa).order_by("nombre")
-            self.fields["campana"].queryset = Campana.objects.filter(empresa=empresa).order_by("-fecha_desde")
+            self.fields["campo"].queryset = Campo.objects.filter(
+                empresa=empresa
+            ).order_by("nombre")
+
+            self.fields["campana"].queryset = Campana.objects.filter(
+                empresa=empresa
+            ).order_by("-fecha_desde")
+
+            self.fields["cultivo"].queryset = Cultivo.objects.filter(
+                empresa=empresa
+            ).order_by("nombre")
 
             campana_activa = Campana.objects.filter(
                 empresa=empresa,
@@ -90,6 +199,38 @@ class CicloForm(BaseForm):
 
             if campana_activa:
                 self.fields["campana"].initial = campana_activa
+
+        # clases bootstrap si BaseForm no las agrega
+        for nombre, field in self.fields.items():
+            css = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
+            actual = field.widget.attrs.get("class", "")
+            field.widget.attrs["class"] = f"{actual} {css}".strip()
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        campo = cleaned_data.get("campo")
+        campana = cleaned_data.get("campana")
+        cultivo = cleaned_data.get("cultivo")
+        fecha_inicio = cleaned_data.get("fecha_inicio")
+        fecha_fin = cleaned_data.get("fecha_fin")
+
+        if campo and campana and campo.empresa_id != campana.empresa_id:
+            self.add_error("campana", _("El campo y la campaña deben pertenecer a la misma empresa."))
+
+        if cultivo and campo and cultivo.empresa_id != campo.empresa_id:
+            self.add_error("cultivo", _("El cultivo debe pertenecer a la misma empresa que el campo."))
+
+        if fecha_inicio and fecha_fin and fecha_fin < fecha_inicio:
+            self.add_error("fecha_fin", _("La fecha de fin no puede ser anterior a la fecha de inicio."))
+
+        if cultivo:
+            if not cultivo.producto_default:
+                self.add_error("cultivo", _("El cultivo seleccionado no tiene un producto final por defecto."))
+            else:
+                cleaned_data["producto_final"] = cultivo.producto_default
+
+        return cleaned_data
 
     class Meta:
         model = CicloAgricola
@@ -341,50 +482,11 @@ class CamposCosechaForm(BaseForm):
         }
 
 class StockFiltroForm(BaseSimpleForm):
-    producto = forms.CharField(
-        required=False,
-        label=_("Producto"),
-        widget=forms.TextInput(
-            attrs={
-                "placeholder": _("Nombre o código del producto"),
-                "class": "form-control",
-            }
-        ),
-    )
 
-    categoria = forms.ModelChoiceField(
-        queryset=CategoriaProducto.objects.order_by("nombre"),
-        required=False,
-        label=_("Categoría"),
-        empty_label=_("Todas"),
-        widget=forms.Select(
-            attrs={
-                "class": "form-select",
-            }
-        ),
-    )
-
-    fecha_entrada_desde = forms.DateField(
-        required=False,
-        label=_("Fecha entrada desde"),
-        widget=forms.DateInput(
-            attrs={
-                "type": "date",
-                "class": "form-control",
-            }
-        ),
-    )
-
-    fecha_entrada_hasta = forms.DateField(
-        required=False,
-        label=_("Fecha entrada hasta"),
-        widget=forms.DateInput(
-            attrs={
-                "type": "date",
-                "class": "form-control",
-            }
-        ),
-    )
+    producto = forms.CharField(required=False, label=_("Producto"), widget=forms.TextInput(attrs={"placeholder": _("Nombre o código del producto"), "class": "form-control"}))
+    categoria = forms.ModelChoiceField(queryset=CategoriaProducto.objects.order_by("nombre"), required=False, label=_("Categoría"), empty_label=_("Todas"), widget=forms.Select(attrs={"class": "form-select"}))
+    fecha_entrada_desde = forms.DateField(required=False, label=_("Fecha entrada desde"), widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}))
+    fecha_entrada_hasta = forms.DateField(required=False, label=_("Fecha entrada hasta"), widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}))
 
     def clean(self):
         cleaned_data = super().clean()
@@ -393,13 +495,9 @@ class StockFiltroForm(BaseSimpleForm):
         fecha_hasta = cleaned_data.get("fecha_entrada_hasta")
 
         if fecha_desde and fecha_hasta and fecha_desde > fecha_hasta:
-            self.add_error(
-                "fecha_entrada_hasta",
-                _("La fecha hasta no puede ser menor que la fecha desde."),
-            )
+            self.add_error("fecha_entrada_hasta", _("La fecha hasta no puede ser menor que la fecha desde."))
 
         return cleaned_data
-
 
 UNIDAD_CHOICES = [
     ("L",   "L"),
@@ -416,7 +514,6 @@ class FacturaCompraForm(BaseForm):
         fields = ["numero", "fecha"]
         widgets = {"fecha": forms.DateInput(attrs={"type": "date"})}
         labels = {"numero": "Número factura", "fecha": "Fecha"}
-
 
 class FacturaCompraItemForm(forms.Form):
 
@@ -436,6 +533,7 @@ class FacturaCompraItemForm(forms.Form):
 
     crear_nuevo_producto = forms.BooleanField(
         required=False,
+        initial=False,
         label=_("Crear nuevo"),
         widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
     )
@@ -492,7 +590,8 @@ class FacturaCompraItemForm(forms.Form):
     )
 
     unidad_medida = forms.ChoiceField(
-        choices=UNIDAD_CHOICES,
+        choices=[("", "---------")] + UNIDAD_CHOICES,
+        required=False,
         label=_("Unidad"),
     )
 
@@ -605,31 +704,38 @@ class FacturaCompraItemForm(forms.Form):
 
         return cleaned
 
-class ItemFacturaManualForm(forms.Form):
-    producto     = forms.ModelChoiceField(
+class FacturaManualItemForm(forms.Form):
+
+    producto_existente = forms.ModelChoiceField(
         queryset=Producto.objects.none(),
         required=True,
         empty_label="— Seleccionar —",
         label=_("Producto"),
-        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
-    presentacion = forms.ModelChoiceField(
+
+    presentacion_existente = forms.ModelChoiceField(
         queryset=PresentacionProducto.objects.none(),
         required=True,
         empty_label="— Seleccionar —",
         label=_("Presentación"),
-        widget=forms.Select(attrs={"class": "form-select form-select-sm"}),
     )
+
+    # Solo se usan para guardar en BD — los llena el AJAX, no el usuario
+    cultivo  = forms.ModelChoiceField(queryset=Cultivo.objects.all(), required=False, widget=forms.HiddenInput())
+    variedad = forms.ModelChoiceField(queryset=Variedad.objects.all(), required=False, widget=forms.HiddenInput())
+
     cantidad = forms.DecimalField(
         min_value=0, decimal_places=3,
         label=_("Cantidad"),
-        widget=forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.001"}),
+        widget=forms.NumberInput(attrs={"step": "0.001", "min": "0"}),
     )
+
     precio_unitario = forms.DecimalField(
         min_value=0, decimal_places=2,
         label=_("Precio unit."),
-        widget=forms.NumberInput(attrs={"class": "form-control form-control-sm", "step": "0.01"}),
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
     )
+
     subtotal = forms.DecimalField(
         required=False, decimal_places=2,
         widget=forms.HiddenInput(),
@@ -637,20 +743,49 @@ class ItemFacturaManualForm(forms.Form):
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.empresa = empresa
+
+        # Clases Bootstrap
+        for name, field in self.fields.items():
+            w = field.widget
+            if isinstance(w, forms.HiddenInput):
+                continue
+            if isinstance(w, forms.Select):
+                w.attrs["class"] = "form-select form-select-sm"
+            else:
+                w.attrs["class"] = "form-control form-control-sm"
+
         if empresa:
-            self.fields["producto"].queryset = (
-                Producto.objects.filter(empresa=empresa, activo=True).order_by("nombre")
-            )
-        # cargar presentaciones si hay producto seleccionado
-        producto_id = None
-        if self.is_bound:
-            producto_id = self.data.get(self.add_prefix("producto"))
-        if producto_id:
-            self.fields["presentacion"].queryset = (
-                PresentacionProducto.objects.filter(producto_id=producto_id)
+            self.fields["producto_existente"].queryset = (
+                Producto.objects
+                .filter(empresa=empresa, activo=True)
+                .select_related("categoria")
+                .order_by("nombre")
             )
 
-ItemFacturaManualFormSet = formset_factory(ItemFacturaManualForm, extra=0)
+        # Cargar presentaciones si hay producto pre-seleccionado
+        producto_id = None
+        if self.is_bound:
+            producto_id = self.data.get(self.add_prefix("producto_existente"))
+        elif self.initial.get("producto_existente"):
+            p = self.initial["producto_existente"]
+            producto_id = p.id if hasattr(p, "id") else p
+
+        if producto_id:
+            self.fields["presentacion_existente"].queryset = (
+                PresentacionProducto.objects
+                .filter(producto_id=producto_id)
+                .order_by("nombre")
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        cantidad = cleaned.get("cantidad") or 0
+        precio   = cleaned.get("precio_unitario") or 0
+        cleaned["subtotal"] = cantidad * precio
+        return cleaned
+
+FacturaManualItemFormSet = formset_factory(FacturaManualItemForm, extra=1)
 
 FacturaCompraItemFormSet = formset_factory(
     FacturaCompraItemForm,

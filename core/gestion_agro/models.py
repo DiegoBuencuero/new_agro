@@ -47,7 +47,22 @@ class Actividad(models.Model):
     codigo = models.CharField(max_length=2)
 
 class Cultivo(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="cultivos")
     nombre = models.CharField(max_length=100, unique=True, verbose_name=_("Cultura"))
+    producto_default = models.ForeignKey(
+        "Producto",
+        on_delete=models.CASCADE,
+        related_name="cultivos",
+        verbose_name=_("Producto asociado"),
+        null=True,
+        blank=True
+    )
+    productos_finales = models.ManyToManyField(
+        "Producto",
+        related_name="cultivos_finales",
+        blank=True,
+        verbose_name=_("Productos finales (cosecha)")
+    )
 
     class Meta:
         verbose_name = _("Cultura")
@@ -100,23 +115,61 @@ class Campana(models.Model):
         super().save(*args, **kwargs)
 
 class CicloAgricola(models.Model):
-    def clean(self):
-        if self.campo and self.campana:
-            if self.campo.empresa != self.campana.empresa:
-                raise ValidationError(
-                    _("El campo y la campaña deben pertenecer a la misma empresa.")
-                )
-    def __str__(self):
-        return f"{self.nombre_lote} – {self.campana} – {self.cultivo}"
-    
     campo = models.ForeignKey(Campo, on_delete=models.CASCADE, related_name="ciclos")
     campana = models.ForeignKey(Campana, on_delete=models.CASCADE, related_name="ciclos")
-    nombre_lote = models.CharField( max_length=50, blank= True, null=True )
-    cultivo = models.ForeignKey( Cultivo, on_delete=models.CASCADE, related_name="ciclos")
+    nombre_lote = models.CharField(max_length=50, blank=True, null=True)
+    cultivo = models.ForeignKey(Cultivo, on_delete=models.CASCADE, related_name="ciclos")
+    producto_final = models.ForeignKey(
+        "Producto",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="ciclos_producto_final",
+    )
     superficie_ha = models.DecimalField(max_digits=8, decimal_places=2)
     fecha_inicio = models.DateField()
     fecha_fin = models.DateField(null=True, blank=True)
     activa = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _("Ciclo agrícola")
+        verbose_name_plural = _("Ciclos agrícolas")
+        ordering = ["-fecha_inicio", "-id"]
+
+    def clean(self):
+        errores = {}
+
+        if self.campo and self.campana:
+            if self.campo.empresa_id != self.campana.empresa_id:
+                errores["campana"] = _("El campo y la campaña deben pertenecer a la misma empresa.")
+
+        if self.cultivo and self.campo:
+            if self.cultivo.empresa_id != self.campo.empresa_id:
+                errores["cultivo"] = _("El cultivo y el campo deben pertenecer a la misma empresa.")
+
+        if self.fecha_inicio and self.fecha_fin:
+            if self.fecha_fin < self.fecha_inicio:
+                errores["fecha_fin"] = _("La fecha de fin no puede ser anterior a la fecha de inicio.")
+
+        if self.cultivo:
+            producto_default = self.cultivo.producto_default
+            if not producto_default:
+                errores["cultivo"] = _("El cultivo seleccionado no tiene un producto final por defecto.")
+            elif self.producto_final_id and self.producto_final_id != producto_default.id:
+                if not self.cultivo.productos_finales.filter(id=self.producto_final_id).exists():
+                    errores["producto_final"] = _("El producto final no corresponde al cultivo seleccionado.")
+
+        if errores:
+            raise ValidationError(errores)
+
+    def save(self, *args, **kwargs):
+        if self.cultivo and not self.producto_final_id and self.cultivo.producto_default:
+            self.producto_final = self.cultivo.producto_default
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.nombre_lote} – {self.campana} – {self.cultivo}"
 
 class FaseAgricola(models.Model):
     TIPO_FASE_CHOICES = [
@@ -240,6 +293,7 @@ class CamposCosecha(models.Model):
 class CategoriaProducto(models.Model):
     codigo = models.CharField(max_length=10, unique=True, verbose_name=_("Código"))
     nombre = models.CharField(max_length=100, verbose_name=_("Nombre"))
+    es_semilla = models.BooleanField(default=False, verbose_name=_("Es semilla"))
 
     class Meta:
         verbose_name = _("Categoría de producto")
@@ -255,9 +309,11 @@ class Producto(models.Model):
     nombre = models.CharField(max_length=255, verbose_name=_("Nombre"))
     categoria = models.ForeignKey(CategoriaProducto, on_delete=models.PROTECT, related_name="productos", verbose_name=_("Categoría"))
     unidad_base = models.ForeignKey(Unidad, on_delete=models.PROTECT, related_name="productos_unidad_base", verbose_name=_("Unidad base"))
+    presentacion_defualt = models.ForeignKey("PresentacionProducto", on_delete=models.SET_NULL, null=True, blank=True, related_name="productos_presentacion_default", verbose_name=_("Presentación default"))
     precio = models.DecimalField(max_digits=18, decimal_places=4, default=0, verbose_name=_("Precio"))
     maneja_stock = models.BooleanField(default=True, verbose_name=_("Maneja stock"))
     activo = models.BooleanField(default=True, verbose_name=_("Activo"))
+    producto_final = models.BooleanField(default=False, verbose_name=_("Producto final (cosecha)"))
 
     class Meta:
         verbose_name = _("Producto")
@@ -284,11 +340,17 @@ class ProductoSemilla(models.Model):
 
     def clean(self):
         if self.variedad and self.variedad.cultivo_id != self.cultivo_id:
-            raise ValidationError({"variedad": _("La variedad no pertenece al cultivo seleccionado.")})
+            raise ValidationError({
+                "variedad": _("La variedad no pertenece al cultivo seleccionado.")
+            })
 
-        if getattr(self.producto.categoria, "codigo", None) != "SEM":
-            raise ValidationError({"producto": _("Solo los productos de categoría semilla pueden tener datos de semilla.")})
+        if not self.producto_id or not self.producto.categoria_id:
+            return
 
+        if not self.producto.categoria.es_semilla:
+            raise ValidationError({
+                "producto": _("Solo los productos de categoría semilla pueden tener datos de semilla.")
+            })
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
@@ -449,7 +511,43 @@ class Proveedor(models.Model):
 
     def __str__(self):
         return self.razon_social
+    
 
+
+
+
+
+
+# class FacturaVenta(models.Model):
+#     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
+#     cliente = models.ForeignKey("Proveedor", on_delete=models.CASCADE, verbose_name=_("Proveedor"))  # agregar tabla cliente
+#     numero = models.CharField(max_length=50, verbose_name=_("Número factura"))
+#     fecha = models.DateField(verbose_name=_("Fecha"))
+#     total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Total"))
+#     archivo_pdf = models.FileField(upload_to="facturas_compra/", blank=True, null=True)
+#     creada = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         verbose_name = _("Factura de compra")
+#         verbose_name_plural = _("Facturas de compra")
+#         unique_together = ("empresa", "proveedor", "numero")
+
+#     def __str__(self):  
+#         return f"{self.proveedor} - {self.numero}"
+
+
+# class FacturaVentaItem(models.Model):
+#     factura = models.ForeignKey(FacturaVenta, related_name="items", on_delete=models.CASCADE)  
+#     cultivo = models.ForeignKey(Producto, on_delete=models.CASCADE)
+#     presentacion = models.ForeignKey("PresentacionProducto", on_delete=models.CASCADE)
+#     cantidad_facturada = models.DecimalField(max_digits=12, decimal_places=3)
+#     cantidad_base = models.DecimalField(max_digits=14, decimal_places=3)
+#     precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
+#     subtotal = models.DecimalField(max_digits=14, decimal_places=2)
+
+#     class Meta:
+#         verbose_name = _("Ítem de factura")
+#         verbose_name_plural = _("Ítems de factura")
 
 
 
