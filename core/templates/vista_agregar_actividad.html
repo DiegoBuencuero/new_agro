@@ -279,23 +279,23 @@
                                     <div class="alert alert-danger">{{ vistoria_form.non_field_errors }}</div>
                                 {% endif %}
                                 <div class="row g-3">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="{{ vistoria_form.plantas_m2.id_for_label }}" class="form-label">{{ vistoria_form.plantas_m2.label }}</label>
                                         {{ vistoria_form.plantas_m2 }}{{ vistoria_form.plantas_m2.errors }}
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="{{ vistoria_form.malezas.id_for_label }}" class="form-label">{{ vistoria_form.malezas.label }}</label>
                                         {{ vistoria_form.malezas }}{{ vistoria_form.malezas.errors }}
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="{{ vistoria_form.insectos.id_for_label }}" class="form-label">{{ vistoria_form.insectos.label }}</label>
                                         {{ vistoria_form.insectos }}{{ vistoria_form.insectos.errors }}
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <label for="{{ vistoria_form.enfermedades.id_for_label }}" class="form-label">{{ vistoria_form.enfermedades.label }}</label>
                                         {{ vistoria_form.enfermedades }}{{ vistoria_form.enfermedades.errors }}
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <label for="{{ vistoria_form.imagen.id_for_label }}" class="form-label">{{ vistoria_form.imagen.label }}</label>
                                         {{ vistoria_form.imagen }}{{ vistoria_form.imagen.errors }}
                                     </div>
@@ -316,6 +316,13 @@
                                     <div class="col-md-4">
                                         <label for="{{ cosecha_form.rendimiento.id_for_label }}" class="form-label">{{ cosecha_form.rendimiento.label }}</label>
                                         {{ cosecha_form.rendimiento }}{{ cosecha_form.rendimiento.errors }}
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">{% translate "Unidad" %}</label>
+                                        <select id="cosecha_um_select" class="form-select">
+                                            <!-- se llena via AJAX -->
+                                        </select>
+                                        {{ cosecha_form.um }}  {# hidden con id_cosecha-um #}
                                     </div>
                                     <div class="col-md-4">
                                         <label for="{{ cosecha_form.comentarios_cosecha.id_for_label }}" class="form-label">{{ cosecha_form.comentarios_cosecha.label }}</label>
@@ -575,6 +582,7 @@ $(document).ready(function () {
             vistoriaSection.show();
         } else if (texto.includes("cosecha")) {
             cosechaSection.show();
+            cargarUnidadesCosecha();
         }
     }
 
@@ -619,6 +627,44 @@ $(document).ready(function () {
             }
         });
     }
+
+    function cargarUnidadesCosecha() {
+    const productoId = "{{ ciclo.producto_final_id|default:'' }}";
+    if (!productoId) return;
+
+        $.ajax({
+            url: "{% url 'ajax_unidades_conversion' %}",
+            type: "GET",
+            data: { producto_id: productoId },
+            success: function (data) {
+                if (!data.ok) return;
+                const select = $("#cosecha_um_select");
+                select.empty();
+
+                // primero la unidad base
+                select.append(
+                    $("<option>")
+                        .val(data.unidad_base_id)
+                        .text(data.unidad_base_nombre + " (" + data.unidad_base_abrev + ")")
+                );
+
+                // luego las conversiones disponibles
+                data.unidades.forEach(function (u) {
+                    select.append(
+                        $("<option>").val(u.id).text(u.nombre + " (" + u.abreviatura + ")")
+                    );
+                });
+
+                // sincronizar con el hidden
+                $("#id_cosecha-um").val(select.val());
+            }
+        });
+    }
+
+// sincronizar select visible → hidden
+$("#cosecha_um_select").on("change", function () {
+    $("#id_cosecha-um").val($(this).val());
+});
 
     function cargarSubtipos(tipoId) {
         if (!tipoId) {

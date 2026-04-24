@@ -395,6 +395,13 @@ class MovimientoStock(models.Model):
         blank=True,
         related_name="movimientos_stock"
     )
+    actividad = models.ForeignKey(
+        "ActividadProductiva",
+        on_delete=models.CASCADE,   blank=True,
+        null=True,
+        related_name="movimientos_stock"
+    )
+    
     factura_item = models.ForeignKey("FacturaCompraItem", on_delete=models.CASCADE, null=True, blank=True)
     precio_unitario = models.DecimalField(
         max_digits=14,

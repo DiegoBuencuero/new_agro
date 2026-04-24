@@ -62,12 +62,10 @@ class CultivoForm(BaseForm):
 
         return cultivo
 
-
 class CultivoEditarForm(BaseForm):
     class Meta:
         model = Cultivo
         fields = ["nombre"]
-
 
 class CultivoProductoFinalForm(BaseSimpleForm):
     codigo = forms.CharField(
@@ -141,6 +139,17 @@ class CultivoProductoFinalForm(BaseSimpleForm):
             cultivo.save(update_fields=["producto_default"])
 
         return producto
+
+class CultivoEditarForm(BaseForm):
+    class Meta:
+        model = Cultivo
+        fields = ["nombre", "producto_default"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if self.instance and self.instance.pk:
+            self.fields["producto_default"].queryset = self.instance.productos_finales.all().order_by("nombre")
 
 class ProductoForm(BaseForm):
     class Meta:
@@ -467,6 +476,12 @@ class CamposVistoriaForm(BaseForm):
         }
 
 class CamposCosechaForm(BaseForm):
+    um = forms.IntegerField(
+        required=False,
+        widget=forms.HiddenInput(),  # lo manejamos via JS
+        label=_("Unidad"),
+    )
+
     class Meta:
         model = CamposCosecha
         fields = ["rendimiento", "comentarios_cosecha", "observaciones"]
@@ -475,12 +490,7 @@ class CamposCosechaForm(BaseForm):
             "comentarios_cosecha": forms.Textarea(attrs={"rows": 3}),
             "observaciones": forms.Textarea(attrs={"rows": 3}),
         }
-        labels = {
-            "rendimiento": _("Rendimiento"),
-            "comentarios_cosecha": _("Comentarios de cosecha"),
-            "observaciones": _("Observaciones"),
-        }
-
+        
 class StockFiltroForm(BaseSimpleForm):
 
     producto = forms.CharField(required=False, label=_("Producto"), widget=forms.TextInput(attrs={"placeholder": _("Nombre o código del producto"), "class": "form-control"}))

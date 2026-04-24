@@ -51,18 +51,38 @@
                     <form class="form-sample" method="post">
                         {% csrf_token %}
                         <p class="card-description">{% translate "Información general" %}</p>
-
-                        <div class="row">
+                        {% if modificacion and cultivo_actual.producto_default %}
+                        <div class="row mb-3">
                             <div class="col-md-8">
                                 <div class="form-group row">
-                                    <label class="col-sm-3 col-form-label">{% translate "Nombre" %}</label>
+                                    <label class="col-sm-3 col-form-label">
+                                        {% translate "Producto asociado" %}
+                                    </label>
                                     <div class="col-sm-9">
-                                        {{ form.nombre }}
-                                        {{ form.nombre.errors }}
+                                        <input type="text"
+                                            class="form-control"
+                                            value="{{ cultivo_actual.producto_default.nombre }}"
+                                            readonly>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        {% endif %}
+                        {% for field in form %}
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <div class="form-group row">
+                                    <label class="col-sm-3 col-form-label" for="{{ field.id_for_label }}">
+                                        {{ field.label }}
+                                    </label>
+                                    <div class="col-sm-9">
+                                        {{ field }}
+                                        {{ field.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
 
                         <div class="mt-3 d-flex gap-2">
                             {% if modificacion %}

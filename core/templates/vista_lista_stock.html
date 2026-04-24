@@ -7,96 +7,91 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="content-wrapper">
+    <div class="row">
+        <div class="col-sm-12">
 
-    {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-                <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
-                    <i class="mdi
-                        {% if 'success' in message.tags %}mdi-check-circle
-                        {% elif 'danger' in message.tags %}mdi-alert-circle
-                        {% elif 'warning' in message.tags %}mdi-alert
-                        {% else %}mdi-information{% endif %}
-                        me-2"></i>
-                    <div>{{ message }}</div>
-                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+            {% if messages %}
+                <div class="mb-3">
+                    {% for message in messages %}
+                        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+                            <i class="mdi
+                                {% if 'success' in message.tags %}mdi-check-circle
+                                {% elif 'danger' in message.tags %}mdi-alert-circle
+                                {% elif 'warning' in message.tags %}mdi-alert
+                                {% else %}mdi-information{% endif %}
+                                me-2"></i>
+                            <div>{{ message }}</div>
+                            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
                 </div>
-            {% endfor %}
-        </div>
-    {% endif %}
+            {% endif %}
 
-    <div class="upload-card">
-        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
-            <div>
-                <h3 class="mb-1">
-                    <i class="mdi mdi-cube-outline icon-agro"></i>
-                    {% translate "Stock de insumos" %}
-                </h3>
-                <div class="text-muted small">
-                    {% translate "Movimientos por producto" %}
+            <div class="home-tab">
+
+                <!-- TABS HEADER -->
+                <div class="d-sm-flex align-items-center justify-content-between border-bottom">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active ps-0" id="tab-insumos" data-bs-toggle="tab" href="#insumos" role="tab">
+                                <i class="mdi mdi-flask-outline me-1"></i>
+                                {% translate "Stock de insumos" %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-cosecha" data-bs-toggle="tab" href="#cosecha" role="tab">
+                                <i class="mdi mdi-sprout me-1"></i>
+                                {% translate "Stock de cosecha" %}
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="btn-wrapper d-flex gap-2 pb-2">
+                        <button class="btn btn-otline-dark" disabled title="{% translate 'Próximamente' %}">
+                            <i class="icon-share me-1"></i> {% translate "Compartir" %}
+                        </button>
+                        <button class="btn btn-otline-dark" disabled title="{% translate 'Próximamente' %}">
+                            <i class="icon-printer me-1"></i> {% translate "Imprimir" %}
+                        </button>
+                        <button class="btn btn-primary text-white me-0" disabled title="{% translate 'Próximamente' %}">
+                            <i class="icon-download me-1"></i> {% translate "Exportar" %}
+                        </button>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="row g-4">
-
-            <div class="col-lg-3">
-                <div class="card border-0 shadow-sm h-100">
-                    <div class="card-body">
-                        <h5 class="fw-bold mb-3">
-                            <i class="mdi mdi-filter-variant me-2"></i>
-                            {% translate "Filtros" %}
-                        </h5>
-
-                        <form method="get">
-                            <div class="mb-3">
-                                <label>{% translate "Producto" %}</label>
-                                <input
-                                    type="text"
-                                    name="producto"
-                                    class="form-control"
+                <!-- FILTROS compartidos -->
+                <div class="card border-0 shadow-sm my-3">
+                    <div class="card-body py-2">
+                        <form method="get" class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">{% translate "Producto" %}</label>
+                                <input type="text" name="producto" class="form-control form-control-sm"
                                     placeholder="{% translate 'Nombre o código' %}"
-                                    value="{{ request.GET.producto }}"
-                                >
+                                    value="{{ request.GET.producto }}">
                             </div>
-
-                            <div class="mb-3">
-                                <label>{% translate "Categoría" %}</label>
-                                <select name="categoria" class="form-select">
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">{% translate "Categoría" %}</label>
+                                <select name="categoria" class="form-select form-select-sm">
                                     <option value="">{% translate "Todas" %}</option>
                                     {% for cat in categorias %}
                                         <option value="{{ cat.id }}"
-                                            {% if request.GET.categoria == cat.id|stringformat:"s" %}
-                                                selected
-                                            {% endif %}>
+                                            {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
                                             {{ cat.nombre }}
                                         </option>
                                     {% endfor %}
                                 </select>
                             </div>
-
-                            <div class="mb-3">
-                                <label>{% translate "Fecha desde" %}</label>
-                                <input
-                                    type="date"
-                                    name="fecha_entrada_desde"
-                                    class="form-control"
-                                    value="{{ request.GET.fecha_entrada_desde }}"
-                                >
+                            <div class="col-md-2">
+                                <label class="form-label small mb-1">{% translate "Fecha desde" %}</label>
+                                <input type="date" name="fecha_entrada_desde" class="form-control form-control-sm"
+                                    value="{{ request.GET.fecha_entrada_desde }}">
                             </div>
-
-                            <div class="mb-3">
-                                <label>{% translate "Fecha hasta" %}</label>
-                                <input
-                                    type="date"
-                                    name="fecha_entrada_hasta"
-                                    class="form-control"
-                                    value="{{ request.GET.fecha_entrada_hasta }}"
-                                >
+                            <div class="col-md-2">
+                                <label class="form-label small mb-1">{% translate "Fecha hasta" %}</label>
+                                <input type="date" name="fecha_entrada_hasta" class="form-control form-control-sm"
+                                    value="{{ request.GET.fecha_entrada_hasta }}">
                             </div>
-
-                            <div class="d-flex gap-2">
+                            <div class="col-md-2 d-flex gap-2">
                                 <button type="submit" class="btn btn-success btn-sm">
                                     <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
                                 </button>
@@ -107,138 +102,213 @@
                         </form>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-lg-9">
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3">
-                        <div class="card text-center h-100 border-0 shadow-sm">
-                            <div class="card-body">
-                                <i class="mdi mdi-format-list-bulleted fs-4 text-muted"></i>
-                                <div class="mt-2 small text-muted">{% translate "Productos" %}</div>
-                                <div class="fw-semibold">{{ total_productos }}</div>
+                <!-- TAB CONTENT -->
+                <div class="tab-content tab-content-basic">
+
+                    <!-- ══════════════════════════════
+                         TAB 1: INSUMOS
+                    ══════════════════════════════ -->
+                    <div class="tab-pane fade show active" id="insumos" role="tabpanel">
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-format-list-bulleted fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Productos" %}</div>
+                                        <div class="fw-semibold">{{ insumos|length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-arrow-down-bold fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Total ingresado" %}</div>
+                                        <div class="fw-semibold">{{ total_ingresado_insumos }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-arrow-up-bold fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Total consumido" %}</div>
+                                        <div class="fw-semibold">{{ total_consumido_insumos }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-cube-outline fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Disponible" %}</div>
+                                        <div class="fw-semibold">{{ total_restante_insumos }}</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="col-md-3">
-                        <div class="card text-center h-100 border-0 shadow-sm">
-                            <div class="card-body">
-                                <i class="mdi mdi-arrow-down-bold fs-4 text-muted"></i>
-                                <div class="mt-2 small text-muted">{% translate "Total ingresado" %}</div>
-                                <div class="fw-semibold">{{ total_ingresado }}</div>
+                        <div class="card card-rounded border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="fw-bold mb-1">
+                                        <i class="mdi mdi-package-variant-closed me-1"></i>
+                                        {% translate "Insumos" %}
+                                    </h5>
+                                    <p class="text-muted small mb-0">{{ insumos|length }} {% translate "registros" %}</p>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="card text-center h-100 border-0 shadow-sm">
-                            <div class="card-body">
-                                <i class="mdi mdi-arrow-up-bold fs-4 text-muted"></i>
-                                <div class="mt-2 small text-muted">{% translate "Total consumido" %}</div>
-                                <div class="fw-semibold">{{ total_consumido }}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <div class="card text-center h-100 border-0 shadow-sm">
-                            <div class="card-body">
-                                <i class="mdi mdi-cube-outline fs-4 text-muted"></i>
-                                <div class="mt-2 small text-muted">{% translate "Restante" %}</div>
-                                <div class="fw-semibold">{{ total_restante }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                        <div>
-                            <h5 class="fw-bold mb-1">
-                                <i class="mdi mdi-package-variant-closed me-1"></i>
-                                {% translate "Productos" %}
-                            </h5>
-                            <p class="text-muted small mb-0">
-                                {{ productos|length }} {% translate "registros" %}
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="card-body p-0" id="lista-productos">
-                        {% if productos %}
-                            {% for item in productos %}
-                                {% with prod=item.obj %}
-                                    <div class="border-bottom px-4 py-3">
-                                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-
-                                            <div>
-                                                <div class="fw-semibold">
-                                                <a href="{% url 'vista_movimientos_producto' prod.id %}" class="text-decoration-none text-dark">
-                                                    {{ prod.nombre|truncatewords:7 }}
-                                                </a>
-                                                </div>
-
-                                                <div class="small text-muted">
-                                                    {% translate "Ver movimientos" %}
-                                                </div>
-
-                                                <div class="small text-muted mt-2">
-                                                    <span>
-                                                        {% translate "Código" %}:
-                                                        <strong>{{ prod.codigo }}</strong>
-                                                    </span>
-
-                                                    <span class="ms-3">
-                                                        {% translate "Ingresado" %}:
-                                                        <strong>{{ item.ingresado }}</strong>
-                                                        {{ prod.unidad_base }}
-                                                    </span>
-
-                                                    <span class="ms-3">
-                                                        {% translate "Consumido" %}:
-                                                        <strong>{{ item.consumido }}</strong>
-                                                        {{ prod.unidad_base }}
-                                                    </span>
+                            <div class="card-body p-0">
+                                {% if insumos %}
+                                    {% for item in insumos %}
+                                        {% with prod=item.obj %}
+                                            <div class="border-bottom px-4 py-3">
+                                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                                                    <div>
+                                                        <div class="fw-semibold">
+                                                            <a href="{% url 'vista_movimientos_producto' prod.id %}" class="text-decoration-none text-dark">
+                                                                {{ prod.nombre|truncatewords:7 }}
+                                                            </a>
+                                                        </div>
+                                                        <div class="small text-muted">{% translate "Ver movimientos" %}</div>
+                                                        <div class="small text-muted mt-2">
+                                                            <span>{% translate "Código" %}: <strong>{{ prod.codigo }}</strong></span>
+                                                            <span class="ms-3">{% translate "Ingresado" %}: <strong>{{ item.ingresado }}</strong> {{ prod.unidad_base }}</span>
+                                                            <span class="ms-3">{% translate "Consumido" %}: <strong>{{ item.consumido }}</strong> {{ prod.unidad_base }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-light text-dark border d-block mb-1">{{ prod.categoria.nombre }}</span>
+                                                        <div class="small text-muted">{% translate "Disponible" %}</div>
+                                                        <div class="fw-semibold fs-6
+                                                            {% if item.restante > 0 %}text-success
+                                                            {% elif item.restante == 0 %}text-warning
+                                                            {% else %}text-danger{% endif %}">
+                                                            {{ item.restante }} {{ prod.unidad_base }}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
+                                        {% endwith %}
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-center py-5 text-muted">
+                                        <i class="mdi mdi-package-variant-closed-remove display-5 d-block mb-2"></i>
+                                        {% translate "No hay insumos con movimientos" %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
 
-                                            <div class="text-end">
-                                                <span class="badge bg-light text-dark border d-block mb-1">
-                                                    {{ prod.categoria.nombre }}
-                                                </span>
+                    <!-- ══════════════════════════════
+                         TAB 2: COSECHA
+                    ══════════════════════════════ -->
+                    <div class="tab-pane fade" id="cosecha" role="tabpanel">
 
-                                                <div class="small text-muted">
-                                                    {% translate "Disponible" %}
-                                                </div>
-
-                                                <div class="fw-semibold fs-6
-                                                    {% if item.restante > 0 %}
-                                                        text-success
-                                                    {% elif item.restante == 0 %}
-                                                        text-warning
-                                                    {% else %}
-                                                        text-danger
-                                                    {% endif %}
-                                                ">
-                                                    {{ item.restante }} {{ prod.unidad_base }}
-                                                </div>
-                                            </div>
-
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-format-list-bulleted fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Cultivos" %}</div>
+                                        <div class="fw-semibold">{{ productos_finales|length }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-arrow-down-bold fs-4 text-success"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Total cosechado" %}</div>
+                                        <div class="fw-semibold text-success">{{ total_ingresado_finales }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-arrow-up-bold fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Total vendido" %}</div>
+                                        <div class="fw-semibold">{{ total_consumido_finales }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-silo fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "En stock" %}</div>
+                                        <div class="fw-semibold fs-6
+                                            {% if total_restante_finales > 0 %}text-success
+                                            {% elif total_restante_finales == 0 %}text-warning
+                                            {% else %}text-danger{% endif %}">
+                                            {{ total_restante_finales }}
                                         </div>
                                     </div>
-                                {% endwith %}
-                            {% endfor %}
-                        {% else %}
-                            <div class="text-center py-5 text-muted">
-                                <i class="mdi mdi-package-variant-closed-remove display-5 d-block mb-2"></i>
-                                {% translate "No hay productos cargados" %}
+                                </div>
                             </div>
-                        {% endif %}
+                        </div>
+
+                        <div class="card card-rounded border-0 shadow-sm">
+                            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h5 class="fw-bold mb-1">
+                                        <i class="mdi mdi-grain me-1"></i>
+                                        {% translate "Producción cosechada" %}
+                                    </h5>
+                                    <p class="text-muted small mb-0">{{ productos_finales|length }} {% translate "registros" %}</p>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                {% if productos_finales %}
+                                    {% for item in productos_finales %}
+                                        {% with prod=item.obj %}
+                                            <div class="border-bottom px-4 py-3">
+                                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                                                    <div>
+                                                        <div class="fw-semibold">
+                                                            <a href="{% url 'vista_movimientos_producto' prod.id %}" class="text-decoration-none text-dark">
+                                                                {{ prod.nombre|truncatewords:7 }}
+                                                            </a>
+                                                        </div>
+                                                        <div class="small text-muted">{% translate "Ver movimientos" %}</div>
+                                                        <div class="small text-muted mt-2">
+                                                            <span>{% translate "Código" %}: <strong>{{ prod.codigo }}</strong></span>
+                                                            <span class="ms-3">{% translate "Cosechado" %}: <strong>{{ item.ingresado }}</strong> {{ prod.unidad_base }}</span>
+                                                            <span class="ms-3">{% translate "Vendido" %}: <strong>{{ item.consumido }}</strong> {{ prod.unidad_base }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle d-block mb-1">
+                                                            {% translate "Producto final" %}
+                                                        </span>
+                                                        <div class="small text-muted">{% translate "En stock" %}</div>
+                                                        <div class="fw-semibold fs-6
+                                                            {% if item.restante > 0 %}text-success
+                                                            {% elif item.restante == 0 %}text-warning
+                                                            {% else %}text-danger{% endif %}">
+                                                            {{ item.restante }} {{ prod.unidad_base }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endwith %}
+                                    {% endfor %}
+                                {% else %}
+                                    <div class="text-center py-5 text-muted">
+                                        <i class="mdi mdi-sprout display-5 d-block mb-2"></i>
+                                        {% translate "No hay producción cosechada registrada" %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -248,12 +318,27 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     setTimeout(function () {
-        const alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
+        document.querySelectorAll('.alert').forEach(function(alert) {
+            new bootstrap.Alert(alert).close();
         });
     }, 5000);
+
+    // Activar tab por parámetro URL (?tab=cosecha)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'cosecha') {
+        const cosechaTab = document.getElementById('tab-cosecha');
+        if (cosechaTab) new bootstrap.Tab(cosechaTab).show();
+    }
+
+    // Guardar tab activo al cambiar
+    document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function(tab) {
+        tab.addEventListener('shown.bs.tab', function(e) {
+            const tabId = e.target.getAttribute('href').replace('#', '');
+            const url = new URL(window.location);
+            url.searchParams.set('tab', tabId);
+            window.history.replaceState({}, '', url);
+        });
+    });
 });
 </script>
 {% endblock %}

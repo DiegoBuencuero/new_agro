@@ -522,6 +522,42 @@ def registrar_actividad_aux(
     guardar_monitoreo(actividad, tipo, vistoria_form)
     guardar_cosecha(actividad, tipo, cosecha_form)
 
+
+    from datetime import datetime
+    import datetime as dt
+
+    # 13b. movimiento de stock si es cosecha
+    if tipo.requiere_cosecha and ciclo.producto_final:
+        rendimiento = cosecha_form.cleaned_data.get("rendimiento")
+        um_id = cosecha_form.cleaned_data.get("um")
+        
+        if rendimiento:
+            factor = Decimal("1")
+            unidad_base = ciclo.producto_final.unidad_base
+            
+            if um_id and um_id != unidad_base.id:
+                try:
+                    conversion = ConversionUM.objects.get(
+                        um_origen_id=um_id,
+                        um_destino=unidad_base,
+                    )
+                    factor = conversion.factor
+                except ConversionUM.DoesNotExist:
+                    pass
+
+            cantidad_total = rendimiento * ciclo.superficie_ha * factor
+            MovimientoStock.objects.create(
+                producto=ciclo.producto_final,
+                tipo=MovimientoStock.Tipo.ENTRADA,
+                cantidad=cantidad_total,
+                um=unidad_base,
+                fecha=datetime.combine(actividad.fecha, dt.time.min),
+                actividad=actividad,
+                actividad_item=None,
+                factura_item=None,
+                precio_unitario=None,
+            )
+
     # 14. cerrar fase
     cerrar_fase_si_corresponde(fase, fecha, cierra_fase)
 

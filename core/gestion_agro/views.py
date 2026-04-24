@@ -23,7 +23,7 @@ from .funciones_aux import ( registrar_actividad_aux, obtener_valores_costos, _d
 from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm, ProductoForm, ProductoModalForm,PresentacionProductoForm,
                                 ActividadProductivaForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm,
                                 StockFiltroForm,CultivoProductoFinalForm, FacturaCompraForm, FacturaCompraItemFormSet, FacturaManualItemFormSet,  
-                                CultivoForm,CultivoEditarForm, CultivoProductoFinalForm
+                                CultivoForm,CultivoEditarForm, CultivoProductoFinalForm,  CultivoEditarForm,
                                 )
 from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
                                 ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
@@ -148,7 +148,6 @@ def vista_editar_campana(request, id_campana):
     else:
         return redirect('vista_campana')
 
-
 @login_required
 def vista_crear_cultivo(request):
     empresa = request.user.profile.empresa
@@ -191,7 +190,6 @@ def vista_crear_cultivo(request):
         },
     )
 
-
 @login_required
 def vista_editar_cultivo(request, id_cultivo):
     empresa = request.user.profile.empresa
@@ -207,15 +205,10 @@ def vista_editar_cultivo(request, id_cultivo):
         .order_by("nombre")
     )
 
-    try:
-        cultivo = Cultivo.objects.get(id=id_cultivo, empresa=empresa)
-    except Cultivo.DoesNotExist:
-        messages.error(request, _("El cultivo no existe."))
-        return redirect("vista_crear_cultivo")
+    cultivo = get_object_or_404(Cultivo, id=id_cultivo, empresa=empresa)
 
     if request.method == "POST":
         form = CultivoEditarForm(request.POST, instance=cultivo)
-
         if form.is_valid():
             if "borrar" in request.POST:
                 cultivo.delete()
@@ -224,6 +217,7 @@ def vista_editar_cultivo(request, id_cultivo):
                 cultivo = form.save(commit=False)
                 cultivo.empresa = empresa
                 cultivo.save()
+                form.save_m2m()
                 messages.success(request, _("Cultivo actualizado correctamente."))
 
             return redirect("vista_crear_cultivo")
@@ -302,7 +296,6 @@ def ajax_agregar_producto_final(request, cultivo_id):
         "ok": False,
         "error": " | ".join(errores)
     }, status=400)
-
 
 @login_required
 def vista_producto(request):
@@ -828,18 +821,15 @@ def ajax_valores_actividad(request):
         "valor_h_maq": str(c_mq) if c_mq is not None else "",
     })
 
-@login_required
 def vista_lista_stock(request):
     empresa = request.user.profile.empresa
-
     form = StockFiltroForm(request.GET or None)
 
-    productos = Producto.objects.select_related(
-        "categoria",
-        "unidad_base"
-    ).filter(
-        empresa=empresa
-    ).order_by("nombre")
+    productos = (
+        Producto.objects.select_related("categoria", "unidad_base")
+        .filter(empresa=empresa)
+        .order_by("nombre")
+    )
 
     categorias = CategoriaProducto.objects.order_by("nombre")
 
@@ -855,22 +845,31 @@ def vista_lista_stock(request):
         fecha_hasta = form.cleaned_data.get("fecha_entrada_hasta")
 
     if producto_txt:
-        productos_por_nombre = productos.filter(nombre__icontains=producto_txt)
-        productos_por_codigo = productos.filter(codigo__icontains=producto_txt)
-        productos = (productos_por_nombre | productos_por_codigo).distinct().order_by("nombre")
+        productos = productos.filter(
+            Q(nombre__icontains=producto_txt) |
+            Q(codigo__icontains=producto_txt)
+        ).distinct()
 
     if categoria:
         productos = productos.filter(categoria=categoria)
 
-    lista_productos = []
+    lista_insumos = []
+    lista_productos_finales = []
+
     total_ingresado = Decimal("0")
     total_consumido = Decimal("0")
     total_restante = Decimal("0")
 
+    total_ingresado_insumos = Decimal("0")
+    total_consumido_insumos = Decimal("0")
+    total_restante_insumos = Decimal("0")
+
+    total_ingresado_finales = Decimal("0")
+    total_consumido_finales = Decimal("0")
+    total_restante_finales = Decimal("0")
+
     for producto in productos:
-        movimientos = MovimientoStock.objects.filter(
-            producto=producto
-        ).select_related("um")
+        movimientos = MovimientoStock.objects.filter(producto=producto).select_related("um")
 
         if fecha_desde:
             movimientos = movimientos.filter(fecha__gte=fecha_desde)
@@ -895,26 +894,58 @@ def vista_lista_stock(request):
 
         restante = ingresado - consumido
 
-        total_ingresado += ingresado
-        total_consumido += consumido
-        total_restante += restante
-
-        lista_productos.append({
+        item = {
             "obj": producto,
             "ingresado": ingresado,
             "consumido": consumido,
             "restante": restante,
-        })
+        }
+
+        total_ingresado += ingresado
+        total_consumido += consumido
+        total_restante += restante
+
+        if producto.producto_final:
+            lista_productos_finales.append(item)
+            total_ingresado_finales += ingresado
+            total_consumido_finales += consumido
+            total_restante_finales += restante
+        else:
+            lista_insumos.append(item)
+            total_ingresado_insumos += ingresado
+            total_consumido_insumos += consumido
+            total_restante_insumos += restante
+
+    lista_productos = lista_insumos + lista_productos_finales
+
     context = {
         "form": form,
         "categorias": categorias,
+
+        # lista general
         "productos": lista_productos,
         "total_productos": len(lista_productos),
+
+        # listas separadas
+        "insumos": lista_insumos,
+        "productos_finales": lista_productos_finales,
+
+        # totales generales
         "total_ingresado": total_ingresado,
         "total_consumido": total_consumido,
         "total_restante": total_restante,
+
+        # totales insumos
+        "total_ingresado_insumos": total_ingresado_insumos,
+        "total_consumido_insumos": total_consumido_insumos,
+        "total_restante_insumos": total_restante_insumos,
+
+        # totales productos finales
+        "total_ingresado_finales": total_ingresado_finales,
+        "total_consumido_finales": total_consumido_finales,
+        "total_restante_finales": total_restante_finales,
     }
-    print("ENTRO A vista_lista_stock")
+
     return render(request, "vista_lista_stock.html", context)
 
 @login_required
@@ -1442,6 +1473,7 @@ def ajax_crear_producto_desde_cultivo(request):
             "nombre": presentacion.nombre,
         }
     })
+
 @login_required
 def ajax_unidades_por_base(request):
     unidad_base_id = request.GET.get("unidad_base_id")
