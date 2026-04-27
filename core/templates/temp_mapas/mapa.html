@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block plugin_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""/>
+<link rel="stylesheet" href="{% static 'mapas/css/mapa.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="mapa-wrapper">
+
+  <!-- ============ PANEL IZQUIERDO 30% ============ -->
+  <aside class="mapa-sidebar">
+
+    <div class="sidebar-section">
+      <h5><i class="mdi mdi-map-marker icon-agro"></i> {% translate "Selección" %}</h5>
+
+      <div class="form-group">
+        <label>{% translate "Campo" %}</label>
+        <select id="select-campo" class="form-control form-control-sm">
+          <option value="">{% translate "Seleccione campo" %}</option>
+          {% for c in campos %}
+          <option value="{{ c.id }}">{{ c.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h6><i class="mdi mdi-layers"></i> {% translate "Capas disponibles" %}</h6>
+      <div id="lista-capas" class="lista-capas">
+        <p class="text-muted small mb-0">{% translate "Seleccione un campo" %}</p>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <button class="btn btn-success btn-sm w-100" id="btn-subir-capa" disabled>
+        <i class="mdi mdi-upload"></i> {% translate "Subir nueva capa" %}
+      </button>
+    </div>
+
+    <div class="sidebar-section" id="panel-info" style="display:none;">
+      <h6><i class="mdi mdi-information"></i> {% translate "Información del punto" %}</h6>
+      <div id="info-punto" class="info-punto"></div>
+    </div>
+
+    <div class="sidebar-section" id="panel-leyenda" style="display:none;">
+      <h6>{% translate "Leyenda" %}</h6>
+      <div id="leyenda"></div>
+    </div>
+
+  </aside>
+
+  <!-- ============ MAPA 70% ============ -->
+  <main class="mapa-main">
+    <div class="mapa-toolbar">
+      <button class="btn btn-sm btn-outline-secondary" id="btn-vista-mapa">
+        <i class="mdi mdi-map"></i> {% translate "Mapa" %}
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" id="btn-vista-satelite">
+        <i class="mdi mdi-satellite-variant"></i> {% translate "Satélite" %}
+      </button>
+      <button class="btn btn-sm btn-outline-secondary ms-auto" id="btn-fit-bounds">
+        <i class="mdi mdi-fit-to-page"></i> {% translate "Centrar" %}
+      </button>
+    </div>
+    <div id="mapa"></div>
+  </main>
+
+</div>
+
+<!-- ============ MODAL: Subir capa ============ -->
+<div class="modal fade" id="modalSubirCapa" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{% translate "Subir nueva capa" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="form-subir-capa" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label>{% translate "Nombre" %}</label>
+            <input type="text" name="nombre" class="form-control" required>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label>{% translate "Tipo" %}</label>
+              <select name="tipo" class="form-control">
+                <option value="prescripcion">{% translate "Prescripción" %}</option>
+                <option value="analisis_suelo">{% translate "Análisis de suelo" %}</option>
+                <option value="rendimiento">{% translate "Rendimiento" %}</option>
+                <option value="ndvi">NDVI</option>
+                <option value="otro">{% translate "Otro" %}</option>
+              </select>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>{% translate "Variable" %}</label>
+              <input type="text" name="variable" class="form-control" value="rate"
+                     placeholder="rate, ph, k...">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label>{% translate "Unidad" %}</label>
+            <input type="text" name="unidad" class="form-control" placeholder="kg/ha, ppm, %">
+          </div>
+          <hr>
+          <p class="small text-muted">{% translate "Suba los 3 archivos del shapefile:" %}</p>
+          <div class="row">
+            <div class="col-md-4 mb-2">
+              <label>.shp</label>
+              <input type="file" name="shp" accept=".shp" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-4 mb-2">
+              <label>.shx</label>
+              <input type="file" name="shx" accept=".shx" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-4 mb-2">
+              <label>.dbf</label>
+              <input type="file" name="dbf" accept=".dbf" class="form-control form-control-sm" required>
+            </div>
+          </div>
+          <div id="alert-subir" class="alert mt-2" style="display:none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            {% translate "Cancelar" %}
+          </button>
+          <button type="submit" class="btn btn-success" id="btn-confirmar-subir">
+            <i class="mdi mdi-check"></i> {% translate "Subir y procesar" %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block custom_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script>
+const selectCampo = document.getElementById("select-campo");
+const listaCapas = document.getElementById("lista-capas");
+
+selectCampo.addEventListener("change", function () {
+  const campoId = this.value;
+
+  if (!campoId) return;
+
+  const url = window.MAPA_URLS.listarCapas.replace("0", campoId);
+
+  fetch(url)
+    .then(r => r.json())
+    .then(resp => {
+      if (!resp.ok) return;
+
+      renderListaCapas(resp.capas);
+    });
+});
+function renderListaCapas(capas) {
+  listaCapas.innerHTML = "";
+
+capas.forEach(capa => {
+  const div = document.createElement("div");
+
+  div.innerHTML = `
+    <label style="display:block; margin-bottom:5px;">
+      <input type="checkbox" data-id="${capa.id}">
+      ${capa.nombre} (${capa.variable})
+    </label>
+  `;
+
+  const checkbox = div.querySelector("input");
+
+  checkbox.addEventListener("change", function () {
+    if (this.checked) {
+      cargarCapa(capa);
+    } else {
+      removerCapa(capa.id);
+    }
+  });
+
+  listaCapas.appendChild(div);
+});
+}
+const capasActivas = {};
+function cargarCapa(capa) {
+fetch(capa.geojson_url)
+  .then(r => r.json())
+  .then(data => {
+    const layer = crearLayer(data, capa);
+    layer.addTo(mapa);
+
+    capasActivas[capa.id] = layer;
+
+    if (capa.bbox) {
+      mapa.fitBounds([
+        [capa.bbox[1], capa.bbox[0]],
+        [capa.bbox[3], capa.bbox[2]]
+      ]);
+    }
+
+    actualizarLeyenda(capa);
+  });
+}
+function crearLayer(data, capa) {
+  const min = Number(capa.valor_min);
+  const max = Number(capa.valor_max);
+
+  return L.geoJSON(data, {
+    style: function (feature) {
+      const v = Number(feature.properties.v);
+
+      return {
+        fillColor: getColor(v, min, max),
+        fillOpacity: 0.7,
+        weight: 0.3,
+        color: "#333"
+      };
+    },
+
+    onEachFeature: function (feature, layer) {
+      const v = feature.properties.v;
+
+      layer.bindPopup(`
+        <b>${capa.nombre}</b><br>
+        ${capa.variable}: ${v} ${capa.unidad || ""}
+      `);
+    }
+  });
+}
+function getColor(v, min, max) {
+  if (v == null || isNaN(v)) return "#ccc";
+
+  const r = (v - min) / (max - min);
+
+  if (r > 0.8) return "#d73027";
+  if (r > 0.6) return "#fc8d59";
+  if (r > 0.4) return "#fee08b";
+  if (r > 0.2) return "#d9ef8b";
+  return "#1a9850";
+}
+function removerCapa(id) {
+  if (capasActivas[id]) {
+    mapa.removeLayer(capasActivas[id]);
+    delete capasActivas[id];
+  }
+}
+function actualizarLeyenda(capa) {
+  const panel = document.getElementById("panel-leyenda");
+  const div = document.getElementById("leyenda");
+
+  panel.style.display = "block";
+
+  div.innerHTML = `
+    <b>${capa.nombre}</b><br>
+    ${capa.variable} (${capa.unidad || ""})<br>
+    Min: ${capa.valor_min}<br>
+    Max: ${capa.valor_max}
+  `;
+}
+</script>
+<script src="{% static 'mapas/js/mapa.js' %}"></script>
+{% endblock %}

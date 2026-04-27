@@ -62,6 +62,8 @@ urlpatterns = [
     path("ajax/variedades-cultivo/", ajax_variedades_cultivo, name="ajax_variedades_cultivo"),
     path("ajax/unidades-por-base/", ajax_unidades_por_base, name="ajax_unidades_por_base"),
   
+
+    path('mapas/', include('mapas.urls')),
 ]
 
 if settings.DEBUG:
