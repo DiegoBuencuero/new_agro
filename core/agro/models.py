@@ -125,6 +125,9 @@ class Empresa(models.Model):
     valor_mobra = models.DecimalField(max_digits=18, decimal_places=2, default=0, verbose_name=_("Costo MO"))
     valor_maquina = models.DecimalField(max_digits=18, decimal_places=2, default=0, verbose_name=_("Costo Maquina"))
     calculo_costo = models.CharField(max_length=1, choices=[('F', 'FIFO'), ('L', 'LIFO'),('P','PONDERADO') ], default='F', verbose_name=_("Cálculo de costo"))  
+    deposito_insumos_default = models.ForeignKey('gestion_agro.Deposito', on_delete=models.SET_NULL, null=True, blank=True, related_name="empresas_insumos_default")
+    deposito_producto_final_default = models.ForeignKey('gestion_agro.Deposito', on_delete=models.SET_NULL, null=True, blank=True, related_name="empresas_producto_final_default" )
+
 
 class Unidad(models.Model):
     nombre = models.CharField(max_length=50, verbose_name=_("Nombre"))

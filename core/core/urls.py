@@ -10,7 +10,7 @@ ajax_subtipos_tipo_actividad, ajax_productos_por_actividad, ajax_valores_activid
 vista_lista_facturas, vista_cargar_factura, vista_cargar_factura_manual, vista_procesar_pdf_factura,
 vista_revisar_factura, vista_confirmar_factura, ajax_unidades_conversion, vista_producto, vista_editar_producto,
 ajax_presentaciones_producto, ajax_crear_producto, ajax_crear_presentacion, ajax_crear_producto, vista_movimientos_producto,
-vista_crear_cultivo, vista_editar_cultivo,
+vista_crear_cultivo, vista_editar_cultivo,vista_crear_deposito, vista_editar_deposito
 )
 
 urlpatterns = [
@@ -27,6 +27,8 @@ urlpatterns = [
     path('campos/<int:id_campo>/', vista_editar_campo, name='vista_editar_campo'),
     path('campanas/', vista_crear_campana, name='vista_crear_campana'),
     path('campanas/<int:id_campana>/', vista_editar_campana, name='vista_editar_campana'),
+    path('depositos/', vista_crear_deposito, name='vista_crear_deposito'),
+    path('depositos/<int:id_deposito>/', vista_editar_deposito, name='vista_editar_deposito'),
 
     path("cultivos/", vista_crear_cultivo, name="vista_crear_cultivo"),
     path("cultivos/editar/<int:id_cultivo>/", vista_editar_cultivo, name="vista_editar_cultivo"),

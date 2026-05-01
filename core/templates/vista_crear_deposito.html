@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+{% block plugin_css %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi 
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+            <div>{{ message }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="upload-card">
+        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
+            <div>
+                <h3 class="mb-1">
+                    <i class="mdi mdi-warehouse icon-agro"></i>
+                    {% translate "Depósitos" %}
+                </h3>
+                <div class="small">
+                  <h6 class="mb-1 mt-2">
+                    {% translate "Creación de nuevos depósitos" %}
+                  </h6>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-12 grid-margin stretch-card">
+          <div class="card">
+            <div class="card-body">
+              <form class="form-sample" method="post">
+                {% csrf_token %}
+                <p class="card-description">
+                  {% translate "Información general" %}
+                </p>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">{% translate "Nombre" %}</label>
+                        <div class="col-sm-9">
+                            {{ form.nombre }}
+                            {{ form.nombre.errors }}
+                        </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">{% translate "Tipo" %}</label>
+                        <div class="col-sm-9">
+                            {{ form.tipo }}
+                            {{ form.tipo.errors }}
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+
+                    <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">{% translate "Ciudad" %}</label>
+                        <div class="col-sm-9">
+                            {{ form.ciudad }}
+                            {{ form.ciudad.errors }}
+                        </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group row">
+                        <label class="col-sm-3 col-form-label">{% translate "Dirección" %}</label>
+                        <div class="col-sm-9">
+                            {{ form.direccion }}
+                            {{ form.direccion.errors }}
+                        </div>
+                        </div>
+                    </div>
+                    </div>
+
+                <div class="row">                  
+                  <div class="col-md-6">
+                    <div class="form-group row">
+                      <label class="col-sm-3 col-form-label">{% translate "Teléfono" %}</label>
+                      <div class="col-sm-9">
+                        {{ form.telefono }}
+                        {{ form.telefono.errors }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group row">
+                      <label class="col-sm-3 col-form-label">{% translate "Descripción" %}</label>
+                      <div class="col-sm-9">
+                        {{ form.descripcion }}
+                        {{ form.descripcion.errors }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-3 d-flex gap-2">
+                    {% if modificacion %}
+                        <button type="submit" name="ok" class="btn btn-success">
+                            <i class="mdi mdi-check me-1"></i>{% translate "Actualizar" %}
+                        </button>
+                        <button type="submit" name="borrar" class="btn btn-danger"
+                                onclick="return confirm('{% translate "¿Confirmar eliminación?" %}')">
+                            <i class="mdi mdi-delete me-1"></i>{% translate "Eliminar" %}
+                        </button>
+                    {% else %}
+                        <button type="submit" name="ok" class="btn btn-success">
+                            <i class="mdi mdi-plus me-1"></i>{% translate "Guardar" %}
+                        </button>
+                    {% endif %}
+                    <a href="{% url 'vista_crear_deposito' %}" class="btn btn-dark">
+                        <i class="mdi mdi-arrow-left me-1"></i>{% translate "Cancelar" %}
+                    </a>
+                </div>
+
+              </form>
+            </div>
+          </div>
+        </div>
+
+      <div class="col-lg-12 grid-margin stretch-card">
+        <div class="card">
+          <div class="card-body">
+            <h4 class="card-title">{% translate "Depósitos" %}</h4>
+            <p class="card-description">{{ empresa.nombre }}</p>
+            <div class="table-responsive">
+              <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>{% translate "Nombre" %}</th>
+                    <th>{% translate "Tipo" %}</th>
+                    <th>{% translate "Ciudad" %}</th>
+                    <th>{% translate "Dirección" %}</th>
+                    <th>{% translate "Teléfono" %}</th>
+                    <th>{% translate "Acciones" %}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for deposito in depositos %}
+                  <tr>
+                    <td>{{ deposito.nombre }}</td>
+                    <td>{{ deposito.get_tipo_display }}</td>
+                    <td>{{ deposito.ciudad }}</td>
+                    <td>{{ deposito.direccion }}</td>
+                    <td>{{ deposito.telefono }}</td>
+                    <td>
+                      <a href="{% url 'vista_editar_deposito' deposito.id %}"
+                        class="btn btn-sm btn-outline-primary">
+                        {% translate "Editar" %}
+                      </a>
+                    </td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="6" class="text-center text-muted">
+                      {% translate "No hay depósitos cargados" %}
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+{% endblock %}

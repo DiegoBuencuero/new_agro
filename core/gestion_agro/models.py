@@ -114,6 +114,24 @@ class Campana(models.Model):
             Campana.objects.filter(empresa=self.empresa, activa=True).exclude(id=self.id).update(activa=False)
         super().save(*args, **kwargs)
 
+class Deposito(models.Model):
+
+    class TipoDeposito(models.TextChoices):
+        PROPIO = "PROPIO", "Propio"
+        EXTERNO = "EXTERNO", "Externo"
+
+    empresa     = models.ForeignKey(Empresa, on_delete=models.CASCADE)
+    nombre      = models.CharField(max_length=100)
+    tipo        = models.CharField(max_length=10, choices=TipoDeposito.choices, default=TipoDeposito.PROPIO)
+
+    ciudad      = models.ForeignKey("agro.Ciudad", on_delete=models.CASCADE)
+    direccion   = models.CharField(max_length=100, blank=True)
+    telefono    = models.CharField(max_length=30, blank=True)
+    descripcion = models.CharField(max_length=255, blank=True)
+
+    def __str__(self):
+        return f"{self.nombre} ({self.tipo})"
+
 class CicloAgricola(models.Model):
     campo = models.ForeignKey(Campo, on_delete=models.CASCADE, related_name="ciclos")
     campana = models.ForeignKey(Campana, on_delete=models.CASCADE, related_name="ciclos")
@@ -314,6 +332,7 @@ class Producto(models.Model):
     maneja_stock = models.BooleanField(default=True, verbose_name=_("Maneja stock"))
     activo = models.BooleanField(default=True, verbose_name=_("Activo"))
     producto_final = models.BooleanField(default=False, verbose_name=_("Producto final (cosecha)"))
+    deposito_default = models.ForeignKey('Deposito', on_delete=models.SET_NULL, null=True, blank=True, related_name="productos_default")
 
     class Meta:
         verbose_name = _("Producto")
@@ -360,13 +379,7 @@ class ActividadInsumo(models.Model):
     actividad = models.ForeignKey("ActividadProductiva", on_delete=models.CASCADE, related_name="insumos")
     producto = models.ForeignKey("gestion_agro.Producto", on_delete=models.CASCADE, null=True, blank=True)
     dosis = models.DecimalField(max_digits=10, decimal_places=2)
-    um = models.ForeignKey(
-        Unidad,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name='actividad_insumos'
-    )
+    um = models.ForeignKey( Unidad, on_delete=models.CASCADE, null=True, blank=True, related_name='actividad_insumos' )
     cantidad_real = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     costo_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     costo_ha = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
@@ -374,43 +387,19 @@ class ActividadInsumo(models.Model):
 class MovimientoStock(models.Model):
     class Tipo(models.TextChoices):
         ENTRADA = "ENTRADA", _("Entrada")
-        SALIDA = "SALIDA", _("Salida")
-   
+        SALIDA = "SALIDA", _("Salida")   
 
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     tipo = models.CharField(max_length=10, choices=Tipo.choices)
     cantidad = models.DecimalField(max_digits=14, decimal_places=3)
-    um = models.ForeignKey(
-        Unidad,
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True,
-        related_name='movimientos_stock'
-    )
+    um = models.ForeignKey( Unidad, on_delete=models.CASCADE,  null=True, blank=True, related_name='movimientos_stock' )
     fecha = models.DateTimeField(default=timezone.now)
-    actividad_item = models.ForeignKey(  
-         "gestion_agro.ActividadInsumo",
-        on_delete=models.CASCADE, 
-        null=True, 
-        blank=True,
-        related_name="movimientos_stock"
-    )
-    actividad = models.ForeignKey(
-        "ActividadProductiva",
-        on_delete=models.CASCADE,   blank=True,
-        null=True,
-        related_name="movimientos_stock"
-    )
-    
+    actividad_item = models.ForeignKey(   "gestion_agro.ActividadInsumo",  on_delete=models.CASCADE,  null=True,  blank=True, related_name="movimientos_stock" )
+    actividad = models.ForeignKey( "ActividadProductiva",  on_delete=models.CASCADE,   blank=True,  null=True,  related_name="movimientos_stock" )    
     factura_item = models.ForeignKey("FacturaCompraItem", on_delete=models.CASCADE, null=True, blank=True)
-    precio_unitario = models.DecimalField(
-        max_digits=14,
-        decimal_places=6,
-        help_text=_("Precio promedio aplicado al momento del consumo"),
-        null=True,
-        blank=False,
-    )
-
+    precio_unitario = models.DecimalField( max_digits=14, decimal_places=6, help_text=_("Precio promedio aplicado al momento del consumo"), null=True,  blank=False, )
+    deposito_origen  = models.ForeignKey(Deposito, on_delete=models.CASCADE,null=True, blank=True, related_name="salidas")
+    deposito_destino = models.ForeignKey(Deposito, on_delete=models.CASCADE, null=True, blank=True, related_name="entradas")
     class Meta:
         verbose_name = _("Movimiento de stock")
         verbose_name_plural = _("Movimientos de stock")
@@ -520,87 +509,6 @@ class Proveedor(models.Model):
         return self.razon_social
     
 
-
-
-
-
-
-# class FacturaVenta(models.Model):
-#     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
-#     cliente = models.ForeignKey("Proveedor", on_delete=models.CASCADE, verbose_name=_("Proveedor"))  # agregar tabla cliente
-#     numero = models.CharField(max_length=50, verbose_name=_("Número factura"))
-#     fecha = models.DateField(verbose_name=_("Fecha"))
-#     total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Total"))
-#     archivo_pdf = models.FileField(upload_to="facturas_compra/", blank=True, null=True)
-#     creada = models.DateTimeField(auto_now_add=True)
-
-#     class Meta:
-#         verbose_name = _("Factura de compra")
-#         verbose_name_plural = _("Facturas de compra")
-#         unique_together = ("empresa", "proveedor", "numero")
-
-#     def __str__(self):  
-#         return f"{self.proveedor} - {self.numero}"
-
-
-# class FacturaVentaItem(models.Model):
-#     factura = models.ForeignKey(FacturaVenta, related_name="items", on_delete=models.CASCADE)  
-#     cultivo = models.ForeignKey(Producto, on_delete=models.CASCADE)
-#     presentacion = models.ForeignKey("PresentacionProducto", on_delete=models.CASCADE)
-#     cantidad_facturada = models.DecimalField(max_digits=12, decimal_places=3)
-#     cantidad_base = models.DecimalField(max_digits=14, decimal_places=3)
-#     precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
-#     subtotal = models.DecimalField(max_digits=14, decimal_places=2)
-
-#     class Meta:
-#         verbose_name = _("Ítem de factura")
-#         verbose_name_plural = _("Ítems de factura")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class ProductoNormalizado(models.Model):
     """Productos extraídos y normalizados de facturas"""
     
@@ -664,163 +572,196 @@ class ProductoNormalizado(models.Model):
     
     def __str__(self):
         return f"{self.nombre} - {self.envase_desc}"
+
+
+
+
+
+# class FacturaVenta(models.Model):
+#     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
+#     cliente = models.ForeignKey("Proveedor", on_delete=models.CASCADE, verbose_name=_("Proveedor"))  # agregar tabla cliente
+#     numero = models.CharField(max_length=50, verbose_name=_("Número factura"))
+#     fecha = models.DateField(verbose_name=_("Fecha"))
+#     total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Total"))
+#     archivo_pdf = models.FileField(upload_to="facturas_compra/", blank=True, null=True)
+#     creada = models.DateTimeField(auto_now_add=True)
+
+#     class Meta:
+#         verbose_name = _("Factura de compra")
+#         verbose_name_plural = _("Facturas de compra")
+#         unique_together = ("empresa", "proveedor", "numero")
+
+#     def __str__(self):  
+#         return f"{self.proveedor} - {self.numero}"
+
+
+# class FacturaVentaItem(models.Model):
+#     factura = models.ForeignKey(FacturaVenta, related_name="items", on_delete=models.CASCADE)  
+#     cultivo = models.ForeignKey(Producto, on_delete=models.CASCADE)
+#     presentacion = models.ForeignKey("PresentacionProducto", on_delete=models.CASCADE)
+#     cantidad_facturada = models.DecimalField(max_digits=12, decimal_places=3)
+#     cantidad_base = models.DecimalField(max_digits=14, decimal_places=3)
+#     precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
+#     subtotal = models.DecimalField(max_digits=14, decimal_places=2)
+
+#     class Meta:
+#         verbose_name = _("Ítem de factura")
+#         verbose_name_plural = _("Ítems de factura")
+
+
         
-class ProductoExtractor:
-    """Extrae y normaliza productos de facturas"""
+# class ProductoExtractor:
+#     """Extrae y normaliza productos de facturas"""
     
-    # Patrones para detectar envases y cantidades
-    PATRONES_ENVASE = [
-        (r'(\d+)\s*KG\s*BIG\s*BAG', 'big_bag', 'kg'),  # BIG BAG 750 KG
-        (r'BIG\s*BAG\s*(\d+)\s*KG', 'big_bag', 'kg'),
-        (r'(\d+)\s*L\s*BID[OÓ]N', 'bidon', 'L'),  # BIDÓN 20 L
-        (r'BID[OÓ]N\s*(\d+)\s*L', 'bidon', 'L'),
-        (r'(\d+)\s*L', 'liquido', 'L'),  # 5 L, 10 L
-        (r'(\d+)\s*KG', 'suelto', 'kg'),  # 25 KG, 50 KG
-        (r'(\d+)\s*GR', 'polvo', 'g'),  # 500 GR
-        (r'(\d+)\s*G', 'polvo', 'g'),
-        (r'(\d+,\d+)\s*KG', 'suelto', 'kg'),  # 0,5 KG
-    ]
+#     # Patrones para detectar envases y cantidades
+#     PATRONES_ENVASE = [
+#         (r'(\d+)\s*KG\s*BIG\s*BAG', 'big_bag', 'kg'),  # BIG BAG 750 KG
+#         (r'BIG\s*BAG\s*(\d+)\s*KG', 'big_bag', 'kg'),
+#         (r'(\d+)\s*L\s*BID[OÓ]N', 'bidon', 'L'),  # BIDÓN 20 L
+#         (r'BID[OÓ]N\s*(\d+)\s*L', 'bidon', 'L'),
+#         (r'(\d+)\s*L', 'liquido', 'L'),  # 5 L, 10 L
+#         (r'(\d+)\s*KG', 'suelto', 'kg'),  # 25 KG, 50 KG
+#         (r'(\d+)\s*GR', 'polvo', 'g'),  # 500 GR
+#         (r'(\d+)\s*G', 'polvo', 'g'),
+#         (r'(\d+,\d+)\s*KG', 'suelto', 'kg'),  # 0,5 KG
+#     ]
     
-    # Unidades de conversión a estándar
-    CONVERSIONES = {
-        'kg': 1,
-        'g': 0.001,
-        'mg': 0.000001,
-        'L': 1,
-        'ml': 0.001,
-        'und': None,  # Sin conversión
-        'un': None,
-        'cx': None,  # Caja
-    }
+#     # Unidades de conversión a estándar
+#     CONVERSIONES = {
+#         'kg': 1,
+#         'g': 0.001,
+#         'mg': 0.000001,
+#         'L': 1,
+#         'ml': 0.001,
+#         'und': None,  # Sin conversión
+#         'un': None,
+#         'cx': None,  # Caja
+#     }
     
-    @staticmethod
-    def extraer_detalle_factura(texto_factura):
-        """Extrae productos del texto de factura"""
+#     @staticmethod
+#     def extraer_detalle_factura(texto_factura):
+#         """Extrae productos del texto de factura"""
         
-        productos = []
+#         productos = []
         
-        # Buscar sección de productos (patrón NF-e brasileña)
-        seccion_match = re.search(r'DADOS DO PRODUTO/SERVIÇOS(.*?)VALOR TOTAL DOS SERVIÇOS', 
-                                 texto_factura, re.DOTALL | re.IGNORECASE)
+#         # Buscar sección de productos (patrón NF-e brasileña)
+#         seccion_match = re.search(r'DADOS DO PRODUTO/SERVIÇOS(.*?)VALOR TOTAL DOS SERVIÇOS', 
+#                                  texto_factura, re.DOTALL | re.IGNORECASE)
         
-        if seccion_match:
-            seccion_texto = seccion_match.group(1)
+#         if seccion_match:
+#             seccion_texto = seccion_match.group(1)
             
-            # Buscar líneas de productos - patrón NF-e
-            lineas = re.finditer(
-                r'(\d{6,10})\s+([A-Z][\w\s\-\./]+?)\s+(\d{8})\s+\d{3}\s+(\d{4})\s+(\w+)\s+([\d\.,]+)\s+([\d\.,]+)\s+([\d\.,]+)',
-                seccion_texto
-            )
+#             # Buscar líneas de productos - patrón NF-e
+#             lineas = re.finditer(
+#                 r'(\d{6,10})\s+([A-Z][\w\s\-\./]+?)\s+(\d{8})\s+\d{3}\s+(\d{4})\s+(\w+)\s+([\d\.,]+)\s+([\d\.,]+)\s+([\d\.,]+)',
+#                 seccion_texto
+#             )
             
-            for linea in lineas:
-                producto = {
-                    'codigo': linea.group(1).strip(),
-                    'descripcion': linea.group(2).strip(),
-                    'ncm': linea.group(3),
-                    'cfop': linea.group(4),
-                    'unidad_factura': linea.group(5).lower(),
-                    'cantidad': Decimal(linea.group(6).replace('.', '').replace(',', '.')),
-                    'precio_unitario': Decimal(linea.group(7).replace('.', '').replace(',', '.')),
-                    'valor_total': Decimal(linea.group(8).replace('.', '').replace(',', '.')),
-                }
+#             for linea in lineas:
+#                 producto = {
+#                     'codigo': linea.group(1).strip(),
+#                     'descripcion': linea.group(2).strip(),
+#                     'ncm': linea.group(3),
+#                     'cfop': linea.group(4),
+#                     'unidad_factura': linea.group(5).lower(),
+#                     'cantidad': Decimal(linea.group(6).replace('.', '').replace(',', '.')),
+#                     'precio_unitario': Decimal(linea.group(7).replace('.', '').replace(',', '.')),
+#                     'valor_total': Decimal(linea.group(8).replace('.', '').replace(',', '.')),
+#                 }
                 
-                # Analizar envase y contenido
-                producto.update(ProductoExtractor.analizar_envase(producto['descripcion']))
+#                 # Analizar envase y contenido
+#                 producto.update(ProductoExtractor.analizar_envase(producto['descripcion']))
                 
-                productos.append(producto)
+#                 productos.append(producto)
         
-        # Si no encuentra con patrón NF-e, buscar genérico
-        if not productos:
-            productos = ProductoExtractor.buscar_patron_generico(texto_factura)
+#         # Si no encuentra con patrón NF-e, buscar genérico
+#         if not productos:
+#             productos = ProductoExtractor.buscar_patron_generico(texto_factura)
         
-        return productos
+#         return productos
     
-    @staticmethod
-    def analizar_envase(descripcion):
-        """Analiza la descripción para extraer envase y contenido"""
+#     @staticmethod
+#     def analizar_envase(descripcion):
+#         """Analiza la descripción para extraer envase y contenido"""
         
-        desc_upper = descripcion.upper()
-        resultado = {
-            'envase_tipo': 'desconocido',
-            'envase_desc': '',
-            'contenido_unidad': 'und',
-            'contenido_cantidad': 1,
-            'contenido_estandar': 1,
-            'unidad_estandar': 'und'
-        }
+#         desc_upper = descripcion.upper()
+#         resultado = {
+#             'envase_tipo': 'desconocido',
+#             'envase_desc': '',
+#             'contenido_unidad': 'und',
+#             'contenido_cantidad': 1,
+#             'contenido_estandar': 1,
+#             'unidad_estandar': 'und'
+#         }
         
-        # Buscar patrones de envase
-        for patron, tipo, unidad in ProductoExtractor.PATRONES_ENVASE:
-            match = re.search(patron, desc_upper, re.IGNORECASE)
-            if match:
-                cantidad = match.group(1).replace(',', '.')
-                resultado.update({
-                    'envase_tipo': tipo,
-                    'envase_desc': f"{tipo} {cantidad}{unidad}",
-                    'contenido_unidad': unidad,
-                    'contenido_cantidad': Decimal(cantidad),
-                    'unidad_estandar': unidad
-                })
-                break
+#         # Buscar patrones de envase
+#         for patron, tipo, unidad in ProductoExtractor.PATRONES_ENVASE:
+#             match = re.search(patron, desc_upper, re.IGNORECASE)
+#             if match:
+#                 cantidad = match.group(1).replace(',', '.')
+#                 resultado.update({
+#                     'envase_tipo': tipo,
+#                     'envase_desc': f"{tipo} {cantidad}{unidad}",
+#                     'contenido_unidad': unidad,
+#                     'contenido_cantidad': Decimal(cantidad),
+#                     'unidad_estandar': unidad
+#                 })
+#                 break
         
-        # Si no encuentra envase específico, buscar número seguido de unidad
-        if resultado['envase_tipo'] == 'desconocido':
-            match_generico = re.search(r'(\d+[\.,]?\d*)\s*(KG|L|GR|G|ML)\b', desc_upper)
-            if match_generico:
-                cantidad = match_generico.group(1).replace(',', '.')
-                unidad = match_generico.group(2).lower()
-                if unidad == 'gr':
-                    unidad = 'g'
+#         # Si no encuentra envase específico, buscar número seguido de unidad
+#         if resultado['envase_tipo'] == 'desconocido':
+#             match_generico = re.search(r'(\d+[\.,]?\d*)\s*(KG|L|GR|G|ML)\b', desc_upper)
+#             if match_generico:
+#                 cantidad = match_generico.group(1).replace(',', '.')
+#                 unidad = match_generico.group(2).lower()
+#                 if unidad == 'gr':
+#                     unidad = 'g'
                 
-                resultado.update({
-                    'envase_tipo': 'generico',
-                    'envase_desc': f"{cantidad}{unidad}",
-                    'contenido_unidad': unidad,
-                    'contenido_cantidad': Decimal(cantidad),
-                    'unidad_estandar': unidad
-                })
+#                 resultado.update({
+#                     'envase_tipo': 'generico',
+#                     'envase_desc': f"{cantidad}{unidad}",
+#                     'contenido_unidad': unidad,
+#                     'contenido_cantidad': Decimal(cantidad),
+#                     'unidad_estandar': unidad
+#                 })
         
-        # Convertir a unidad estándar
-        if resultado['unidad_estandar'] in ['kg', 'L']:
-            resultado['contenido_estandar'] = resultado['contenido_cantidad']
-        elif resultado['unidad_estandar'] == 'g':
-            resultado['contenido_estandar'] = resultado['contenido_cantidad'] * 0.001
-            resultado['unidad_estandar'] = 'kg'
-        elif resultado['unidad_estandar'] == 'ml':
-            resultado['contenido_estandar'] = resultado['contenido_cantidad'] * 0.001
-            resultado['unidad_estandar'] = 'L'
+#         # Convertir a unidad estándar
+#         if resultado['unidad_estandar'] in ['kg', 'L']:
+#             resultado['contenido_estandar'] = resultado['contenido_cantidad']
+#         elif resultado['unidad_estandar'] == 'g':
+#             resultado['contenido_estandar'] = resultado['contenido_cantidad'] * 0.001
+#             resultado['unidad_estandar'] = 'kg'
+#         elif resultado['unidad_estandar'] == 'ml':
+#             resultado['contenido_estandar'] = resultado['contenido_cantidad'] * 0.001
+#             resultado['unidad_estandar'] = 'L'
         
-        return resultado
+#         return resultado
     
-    @staticmethod
-    def buscar_patron_generico(texto):
-        """Búsqueda genérica de productos en texto de factura"""
+#     @staticmethod
+#     def buscar_patron_generico(texto):
+#         """Búsqueda genérica de productos en texto de factura"""
         
-        productos = []
+#         productos = []
         
-        # Buscar líneas con cantidades y precios
-        patron = r'([A-Z][\w\s\-/]+?)\s+(\d+[\.,]?\d*)\s*([Kk]g|[Ll]|[Gg]r|[Mm]l|[Uu]nd)?\s+([\d\.,]+)\s+([\d\.,]+)'
+#         # Buscar líneas con cantidades y precios
+#         patron = r'([A-Z][\w\s\-/]+?)\s+(\d+[\.,]?\d*)\s*([Kk]g|[Ll]|[Gg]r|[Mm]l|[Uu]nd)?\s+([\d\.,]+)\s+([\d\.,]+)'
         
-        matches = re.finditer(patron, texto)
+#         matches = re.finditer(patron, texto)
         
-        for match in matches:
-            producto = {
-                'codigo': '',
-                'descripcion': match.group(1).strip(),
-                'unidad_factura': match.group(3).lower() if match.group(3) else 'und',
-                'cantidad': Decimal(match.group(2).replace(',', '.')),
-                'precio_unitario': Decimal(match.group(4).replace('.', '').replace(',', '.')),
-                'valor_total': Decimal(match.group(5).replace('.', '').replace(',', '.'))
-            }
+#         for match in matches:
+#             producto = {
+#                 'codigo': '',
+#                 'descripcion': match.group(1).strip(),
+#                 'unidad_factura': match.group(3).lower() if match.group(3) else 'und',
+#                 'cantidad': Decimal(match.group(2).replace(',', '.')),
+#                 'precio_unitario': Decimal(match.group(4).replace('.', '').replace(',', '.')),
+#                 'valor_total': Decimal(match.group(5).replace('.', '').replace(',', '.'))
+#             }
             
-            producto.update(ProductoExtractor.analizar_envase(producto['descripcion']))
-            productos.append(producto)
+#             producto.update(ProductoExtractor.analizar_envase(producto['descripcion']))
+#             productos.append(producto)
         
-        return productos
-
-
-
-
+#         return productos
 
 
 

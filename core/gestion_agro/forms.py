@@ -5,15 +5,12 @@ from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad, Unidad
 from gestion_agro.funciones_aux import convertir_unidad
-
 from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
                                 ActividadInsumo, CamposVistoria, CamposCosecha, Producto, CategoriaProducto, FacturaCompra,
-                                Proveedor, Cultivo, PresentacionProducto, Variedad, MovimientoStock)
+                                Proveedor, PresentacionProducto, Variedad, MovimientoStock,Deposito)
 
 from django.utils.translation import gettext_lazy as _
-from gestion_agro.models import (
-    CategoriaProducto, Cultivo, Variedad, Producto, PresentacionProducto
-)
+
 
 
 class BaseForm(ModelForm):
@@ -47,6 +44,13 @@ class CampanaForm(BaseForm):
             "observaciones": forms.Textarea(attrs={"rows": 2}),
         }
 
+class DepositoForm(BaseForm):
+    class Meta:
+        model = Deposito
+        fields = ["nombre", "tipo", "ciudad", "descripcion", "direccion", "telefono"]
+        widgets = {
+            "descripcion": forms.Textarea(attrs={"rows": 2}),
+        }
 
 class CultivoForm(BaseForm):
     class Meta:

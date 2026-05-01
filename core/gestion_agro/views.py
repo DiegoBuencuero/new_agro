@@ -23,13 +23,13 @@ from .funciones_aux import ( registrar_actividad_aux, obtener_valores_costos, _d
 from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm, ProductoForm, ProductoModalForm,PresentacionProductoForm,
                                 ActividadProductivaForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm,
                                 StockFiltroForm,CultivoProductoFinalForm, FacturaCompraForm, FacturaCompraItemFormSet, FacturaManualItemFormSet,  
-                                CultivoForm,CultivoEditarForm, CultivoProductoFinalForm,  CultivoEditarForm,
+                                CultivoForm,CultivoEditarForm, CultivoProductoFinalForm,  CultivoEditarForm, DepositoForm
                                 )
 from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
                                 ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
                                 ActividadInsumo, CategoriaProducto, MovimientoStock, 
                                 FacturaCompra, Proveedor,  PresentacionProducto, FacturaCompraItem, Variedad,
-                                Proveedor, Cultivo, ProductoSemilla
+                                Proveedor, Cultivo, ProductoSemilla, Deposito
                                 )
 
 @login_required
@@ -123,6 +123,79 @@ def vista_crear_campana(request):
             "empresa": empresa,
         },
     )
+
+@login_required
+def vista_crear_deposito(request):
+    empresa = request.user.profile.empresa
+
+    depositos = Deposito.objects.filter(empresa=empresa)
+
+    if request.method == "POST":
+        form = DepositoForm(request.POST)
+
+        if form.is_valid():
+            deposito = form.save(commit=False)
+            deposito.empresa = empresa
+            deposito.save()
+
+            messages.success(request, _("Depósito creado correctamente"))
+
+            return redirect("vista_crear_deposito")
+        else:
+            messages.error(request, form.errors.as_text())
+
+    else:
+        form = DepositoForm()
+
+    return render(
+        request,
+        "vista_crear_deposito.html",
+        {
+            "form": form,
+            "depositos": depositos,
+            "empresa": empresa,
+        },
+    )
+
+@login_required
+def vista_editar_deposito(request, id_deposito):
+    empresa = request.user.profile.empresa
+
+    deposito = get_object_or_404(
+        Deposito,
+        id=id_deposito,
+        empresa=empresa
+    )
+
+    depositos = Deposito.objects.filter(empresa=empresa)
+
+    if request.method == "POST":
+
+        if "borrar" in request.POST:
+            deposito.delete()
+            messages.success(request, _("Depósito eliminado correctamente"))
+            return redirect("vista_crear_deposito")
+
+        form = DepositoForm(request.POST, instance=deposito)
+
+        if form.is_valid():
+            deposito = form.save(commit=False)
+            deposito.empresa = empresa
+            deposito.save()
+            messages.success(request, _("Depósito actualizado correctamente"))
+            return redirect("vista_crear_deposito")
+        else:
+            messages.error(request, form.errors.as_data())
+
+    else:
+        form = DepositoForm(instance=deposito)
+
+    return render(request, "vista_crear_deposito.html", {
+        "form": form,
+        "depositos": depositos,
+        "empresa": empresa,
+        "modificacion": "S",
+    })
 
 @login_required
 def vista_editar_campana(request, id_campana):
