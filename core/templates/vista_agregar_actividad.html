@@ -356,7 +356,7 @@
                                     <i class="mdi mdi-plus me-1"></i>{% translate "Guardar" %}
                                 </button>
                             {% endif %}
-                            <a href="{% url 'vista_producto' %}" class="btn btn-dark">
+                            <a href="{% url 'vista_detalle_ciclo' id_ciclo=ciclo.id %}" class="btn btn-dark">
                                 <i class="mdi mdi-arrow-left me-1"></i>{% translate "Cancelar" %}
                             </a>
                         </div>
@@ -411,9 +411,28 @@ $(document).ready(function () {
     }
 
     function ocultarSubtipo() {
-        if (!subtipoContainer.length) return;
         subtipoContainer.hide();
     }
+
+    function ocultarSecciones() {
+        manoObraSection.hide();
+        maquinariaSection.hide();
+        insumosSection.hide();
+        vistoriaSection.hide();
+        cosechaSection.hide();
+    }
+
+    function limpiarValoresActividad() {
+        cantidadHombreInput.val("");
+        valorHombreInput.val("");
+        cantidadMaqInput.val("");
+        valorMaqInput.val("");
+        $("#totalHsManoObra").val("");
+        $("#costoTotalManoObra").val("");
+        $("#totalHsMaquinaria").val("");
+        $("#costoTotalMaquinaria").val("");
+    }
+
     function calcularSubtotalManoObra() {
         const cantidad = parseFloat(cantidadHombreInput.val()) || 0;
         const valor = parseFloat(valorHombreInput.val()) || 0;
@@ -466,41 +485,6 @@ $(document).ready(function () {
         });
     }
 
-    // Listeners
-    cantidadHombreInput.on("input change", calcularSubtotalManoObra);
-    valorHombreInput.on("input change", calcularSubtotalManoObra);
-    cantidadMaqInput.on("input change", calcularSubtotalMaquinaria);
-    valorMaqInput.on("input change", calcularSubtotalMaquinaria);
-
-    body.on("change", 'select[name$="-producto"]', function () {
-        proponerUnidadEnFila(this);
-        calcularSubtotalInsumo($(this).closest('.insumo-row'));
-    });
-
-    body.on("input change", 'input[name$="-dosis"]', function () {
-        calcularSubtotalInsumo($(this).closest('.insumo-row'));
-    });
-
-    body.on("change", 'select[name$="-um"]', function () {
-        calcularSubtotalInsumo($(this).closest('.insumo-row'));
-    });
-    function recalcularTodosInsumos() {
-        body.find('.insumo-row:visible').each(function () {
-            calcularSubtotalInsumo($(this));
-        });
-    }
-
-    function limpiarValoresActividad() {
-        cantidadHombreInput.val("");
-        valorHombreInput.val("");
-        cantidadMaqInput.val("");
-        valorMaqInput.val("");
-        $("#totalHsManoObra").val("");
-        $("#costoTotalManoObra").val("");
-        $("#totalHsMaquinaria").val("");
-        $("#costoTotalMaquinaria").val("");
-    }
-
     // ─── Productos ────────────────────────────────────────────────
     function proponerUnidadEnFila(selectProducto) {
         const row = $(selectProducto).closest(".insumo-row");
@@ -514,7 +498,6 @@ $(document).ready(function () {
 
     function actualizarSelectsProducto(productos) {
         productosActuales = productos || [];
-
         const selects = obtenerSelectsProducto();
 
         selects.each(function () {
@@ -552,15 +535,6 @@ $(document).ready(function () {
         recalcularTodosInsumos();
     }
 
-    // ─── Secciones ────────────────────────────────────────────────
-    function ocultarSecciones() {
-        manoObraSection.hide();
-        maquinariaSection.hide();
-        insumosSection.hide();
-        vistoriaSection.hide();
-        cosechaSection.hide();
-    }
-
     // ─── AJAX ─────────────────────────────────────────────────────
     function cargarProductos(tipoId, subtipoId = "") {
         if (!tipoId) { limpiarProductos(); return; }
@@ -568,7 +542,7 @@ $(document).ready(function () {
         $.ajax({
             url: "{% url 'ajax_productos_por_actividad' %}",
             type: "GET",
-            data: { tipo_id: tipoId, subtipo_id: subtipoId, ciclo_id: cicloId },  // ← agregás ciclo_id
+            data: { tipo_id: tipoId, subtipo_id: subtipoId, ciclo_id: cicloId },
             success: function (data) {
                 if (!data.ok) { limpiarProductos(); return; }
                 actualizarSelectsProducto(data.productos);
@@ -604,15 +578,8 @@ $(document).ready(function () {
     }
 
     function cargarUnidadesCosecha() {
-        console.log("cargarUnidadesCosecha llamada");
         const productoId = "{{ ciclo.producto_final_id|default:'' }}";
-        console.log("productoId:", productoId);
-        if (!productoId) {
-            console.log("no hay productoId, saliendo");
-            return;
-    }
-    
-    if (!productoId) return;
+        if (!productoId) return;
 
         $.ajax({
             url: "{% url 'ajax_unidades_conversion' %}",
@@ -623,91 +590,85 @@ $(document).ready(function () {
                 const select = $("#cosecha_um_select");
                 select.empty();
 
-                // primero la unidad base
                 select.append(
                     $("<option>")
                         .val(data.unidad_base_id)
                         .text(data.unidad_base_nombre + " (" + data.unidad_base_abrev + ")")
                 );
 
-                // luego las conversiones disponibles
                 data.unidades.forEach(function (u) {
                     select.append(
                         $("<option>").val(u.id).text(u.nombre + " (" + u.abreviatura + ")")
                     );
                 });
 
-                // sincronizar con el hidden
                 $("#id_cosecha-um").val(select.val());
             }
         });
     }
 
-// sincronizar select visible → hidden
-$("#cosecha_um_select").on("change", function () {
-    $("#id_cosecha-um").val($(this).val());
-});
-
-function cargarSubtipos(tipoId) {
-    if (!tipoId) {
-        ocultarSubtipo();
-        limpiarValoresActividad();
-        ocultarSecciones();
-        return;
-    }
-
-    $.ajax({
-        url: "{% url 'ajax_subtipos_tipo_actividad' %}",
-        type: "GET",
-        data: { tipo_id: tipoId },
-        success: function (data) {
-            if (!data.ok) {
-                ocultarSubtipo();
-                limpiarValoresActividad();
-                return;
-            }
-
-            // secciones por flags reales
-            ocultarSecciones();
-            if (data.requiere_mo)      { manoObraSection.show(); calcularSubtotalManoObra(); }
-            if (data.requiere_maq)     { maquinariaSection.show(); calcularSubtotalMaquinaria(); }
-            if (data.requiere_insumo)  { insumosSection.show(); }
-            if (data.requiere_vist)    { vistoriaSection.show(); }
-            if (data.requiere_cosecha) { cosechaSection.show(); cargarUnidadesCosecha(); }
-
-            if (!data.subtipos.length) {
-                subtipoSelect.empty();
-                subtipoContainer.hide();
-                cargarProductos(tipoId);
-                cargarValoresActividad(tipoId);
-                return;
-            }
-
-            subtipoSelect.empty();
-            subtipoSelect.append($("<option>").val("").text("---------"));
-            data.subtipos.forEach(function (s) {
-                subtipoSelect.append($("<option>").val(s.id).text(s.nombre));
-            });
-
-            if (data.subtipo_auto_id) {
-                subtipoSelect.val(String(data.subtipo_auto_id));
-            } else if (data.subtipos.length === 1) {
-                subtipoSelect.val(String(data.subtipos[0].id));
-            } else {
-                subtipoSelect.val("");
-            }
-
-            subtipoContainer.show();
-            cargarProductos(tipoId, subtipoSelect.val());
-            cargarValoresActividad(tipoId, subtipoSelect.val());
-        },
-        error: function (xhr) {
-            console.error("ERROR subtipos", xhr.responseText);
+    function cargarSubtipos(tipoId) {
+        if (!tipoId) {
             ocultarSubtipo();
+            ocultarSecciones();
             limpiarValoresActividad();
+            limpiarProductos();
+            return;
         }
-    });
-}
+
+        $.ajax({
+            url: "{% url 'ajax_subtipos_tipo_actividad' %}",
+            type: "GET",
+            data: { tipo_id: tipoId },
+            success: function (data) {
+                if (!data.ok) {
+                    ocultarSubtipo();
+                    ocultarSecciones();
+                    limpiarValoresActividad();
+                    return;
+                }
+
+                ocultarSecciones();
+                if (data.requiere_mo)      { manoObraSection.show(); calcularSubtotalManoObra(); }
+                if (data.requiere_maq)     { maquinariaSection.show(); calcularSubtotalMaquinaria(); }
+                if (data.requiere_insumo)  { insumosSection.show(); }
+                if (data.requiere_vist)    { vistoriaSection.show(); }
+                if (data.requiere_cosecha) { cosechaSection.show(); cargarUnidadesCosecha(); }
+
+                if (!data.subtipos.length) {
+                    subtipoSelect.empty();
+                    subtipoContainer.hide();
+                    cargarProductos(tipoId);
+                    cargarValoresActividad(tipoId);
+                    return;
+                }
+
+                subtipoSelect.empty();
+                subtipoSelect.append($("<option>").val("").text("---------"));
+                data.subtipos.forEach(function (s) {
+                    subtipoSelect.append($("<option>").val(s.id).text(s.nombre));
+                });
+
+                if (data.subtipo_auto_id) {
+                    subtipoSelect.val(String(data.subtipo_auto_id));
+                } else if (data.subtipos.length === 1) {
+                    subtipoSelect.val(String(data.subtipos[0].id));
+                } else {
+                    subtipoSelect.val("");
+                }
+
+                subtipoContainer.show();
+                cargarProductos(tipoId, subtipoSelect.val());
+                cargarValoresActividad(tipoId, subtipoSelect.val());
+            },
+            error: function (xhr) {
+                console.error("ERROR subtipos", xhr.responseText);
+                ocultarSubtipo();
+                ocultarSecciones();
+                limpiarValoresActividad();
+            }
+        });
+    }
 
     // ─── Listeners ────────────────────────────────────────────────
     cantidadHombreInput.on("input change", calcularSubtotalManoObra);
@@ -724,14 +685,21 @@ function cargarSubtipos(tipoId) {
         calcularSubtotalInsumo($(this).closest('.insumo-row'));
     });
 
+    body.on("change", 'select[name$="-um"]', function () {
+        calcularSubtotalInsumo($(this).closest('.insumo-row'));
+    });
+
     tipoSelect.on("change", function () {
         cargarSubtipos(this.value);
-
     });
 
     subtipoSelect.on("change", function () {
         cargarProductos(tipoSelect.val(), this.value);
         cargarValoresActividad(tipoSelect.val(), this.value);
+    });
+
+    $("#cosecha_um_select").on("change", function () {
+        $("#id_cosecha-um").val($(this).val());
     });
 
     addBtn.on("click", function () {
@@ -756,11 +724,10 @@ function cargarSubtipos(tipoId) {
     // ─── Init ─────────────────────────────────────────────────────
     if (tipoSelect.val()) {
         cargarSubtipos(tipoSelect.val());
-
     } else {
         ocultarSubtipo();
-        limpiarValoresActividad();
         ocultarSecciones();
+        limpiarValoresActividad();
     }
 
 });
