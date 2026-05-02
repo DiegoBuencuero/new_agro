@@ -632,28 +632,34 @@ def vista_editar_ciclo():
 @login_required
 def ajax_subtipos_tipo_actividad(request):
     tipo_id = request.GET.get("tipo_id")
-
     if not tipo_id:
-        return JsonResponse({
-            "ok": False,
-            "subtipos": []
-        })
+        return JsonResponse({"ok": False, "subtipos": []})
+    
+    try:
+        tipo = TipoActividad.objects.get(id=tipo_id)
+    except TipoActividad.DoesNotExist:
+        return JsonResponse({"ok": False, "subtipos": []})
 
-    subtipos = SubTipoActividad.objects.filter( tipo_actividad_id=tipo_id, activo=True).order_by("nombre")
+    subtipos = SubTipoActividad.objects.filter(
+        tipo_actividad_id=tipo_id, activo=True
+    ).order_by("nombre")
 
-    data = [
-        {
-            "id": subtipo.id,
-            "nombre": subtipo.nombre
-        }
-        for subtipo in subtipos
-    ]
+    data = [{"id": subtipo.id, "nombre": subtipo.nombre} for subtipo in subtipos]
 
-    return JsonResponse({"ok": True, "subtipos": data })
+    return JsonResponse({
+        "ok": True,
+        "subtipos": data,
+        "requiere_mo":      tipo.requiere_mo,
+        "requiere_maq":     tipo.requiere_maq,
+        "requiere_insumo":  tipo.requiere_insumo,
+        "requiere_vist":    tipo.requiere_vist,
+        "requiere_cosecha": tipo.requiere_cosecha,
+    })
 
 @login_required
 def vista_agregar_actividad(request, id_ciclo):
     empresa = request.user.profile.empresa
+    depositos = Deposito.objects.filter(empresa=empresa)
 
     ciclo = CicloAgricola.objects.filter(
         id=id_ciclo,
@@ -690,6 +696,7 @@ def vista_agregar_actividad(request, id_ciclo):
         cosecha_form = CamposCosechaForm(
             request.POST,
             prefix="cosecha",
+            depositos=Deposito.objects.filter(empresa=empresa),
         )
 
         if actividad_form.is_valid():
@@ -748,7 +755,11 @@ def vista_agregar_actividad(request, id_ciclo):
         )
 
         vistoria_form = CamposVistoriaForm(prefix="vistoria")
-        cosecha_form = CamposCosechaForm(prefix="cosecha")
+        cosecha_form = CamposCosechaForm(
+            prefix="cosecha",
+            depositos=depositos,
+            initial={"deposito_destino": empresa.deposito_producto_final_default}
+        )
 
     context = {
         "ciclo": ciclo,
@@ -764,6 +775,7 @@ def vista_agregar_actividad(request, id_ciclo):
 def ajax_productos_por_actividad(request):
     tipo_id = request.GET.get("tipo_id")
     subtipo_id = request.GET.get("subtipo_id")
+    ciclo_id = request.GET.get("ciclo_id")
 
     if not tipo_id:
         return JsonResponse({"ok": False, "productos": []})
@@ -781,25 +793,16 @@ def ajax_productos_por_actividad(request):
     )
 
     if subtipo_id:
-        configuraciones_subtipo = configuraciones.filter(
-            subtipo_actividad_id=subtipo_id
-        )
-
+        configuraciones_subtipo = configuraciones.filter(subtipo_actividad_id=subtipo_id)
         if configuraciones_subtipo.exists():
             configuraciones = configuraciones_subtipo
         else:
-            configuraciones = configuraciones.filter(
-                subtipo_actividad__isnull=True
-            )
+            configuraciones = configuraciones.filter(subtipo_actividad__isnull=True)
     else:
-        configuraciones = configuraciones.filter(
-            subtipo_actividad__isnull=True
-        )
+        configuraciones = configuraciones.filter(subtipo_actividad__isnull=True)
 
-    categoria_ids = configuraciones.values_list(
-        "categoria_producto_id",
-        flat=True,
-    )
+    categoria_ids = configuraciones.values_list("categoria_producto_id", flat=True)
+
     if categoria_ids:
         productos = Producto.objects.filter(
             empresa=empresa,
@@ -814,6 +817,19 @@ def ajax_productos_por_actividad(request):
             maneja_stock=True
         )
 
+    # filtrar semillas por cultivo del ciclo
+    ciclo = None
+    if ciclo_id:
+        ciclo = CicloAgricola.objects.filter(id=ciclo_id).first()
+
+    if ciclo:
+        productos_semilla = productos.filter(
+            categoria__es_semilla=True,
+            datos_semilla__cultivo=ciclo.cultivo
+        )
+        productos_no_semilla = productos.filter(categoria__es_semilla=False)
+        productos = (productos_semilla | productos_no_semilla).distinct()
+
     productos = productos.select_related("unidad_base").order_by("nombre")
 
     data = [
@@ -822,18 +838,13 @@ def ajax_productos_por_actividad(request):
             "nombre": producto.nombre,
             "unidad_id": producto.unidad_base_id,
             "unidad_abreviatura": (
-                producto.unidad_base.abreviatura
-                if producto.unidad_base else ""
+                producto.unidad_base.abreviatura if producto.unidad_base else ""
             ),
         }
         for producto in productos
     ]
 
-    return JsonResponse({
-        "ok": True,
-        "productos": data,
-    })
-
+    return JsonResponse({"ok": True, "productos": data})
 @login_required
 def ajax_valores_actividad(request):
     tipo_id = request.GET.get("tipo_id")
@@ -1829,6 +1840,11 @@ def vista_confirmar_factura(request):
     )
 
     if not cabecera_form.is_valid() or not formset.is_valid():
+        print("ERRORES CABECERA:", cabecera_form.errors)
+        for i, f in enumerate(formset):
+            if f.errors:
+                print(f"ERRORES FORM {i}:", f.errors)
+        print("ERRORES FORMSET NON FORM:", formset.non_form_errors())
         messages.error(request, _("Hay errores en la factura. Revisá los campos marcados."))
         return render(request, "tem_facturas/vista_revisar_factura.html", {
             "cabecera_form":   cabecera_form,
@@ -1837,10 +1853,10 @@ def vista_confirmar_factura(request):
                 (f, {"score": 0, "label": "ninguno", "candidatos": [], "presentaciones": []})
                 for f in formset
             ],
-            "items":          factura_temp["items"],
-            "nombre_archivo": factura_temp["nombre_archivo"],
-            "datos_factura":  factura_temp["datos_factura"],
-            "proveedor":      proveedor,
+            "items":           factura_temp["items"],
+            "nombre_archivo":  factura_temp["nombre_archivo"],
+            "datos_factura":   factura_temp["datos_factura"],
+            "proveedor":       proveedor,
             "empresa_usuario": empresa,
         })
 
@@ -1859,15 +1875,6 @@ def vista_confirmar_factura(request):
         request.session.pop("proveedor_seleccionado", None)
         return redirect("vista_lista_facturas")
 
-    # ── Unidad helper ──────────────────────────────────────────────────────
-    from agro.models import Unidad
-
-    def resolver_unidad(nombre):
-        return (
-            Unidad.objects.filter(nombre__iexact=nombre).first()
-            or Unidad.objects.filter(abreviatura__iexact=nombre).first()
-            or Unidad.objects.first()
-        )
 
     # ── Guardar cabecera ───────────────────────────────────────────────────
     factura = cabecera_form.save(commit=False)
@@ -1887,23 +1894,22 @@ def vista_confirmar_factura(request):
     factura.save()
 
     total_factura = Decimal("0.00")
-    items_raw     = factura_temp["items"]
 
     for i, form in enumerate(formset):
         cd = form.cleaned_data
         if not cd:
             continue
 
-        usar_nuevo       = cd.get("crear_nuevo_producto")
-        prod_existente   = cd.get("producto_existente")
-        pres_existente   = cd.get("presentacion_existente")
+        usar_nuevo           = cd.get("crear_nuevo_producto")
+        prod_existente       = cd.get("producto_existente")
+        pres_existente       = cd.get("presentacion_existente")
 
-        descripcion      = (cd.get("descripcion") or "").strip()
-        unidad_detectada = (cd.get("unidad_detectada") or "UN").strip()
-        categoria        = cd.get("categoria")
-        cultivo          = cd.get("cultivo")
-        variedad         = cd.get("variedad")
-        variedad_manual  = (cd.get("variedad_manual") or "").strip()
+        descripcion          = (cd.get("descripcion") or "").strip()
+        unidad_detectada     = (cd.get("unidad_detectada") or "UN").strip()
+        categoria            = cd.get("categoria")
+        cultivo              = cd.get("cultivo")
+        variedad             = cd.get("variedad")
+        variedad_manual      = (cd.get("variedad_manual") or "").strip()
 
         cantidad_envases     = cd["cantidad"]
         contenido_por_envase = cd["contenido_por_envase"]
@@ -1915,16 +1921,23 @@ def vista_confirmar_factura(request):
         if prod_existente and not usar_nuevo:
             producto = prod_existente
         else:
-            if categoria and "semilla" in categoria.nombre.lower():
-                if variedad_manual and cultivo:
-                    variedad, creada = Variedad.objects.get_or_create(
+            es_semilla = categoria and categoria.es_semilla
+
+            if es_semilla and cultivo:
+                variedad_obj = variedad
+                if not variedad_obj and variedad_manual:
+                    variedad_obj, creado = Variedad.objects.get_or_create(
                         cultivo=cultivo, nombre=variedad_manual
                     )
-                nombre_producto = f"{descripcion[:180]} - {cultivo.nombre} {variedad.nombre}"
+                if variedad_obj:
+                    nombre_producto = f"{descripcion[:180]} - {cultivo.nombre} {variedad_obj.nombre}"
+                else:
+                    nombre_producto = descripcion[:255]
             else:
+                variedad_obj = None
                 nombre_producto = descripcion[:255]
 
-            unidad_base = resolver_unidad(unidad_medida)
+            unidad_base = unidad_medida
 
             producto = Producto.objects.filter(
                 empresa=empresa,
@@ -1935,7 +1948,6 @@ def vista_confirmar_factura(request):
                 import re
                 codigo_base = re.sub(r"[^A-Z0-9]", "", nombre_producto.upper())[:20]
                 codigo = codigo_base or "PROD"
-
                 sufijo = 1
                 codigo_final = codigo
                 while Producto.objects.filter(empresa=empresa, codigo=codigo_final).exists():
@@ -1953,6 +1965,16 @@ def vista_confirmar_factura(request):
                     unidad_base=unidad_base,
                 )
 
+            # ── Crear ProductoSemilla si corresponde ───────────────────────
+            if es_semilla and cultivo and variedad_obj:
+                ProductoSemilla.objects.get_or_create(
+                    producto=producto,
+                    defaults={
+                        "cultivo": cultivo,
+                        "variedad": variedad_obj,
+                    }
+                )
+
         # ── Resolver presentación ──────────────────────────────────────────
         if pres_existente and not usar_nuevo:
             presentacion = pres_existente
@@ -1961,9 +1983,9 @@ def vista_confirmar_factura(request):
                 (cd.get("nueva_presentacion_nombre") or "").strip()
                 or f"{unidad_detectada} {contenido_por_envase} {unidad_medida}"
             )
-            unidad_contenido = resolver_unidad(unidad_medida)
+            unidad_contenido = unidad_medida
 
-            presentacion, pres_creada = PresentacionProducto.objects.get_or_create(
+            presentacion, creado = PresentacionProducto.objects.get_or_create(
                 producto=producto,
                 nombre=nombre_pres,
                 defaults={
@@ -2006,7 +2028,7 @@ def vista_confirmar_factura(request):
 
     messages.success(request, _(f"Factura {factura.numero} guardada correctamente."))
     return redirect("vista_lista_facturas")
-    
+
 @login_required
 def ajax_unidades_conversion(request):
     producto_id = request.GET.get("producto_id")

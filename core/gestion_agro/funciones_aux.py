@@ -530,11 +530,18 @@ def registrar_actividad_aux(
     if tipo.requiere_cosecha and ciclo.producto_final:
         rendimiento = cosecha_form.cleaned_data.get("rendimiento")
         um_id = cosecha_form.cleaned_data.get("um")
-        
+        deposito_destino = cosecha_form.cleaned_data.get("deposito_destino")
+
+        # si no eligió depósito, buscar default
+        if not deposito_destino:
+            deposito_destino = (
+                ciclo.producto_final.deposito_default
+                or empresa.deposito_producto_final_default
+            )
+
         if rendimiento:
             factor = Decimal("1")
             unidad_base = ciclo.producto_final.unidad_base
-            
             if um_id and um_id != unidad_base.id:
                 try:
                     conversion = ConversionUM.objects.get(
@@ -544,7 +551,6 @@ def registrar_actividad_aux(
                     factor = conversion.factor
                 except ConversionUM.DoesNotExist:
                     pass
-
             cantidad_total = rendimiento * ciclo.superficie_ha * factor
             MovimientoStock.objects.create(
                 producto=ciclo.producto_final,
@@ -556,7 +562,9 @@ def registrar_actividad_aux(
                 actividad_item=None,
                 factura_item=None,
                 precio_unitario=None,
+                deposito_destino=deposito_destino,
             )
+
 
     # 14. cerrar fase
     cerrar_fase_si_corresponde(fase, fecha, cierra_fase)

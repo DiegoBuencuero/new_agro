@@ -313,20 +313,27 @@
                                     <div class="alert alert-danger">{{ cosecha_form.non_field_errors }}</div>
                                 {% endif %}
                                 <div class="row g-3">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="{{ cosecha_form.rendimiento.id_for_label }}" class="form-label">{{ cosecha_form.rendimiento.label }}</label>
                                         {{ cosecha_form.rendimiento }}{{ cosecha_form.rendimiento.errors }}
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label class="form-label">{% translate "Unidad" %}</label>
                                         <select id="cosecha_um_select" class="form-select">
                                             <!-- se llena via AJAX -->
                                         </select>
                                         {{ cosecha_form.um }}  {# hidden con id_cosecha-um #}
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="{{ cosecha_form.comentarios_cosecha.id_for_label }}" class="form-label">{{ cosecha_form.comentarios_cosecha.label }}</label>
                                         {{ cosecha_form.comentarios_cosecha }}{{ cosecha_form.comentarios_cosecha.errors }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="{{ cosecha_form.deposito_destino.id_for_label }}" class="form-label">
+                                            {% translate "Depósito destino" %}
+                                        </label>
+                                        {{ cosecha_form.deposito_destino }}
+                                        {{ cosecha_form.deposito_destino.errors }}
                                     </div>
                                     <div class="col-md-4">
                                         <label for="{{ cosecha_form.observaciones.id_for_label }}" class="form-label">{{ cosecha_form.observaciones.label }}</label>
@@ -554,38 +561,6 @@ $(document).ready(function () {
         cosechaSection.hide();
     }
 
-    function actualizarSeccionesPorTipo() {
-        ocultarSecciones();
-        if (!tipoSelect.val()) return;
-
-        const texto = tipoSelect.find("option:selected").text().toLowerCase();
-
-        if (
-            texto.includes("siembra") ||
-            texto.includes("aplicación") || texto.includes("aplicacion") ||
-            texto.includes("fertilización") || texto.includes("fertilizacion") ||
-            texto.includes("cosecha")
-        ) {
-            manoObraSection.show();
-            maquinariaSection.show();
-            calcularSubtotalManoObra();
-            calcularSubtotalMaquinaria();
-        }
-
-        if (
-            texto.includes("siembra") ||
-            texto.includes("aplicación") || texto.includes("aplicacion") ||
-            texto.includes("fertilización") || texto.includes("fertilizacion")
-        ) {
-            insumosSection.show();
-        } else if (texto.includes("monitoreo")) {
-            vistoriaSection.show();
-        } else if (texto.includes("cosecha")) {
-            cosechaSection.show();
-            cargarUnidadesCosecha();
-        }
-    }
-
     // ─── AJAX ─────────────────────────────────────────────────────
     function cargarProductos(tipoId, subtipoId = "") {
         if (!tipoId) { limpiarProductos(); return; }
@@ -593,7 +568,7 @@ $(document).ready(function () {
         $.ajax({
             url: "{% url 'ajax_productos_por_actividad' %}",
             type: "GET",
-            data: { tipo_id: tipoId, subtipo_id: subtipoId },
+            data: { tipo_id: tipoId, subtipo_id: subtipoId, ciclo_id: cicloId },  // ← agregás ciclo_id
             success: function (data) {
                 if (!data.ok) { limpiarProductos(); return; }
                 actualizarSelectsProducto(data.productos);
@@ -629,7 +604,14 @@ $(document).ready(function () {
     }
 
     function cargarUnidadesCosecha() {
-    const productoId = "{{ ciclo.producto_final_id|default:'' }}";
+        console.log("cargarUnidadesCosecha llamada");
+        const productoId = "{{ ciclo.producto_final_id|default:'' }}";
+        console.log("productoId:", productoId);
+        if (!productoId) {
+            console.log("no hay productoId, saliendo");
+            return;
+    }
+    
     if (!productoId) return;
 
         $.ajax({
@@ -666,55 +648,66 @@ $("#cosecha_um_select").on("change", function () {
     $("#id_cosecha-um").val($(this).val());
 });
 
-    function cargarSubtipos(tipoId) {
-        if (!tipoId) {
-            ocultarSubtipo();
-            limpiarValoresActividad();
-            actualizarSeccionesPorTipo();
-            return;
-        }
+function cargarSubtipos(tipoId) {
+    if (!tipoId) {
+        ocultarSubtipo();
+        limpiarValoresActividad();
+        ocultarSecciones();
+        return;
+    }
 
-        $.ajax({
-            url: "{% url 'ajax_subtipos_tipo_actividad' %}",
-            type: "GET",
-            data: { tipo_id: tipoId },
-            success: function (data) {
-                if (!data.ok || data.subtipos.length === 0) {
-                    subtipoSelect.empty();
-                    subtipoContainer.hide();
-                    cargarProductos(tipoId);
-                    cargarValoresActividad(tipoId);
-                    actualizarSeccionesPorTipo();
-                    return;
-                }
-
-                subtipoSelect.empty();
-                subtipoSelect.append($("<option>").val("").text("---------"));
-
-                data.subtipos.forEach(function (s) {
-                    subtipoSelect.append($("<option>").val(s.id).text(s.nombre));
-                });
-
-                if (data.subtipo_auto_id) {
-                    subtipoSelect.val(String(data.subtipo_auto_id));
-                } else if (data.subtipos.length === 1) {
-                    subtipoSelect.val(String(data.subtipos[0].id));
-                } else {
-                    subtipoSelect.val("");
-                }
-
-                subtipoContainer.show();
-                cargarProductos(tipoId, subtipoSelect.val());
-                cargarValoresActividad(tipoId, subtipoSelect.val());
-                actualizarSeccionesPorTipo();
-            },
-            error: function (xhr) {
-                console.error("ERROR subtipos", xhr.responseText);
+    $.ajax({
+        url: "{% url 'ajax_subtipos_tipo_actividad' %}",
+        type: "GET",
+        data: { tipo_id: tipoId },
+        success: function (data) {
+            if (!data.ok) {
                 ocultarSubtipo();
                 limpiarValoresActividad();
+                return;
             }
-        });
-    }
+
+            // secciones por flags reales
+            ocultarSecciones();
+            if (data.requiere_mo)      { manoObraSection.show(); calcularSubtotalManoObra(); }
+            if (data.requiere_maq)     { maquinariaSection.show(); calcularSubtotalMaquinaria(); }
+            if (data.requiere_insumo)  { insumosSection.show(); }
+            if (data.requiere_vist)    { vistoriaSection.show(); }
+            if (data.requiere_cosecha) { cosechaSection.show(); cargarUnidadesCosecha(); }
+
+            if (!data.subtipos.length) {
+                subtipoSelect.empty();
+                subtipoContainer.hide();
+                cargarProductos(tipoId);
+                cargarValoresActividad(tipoId);
+                return;
+            }
+
+            subtipoSelect.empty();
+            subtipoSelect.append($("<option>").val("").text("---------"));
+            data.subtipos.forEach(function (s) {
+                subtipoSelect.append($("<option>").val(s.id).text(s.nombre));
+            });
+
+            if (data.subtipo_auto_id) {
+                subtipoSelect.val(String(data.subtipo_auto_id));
+            } else if (data.subtipos.length === 1) {
+                subtipoSelect.val(String(data.subtipos[0].id));
+            } else {
+                subtipoSelect.val("");
+            }
+
+            subtipoContainer.show();
+            cargarProductos(tipoId, subtipoSelect.val());
+            cargarValoresActividad(tipoId, subtipoSelect.val());
+        },
+        error: function (xhr) {
+            console.error("ERROR subtipos", xhr.responseText);
+            ocultarSubtipo();
+            limpiarValoresActividad();
+        }
+    });
+}
 
     // ─── Listeners ────────────────────────────────────────────────
     cantidadHombreInput.on("input change", calcularSubtotalManoObra);
@@ -733,7 +726,7 @@ $("#cosecha_um_select").on("change", function () {
 
     tipoSelect.on("change", function () {
         cargarSubtipos(this.value);
-        actualizarSeccionesPorTipo();
+
     });
 
     subtipoSelect.on("change", function () {
@@ -763,7 +756,7 @@ $("#cosecha_um_select").on("change", function () {
     // ─── Init ─────────────────────────────────────────────────────
     if (tipoSelect.val()) {
         cargarSubtipos(tipoSelect.val());
-        actualizarSeccionesPorTipo();
+
     } else {
         ocultarSubtipo();
         limpiarValoresActividad();

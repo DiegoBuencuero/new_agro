@@ -482,9 +482,19 @@ class CamposVistoriaForm(BaseForm):
 class CamposCosechaForm(BaseForm):
     um = forms.IntegerField(
         required=False,
-        widget=forms.HiddenInput(),  # lo manejamos via JS
+        widget=forms.HiddenInput(),
         label=_("Unidad"),
     )
+    deposito_destino = forms.ModelChoiceField(
+        queryset=Deposito.objects.none(),
+        required=False,
+        label=_("Depósito destino"),
+    )
+
+    def __init__(self, *args, depositos=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if depositos is not None:
+            self.fields["deposito_destino"].queryset = depositos
 
     class Meta:
         model = CamposCosecha
@@ -512,15 +522,6 @@ class StockFiltroForm(BaseSimpleForm):
             self.add_error("fecha_entrada_hasta", _("La fecha hasta no puede ser menor que la fecha desde."))
 
         return cleaned_data
-
-UNIDAD_CHOICES = [
-    ("L",   "L"),
-    ("ML",  "ML"),
-    ("KG",  "KG"),
-    ("G",   "G"),
-    ("TON", "TON"),
-    ("UN",  "UN"),
-]
 
 class FacturaCompraForm(BaseForm):
     class Meta:
@@ -603,10 +604,12 @@ class FacturaCompraItemForm(forms.Form):
         label=_("Contenido por envase"),
     )
 
-    unidad_medida = forms.ChoiceField(
-        choices=[("", "---------")] + UNIDAD_CHOICES,
+    unidad_medida = forms.ModelChoiceField(
+        queryset=Unidad.objects.all().order_by("abreviatura"),
         required=False,
+        empty_label="---------",
         label=_("Unidad"),
+        to_field_name="abreviatura",
     )
 
     precio_unitario = forms.DecimalField(
