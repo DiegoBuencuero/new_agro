@@ -203,7 +203,7 @@ def vista_editar_campana(request, id_campana):
     try:
         camp = Campana.objects.get(id = id_campana)
     except:
-        return redirect('vista_campana')
+        return redirect('vista_crear_campana')
     empresa = request.user.profile.empresa
     if camp.empresa == empresa:
         if request.method == 'POST':
@@ -214,12 +214,12 @@ def vista_editar_campana(request, id_campana):
                     campana.delete()
                 else:
                     campana.save()
-                return redirect('vista_campana')
+                return redirect('vista_crear_campana')
         else:
             form = CampanaForm(instance = camp)
-        return render(request, 'vista_campana.html', {'form': form, 'empresa': empresa, 'campanas':campanas, 'modificacion': 'S'})
+        return render(request, 'vista_crear_campana.html', {'form': form, 'empresa': empresa, 'campanas':campanas, 'modificacion': 'S'})
     else:
-        return redirect('vista_campana')
+        return redirect('vista_crear_campana')
 
 @login_required
 def vista_crear_cultivo(request):
@@ -905,6 +905,7 @@ def ajax_valores_actividad(request):
         "valor_h_maq": str(c_mq) if c_mq is not None else "",
     })
 
+@login_required
 def vista_lista_stock(request):
     empresa = request.user.profile.empresa
     form = StockFiltroForm(request.GET or None)
@@ -1609,12 +1610,7 @@ def vista_procesar_pdf_factura(request):
         messages.error(request, _("No se ha seleccionado ningún archivo PDF."))
         return redirect("vista_cargar_factura")
 
-    # Leer contenido antes de escribir el temp
     pdf_content = pdf_file.read()
-    pdf_file.seek(0)
-
-    pdf_content = pdf_file.read()
-    pdf_file.seek(0)
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
         tmp.write(pdf_content)
@@ -1641,7 +1637,7 @@ def vista_procesar_pdf_factura(request):
             except ValueError:
                 fecha_html = ""
 
-            request.session["factura_temporal"] = {
+        request.session["factura_temporal"] = {
             "items": datos["items"],
             "nombre_archivo": pdf_file.name,
             "proveedor_data": datos.get("proveedor"),
@@ -1650,8 +1646,8 @@ def vista_procesar_pdf_factura(request):
                 "fecha_emision": fecha_html,
                 "total": str(total),
             },
-            "pdf_base64": base64.b64encode(pdf_content).decode("utf-8"),  # ← dentro do dict
-            "pdf_nombre": pdf_file.name,                                   # ← dentro do dict
+            "pdf_base64": base64.b64encode(pdf_content).decode("utf-8"),
+            "pdf_nombre": pdf_file.name,
         }
         return redirect("vista_revisar_factura")
 
@@ -1743,7 +1739,7 @@ def vista_revisar_factura(request):
         presentaciones = []
         if mejor_producto:
             presentaciones = list(
-                PresentacionProducto.objects.filter(producto_id=prod).order_by("nombre")
+                PresentacionProducto.objects.filter(producto_id=mejor_producto.id).order_by("nombre")
             )
 
         pres_match = next(
