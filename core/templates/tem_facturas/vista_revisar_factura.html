@@ -116,6 +116,18 @@
                                            class="form-control form-control-sm"
                                            value="{{ datos_factura.fecha_emision }}" required>
                                 </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">{% translate "Depósito destino" %}</label>
+                                    <select name="deposito_destino" id="id_deposito_destino" class="form-select form-select-sm">
+                                        <option value="">— {% translate "Sin asignar" %} —</option>
+                                        {% for dep in depositos %}
+                                        <option value="{{ dep.id }}"
+                                            {% if deposito_default and deposito_default.id == dep.id %}selected{% endif %}>
+                                            {{ dep.nombre }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
                         </div>
 

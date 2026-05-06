@@ -954,7 +954,9 @@ def vista_lista_stock(request):
     total_restante_finales = Decimal("0")
 
     for producto in productos:
-        movimientos = MovimientoStock.objects.filter(producto=producto).select_related("um")
+        movimientos = MovimientoStock.objects.filter(producto=producto).select_related(
+            "um", "deposito_origen", "deposito_destino"
+        )
 
         if fecha_desde:
             movimientos = movimientos.filter(fecha__gte=fecha_desde)
@@ -969,13 +971,31 @@ def vista_lista_stock(request):
         consumido = Decimal("0")
         unidad_base = producto.unidad_base
 
+        depositos_cantidad = {}
+        depositos_obj = {}
+
         for mov in movimientos:
             cantidad = convertir_unidad(mov.cantidad, mov.um, unidad_base)
 
             if mov.tipo == "ENTRADA":
                 ingresado += cantidad
+                if mov.deposito_destino_id:
+                    dep_id = mov.deposito_destino_id
+                    depositos_obj[dep_id] = mov.deposito_destino
+                    depositos_cantidad[dep_id] = depositos_cantidad.get(dep_id, Decimal("0")) + cantidad
+
             elif mov.tipo == "SALIDA":
                 consumido += cantidad
+                if mov.deposito_origen_id:
+                    dep_id = mov.deposito_origen_id
+                    depositos_obj[dep_id] = mov.deposito_origen
+                    depositos_cantidad[dep_id] = depositos_cantidad.get(dep_id, Decimal("0")) - cantidad
+
+        por_deposito = [
+            {"deposito": depositos_obj[dep_id], "cantidad": cant}
+            for dep_id, cant in depositos_cantidad.items()
+            if cant != 0
+        ]
 
         restante = ingresado - consumido
 
@@ -984,6 +1004,7 @@ def vista_lista_stock(request):
             "ingresado": ingresado,
             "consumido": consumido,
             "restante": restante,
+            "por_deposito": por_deposito,
         }
 
         total_ingresado += ingresado
@@ -1003,9 +1024,12 @@ def vista_lista_stock(request):
 
     lista_productos = lista_insumos + lista_productos_finales
 
+    depositos = Deposito.objects.filter(empresa=empresa).order_by("nombre")
+
     context = {
         "form": form,
         "categorias": categorias,
+        "depositos": depositos,
 
         # lista general
         "productos": lista_productos,
@@ -1222,7 +1246,7 @@ def vista_cargar_factura(request):
 def vista_cargar_factura_manual(request):
     empresa = request.user.profile.empresa
 
-    def _context_base(factura_form, formset, proveedor_seleccionado=0):
+    def _context_base(factura_form, formset, proveedor_seleccionado=0, deposito_seleccionado=None):
         return {
             "factura_form":           factura_form,
             "formset":                formset,
@@ -1231,6 +1255,8 @@ def vista_cargar_factura_manual(request):
             "categorias":             CategoriaProducto.objects.all().order_by("nombre"),
             "unidades":               Unidad.objects.all().order_by("abreviatura"),
             "cultivos":               Cultivo.objects.all().order_by("nombre"),
+            "depositos":              Deposito.objects.filter(empresa=empresa).order_by("nombre"),
+            "deposito_default":       deposito_seleccionado or empresa.deposito_insumos_default,
             "proveedor_seleccionado": proveedor_seleccionado,
         }
 
@@ -1260,6 +1286,11 @@ def vista_cargar_factura_manual(request):
         # ── Guardar factura ──
         if "ok" in request.POST:
             if factura_form.is_valid() and formset.is_valid():
+                deposito_destino = Deposito.objects.filter(
+                    id=request.POST.get("deposito_destino"),
+                    empresa=empresa
+                ).first() or empresa.deposito_insumos_default
+
                 with transaction.atomic():
                     factura = factura_form.save(commit=False)
                     factura.empresa      = empresa
@@ -1300,6 +1331,7 @@ def vista_cargar_factura_manual(request):
                             factura_item=item,
                             fecha=factura.fecha,
                             precio_unitario=precio,
+                            deposito_destino=deposito_destino,
                         )
 
                 messages.success(request, _("Factura cargada correctamente."))
@@ -1797,6 +1829,8 @@ def vista_revisar_factura(request):
         "proveedor":       proveedor_obj,
         "empresa_usuario": empresa,
         "categorias":      CategoriaProducto.objects.all().order_by("nombre"),
+        "depositos":       Deposito.objects.filter(empresa=empresa).order_by("nombre"),
+        "deposito_default": empresa.deposito_insumos_default,
     }
 
     return render(request, "tem_facturas/vista_revisar_factura.html", context)
@@ -1823,6 +1857,11 @@ def vista_confirmar_factura(request):
     except Proveedor.DoesNotExist:
         messages.error(request, _("Proveedor no encontrado."))
         return redirect("vista_revisar_factura")
+
+    deposito_destino = Deposito.objects.filter(
+        id=request.POST.get("deposito_destino"),
+        empresa=empresa
+    ).first() or empresa.deposito_insumos_default
 
     cabecera_form = FacturaCompraForm({
         "numero": request.POST.get("numero_factura"),
@@ -2012,6 +2051,7 @@ def vista_confirmar_factura(request):
             factura_item=factura_item,
             fecha=timezone.now(),
             precio_unitario=precio_unitario,
+            deposito_destino=deposito_destino,
         )
 
         total_factura += subtotal
@@ -2055,5 +2095,110 @@ def ajax_unidades_conversion(request):
         "categoria_id":       producto.categoria.id,
         "categoria_nombre":   producto.categoria.nombre,
         "unidades":           lista,
+    })
+
+@login_required
+def ajax_transferir_stock(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido"}, status=405)
+
+    empresa = request.user.profile.empresa
+
+    producto_id         = request.POST.get("producto_id")
+    deposito_origen_id  = request.POST.get("deposito_origen_id")
+    deposito_destino_id = request.POST.get("deposito_destino_id")
+    cantidad_str        = request.POST.get("cantidad")
+    unidad_id           = request.POST.get("unidad_id")
+    fecha               = request.POST.get("fecha")
+    observacion         = request.POST.get("observacion", "").strip()
+
+    if not all([producto_id, deposito_origen_id, deposito_destino_id, cantidad_str, fecha]):
+        return JsonResponse({"ok": False, "error": "Faltan datos obligatorios."}, status=400)
+
+    if deposito_origen_id == deposito_destino_id:
+        return JsonResponse({"ok": False, "error": "El depósito origen y destino no pueden ser el mismo."}, status=400)
+
+    try:
+        cantidad = Decimal(cantidad_str)
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Cantidad inválida."}, status=400)
+
+    if cantidad <= 0:
+        return JsonResponse({"ok": False, "error": "La cantidad debe ser mayor a cero."}, status=400)
+
+    try:
+        producto = Producto.objects.get(id=producto_id, empresa=empresa)
+    except Producto.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Producto no encontrado."}, status=404)
+
+    # convertir a unidad base si se eligió otra unidad
+    unidad_ingresada = None
+    if unidad_id:
+        unidad_ingresada = Unidad.objects.filter(id=unidad_id).first()
+    if not unidad_ingresada:
+        unidad_ingresada = producto.unidad_base
+
+    if unidad_ingresada != producto.unidad_base:
+        try:
+            from .funciones_aux import convertir_unidad as _convertir
+            cantidad = _convertir(cantidad, unidad_ingresada, producto.unidad_base)
+        except ValueError as e:
+            return JsonResponse({"ok": False, "error": str(e)}, status=400)
+
+    try:
+        origen = Deposito.objects.get(id=deposito_origen_id, empresa=empresa)
+    except Deposito.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Depósito origen no encontrado."}, status=404)
+
+    try:
+        destino = Deposito.objects.get(id=deposito_destino_id, empresa=empresa)
+    except Deposito.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Depósito destino no encontrado."}, status=404)
+
+    entradas = MovimientoStock.objects.filter(
+        producto=producto,
+        tipo="ENTRADA",
+        deposito_destino=origen,
+    )
+    salidas = MovimientoStock.objects.filter(
+        producto=producto,
+        tipo="SALIDA",
+        deposito_origen=origen,
+    )
+    stock_origen = sum(m.cantidad for m in entradas) - sum(m.cantidad for m in salidas)
+
+    if cantidad > stock_origen:
+        return JsonResponse({
+            "ok": False,
+            "error": "Stock insuficiente en el depósito origen. Disponible: {} {}.".format(
+                stock_origen, producto.unidad_base.abreviatura
+            )
+        }, status=400)
+
+    with transaction.atomic():
+        MovimientoStock.objects.create(
+            producto=producto,
+            tipo=MovimientoStock.Tipo.SALIDA,
+            cantidad=cantidad,
+            um=producto.unidad_base,
+            fecha=fecha,
+            precio_unitario=Decimal("0"),
+            deposito_origen=origen,
+            deposito_destino=None,
+        )
+        MovimientoStock.objects.create(
+            producto=producto,
+            tipo=MovimientoStock.Tipo.ENTRADA,
+            cantidad=cantidad,
+            um=producto.unidad_base,
+            fecha=fecha,
+            precio_unitario=Decimal("0"),
+            deposito_origen=None,
+            deposito_destino=destino,
+        )
+
+    return JsonResponse({
+        "ok": True,
+        "message": "Transferencia realizada correctamente.",
     })
 

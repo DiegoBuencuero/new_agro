@@ -3,14 +3,14 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from agro.views import index,login_page
-from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo, 
+from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo,
 vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
 vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo, ajax_get_ciclos_data, vista_agregar_actividad,
 ajax_subtipos_tipo_actividad, ajax_productos_por_actividad, ajax_valores_actividad, vista_lista_stock,
 vista_lista_facturas, vista_cargar_factura, vista_cargar_factura_manual, vista_procesar_pdf_factura,
 vista_revisar_factura, vista_confirmar_factura, ajax_unidades_conversion, vista_producto, vista_editar_producto,
 ajax_presentaciones_producto, ajax_crear_producto, ajax_crear_presentacion, ajax_crear_producto, vista_movimientos_producto,
-vista_crear_cultivo, vista_editar_cultivo,vista_crear_deposito, vista_editar_deposito
+vista_crear_cultivo, vista_editar_cultivo, vista_crear_deposito, vista_editar_deposito, ajax_transferir_stock
 )
 
 urlpatterns = [
@@ -60,6 +60,7 @@ urlpatterns = [
     path("facturas/confirmar/", vista_confirmar_factura, name="vista_confirmar_factura"),
     path("ajax/unidades-conversion/", ajax_unidades_conversion, name="ajax_unidades_conversion"),
     path("ajax/presentaciones-producto/", ajax_presentaciones_producto, name="ajax_presentaciones_producto"),
+    path("ajax/transferir-stock/", ajax_transferir_stock, name="ajax_transferir_stock"),
     path("ajax/crear-presentacion/", ajax_crear_presentacion, name="ajax_crear_presentacion"),
     path("ajax/variedades-cultivo/", ajax_variedades_cultivo, name="ajax_variedades_cultivo"),
     path("ajax/unidades-por-base/", ajax_unidades_por_base, name="ajax_unidades_por_base"),

@@ -2,30 +2,20 @@
 {% load static %}
 {% load i18n %}
 
-{% block plugin_css %}
-<link rel="stylesheet" href="{% static 'css/detalleCiclo.css' %}">
-{% endblock %}
-
 {% block content %}
 <div class="content-wrapper">
     <div class="row">
         <div class="col-sm-12">
 
             {% if messages %}
-                <div class="mb-3">
-                    {% for message in messages %}
-                        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
-                            <i class="mdi
-                                {% if 'success' in message.tags %}mdi-check-circle
-                                {% elif 'danger' in message.tags %}mdi-alert-circle
-                                {% elif 'warning' in message.tags %}mdi-alert
-                                {% else %}mdi-information{% endif %}
-                                me-2"></i>
-                            <div>{{ message }}</div>
-                            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
+            <div class="mb-3">
+                {% for message in messages %}
+                <div class="alert {{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
+                {% endfor %}
+            </div>
             {% endif %}
 
             <div class="home-tab">
@@ -35,60 +25,60 @@
                     <ul class="nav nav-tabs" role="tablist">
                         <li class="nav-item">
                             <a class="nav-link active ps-0" id="tab-insumos" data-bs-toggle="tab" href="#insumos" role="tab">
-                                <i class="mdi mdi-flask-outline me-1"></i>
-                                {% translate "Stock de insumos" %}
+                                <i class="mdi mdi-flask-outline me-1"></i>{% translate "Stock de insumos" %}
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" id="tab-cosecha" data-bs-toggle="tab" href="#cosecha" role="tab">
-                                <i class="mdi mdi-sprout me-1"></i>
-                                {% translate "Stock de cosecha" %}
+                                <i class="mdi mdi-sprout me-1"></i>{% translate "Stock de cosecha" %}
                             </a>
                         </li>
                     </ul>
                     <div class="btn-wrapper d-flex gap-2 pb-2">
-                        <button class="btn btn-otline-dark" disabled title="{% translate 'Próximamente' %}">
-                            <i class="icon-share me-1"></i> {% translate "Compartir" %}
+                        <button class="btn btn-otline-dark" disabled>
+                            <i class="icon-share me-1"></i>{% translate "Compartir" %}
                         </button>
-                        <button class="btn btn-otline-dark" disabled title="{% translate 'Próximamente' %}">
-                            <i class="icon-printer me-1"></i> {% translate "Imprimir" %}
+                        <button class="btn btn-otline-dark" disabled>
+                            <i class="icon-printer me-1"></i>{% translate "Imprimir" %}
                         </button>
-                        <button class="btn btn-primary text-white me-0" disabled title="{% translate 'Próximamente' %}">
-                            <i class="icon-download me-1"></i> {% translate "Exportar" %}
+                        <button class="btn btn-primary text-white me-0" disabled>
+                            <i class="icon-download me-1"></i>{% translate "Exportar" %}
                         </button>
                     </div>
                 </div>
 
-                <!-- FILTROS compartidos -->
+                <!-- FILTROS -->
                 <div class="card border-0 shadow-sm my-3">
                     <div class="card-body py-2">
                         <form method="get" class="row g-2 align-items-end">
                             <div class="col-md-3">
                                 <label class="form-label small mb-1">{% translate "Producto" %}</label>
-                                <input type="text" name="producto" class="form-control form-control-sm"
+                                <input type="text" name="producto" id="filtro-producto" class="form-control form-control-sm"
                                     placeholder="{% translate 'Nombre o código' %}"
                                     value="{{ request.GET.producto }}">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small mb-1">{% translate "Categoría" %}</label>
-                                <select name="categoria" class="form-select form-select-sm">
+                                <select name="categoria" id="filtro-categoria" class="form-select form-select-sm">
                                     <option value="">{% translate "Todas" %}</option>
                                     {% for cat in categorias %}
-                                        <option value="{{ cat.id }}"
-                                            {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
-                                            {{ cat.nombre }}
-                                        </option>
+                                    <option value="{{ cat.id }}"
+                                        {% if request.GET.categoria == cat.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ cat.nombre }}
+                                    </option>
                                     {% endfor %}
                                 </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small mb-1">{% translate "Fecha desde" %}</label>
-                                <input type="date" name="fecha_entrada_desde" class="form-control form-control-sm"
+                                <input type="date" name="fecha_entrada_desde" id="filtro-fecha-desde"
+                                    class="form-control form-control-sm"
                                     value="{{ request.GET.fecha_entrada_desde }}">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small mb-1">{% translate "Fecha hasta" %}</label>
-                                <input type="date" name="fecha_entrada_hasta" class="form-control form-control-sm"
+                                <input type="date" name="fecha_entrada_hasta" id="filtro-fecha-hasta"
+                                    class="form-control form-control-sm"
                                     value="{{ request.GET.fecha_entrada_hasta }}">
                             </div>
                             <div class="col-md-2 d-flex gap-2">
@@ -111,6 +101,7 @@
                     ══════════════════════════════ -->
                     <div class="tab-pane fade show active" id="insumos" role="tabpanel">
 
+                        <!-- cards resumen -->
                         <div class="row g-3 mb-4">
                             <div class="col-md-3">
                                 <div class="card text-center h-100 border-0 shadow-sm">
@@ -150,54 +141,111 @@
                             </div>
                         </div>
 
-                        <div class="card card-rounded border-0 shadow-sm">
-                            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="fw-bold mb-1">
-                                        <i class="mdi mdi-package-variant-closed me-1"></i>
-                                        {% translate "Insumos" %}
-                                    </h5>
-                                    <p class="text-muted small mb-0">{{ insumos|length }} {% translate "registros" %}</p>
-                                </div>
+                        <!-- tabla insumos -->
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="fw-bold mb-1">
+                                    <i class="mdi mdi-package-variant-closed me-1"></i>{% translate "Insumos" %}
+                                </h5>
+                                <p class="text-muted small mb-0">{{ insumos|length }} {% translate "registros" %}</p>
                             </div>
                             <div class="card-body p-0">
                                 {% if insumos %}
+                                <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width:35%">{% translate "Producto" %}</th>
+                                            <th style="width:12%">{% translate "Categoría" %}</th>
+                                            <th style="width:13%" class="text-end">{% translate "Ingresado" %}</th>
+                                            <th style="width:13%" class="text-end">{% translate "Consumido" %}</th>
+                                            <th style="width:12%" class="text-end">{% translate "Disponible" %}</th>
+                                            <th style="width:15%" class="text-center">{% translate "Acciones" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                                     {% for item in insumos %}
-                                        {% with prod=item.obj %}
-                                            <div class="border-bottom px-4 py-3">
-                                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-                                                    <div>
-                                                        <div class="fw-semibold">
-                                                            <a href="{% url 'vista_movimientos_producto' prod.id %}" class="text-decoration-none text-dark">
-                                                                {{ prod.nombre|truncatewords:7 }}
-                                                            </a>
-                                                        </div>
-                                                        <div class="small text-muted">{% translate "Ver movimientos" %}</div>
-                                                        <div class="small text-muted mt-2">
-                                                            <span>{% translate "Código" %}: <strong>{{ prod.codigo }}</strong></span>
-                                                            <span class="ms-3">{% translate "Ingresado" %}: <strong>{{ item.ingresado }}</strong> {{ prod.unidad_base }}</span>
-                                                            <span class="ms-3">{% translate "Consumido" %}: <strong>{{ item.consumido }}</strong> {{ prod.unidad_base }}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="text-end">
-                                                        <span class="badge bg-light text-dark border d-block mb-1">{{ prod.categoria.nombre }}</span>
-                                                        <div class="small text-muted">{% translate "Disponible" %}</div>
-                                                        <div class="fw-semibold fs-6
-                                                            {% if item.restante > 0 %}text-success
-                                                            {% elif item.restante == 0 %}text-warning
-                                                            {% else %}text-danger{% endif %}">
-                                                            {{ item.restante }} {{ prod.unidad_base }}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                    {% with prod=item.obj %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold small">{{ prod.nombre|truncatewords:8 }}</div>
+                                            <div class="text-muted" style="font-size:.72rem">{{ prod.codigo }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-light text-dark border">{{ prod.categoria.nombre }}</span>
+                                        </td>
+                                        <td class="text-end small">{{ item.ingresado }} {{ prod.unidad_base }}</td>
+                                        <td class="text-end small">{{ item.consumido }} {{ prod.unidad_base }}</td>
+                                        <td class="text-end">
+                                            <span class="fw-semibold small
+                                                {% if item.restante > 0 %}text-success
+                                                {% elif item.restante == 0 %}text-warning
+                                                {% else %}text-danger{% endif %}">
+                                                {{ item.restante }} {{ prod.unidad_base }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-1">
+                                                <a href="{% url 'vista_movimientos_producto' prod.id %}"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Ver historial de movimientos' %}">
+                                                    <i class="mdi mdi-history"></i>
+                                                </a>
+                                                {% if item.por_deposito %}
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    onclick="abrirModalMover({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ prod.unidad_base }}', {{ prod.unidad_base.id }})"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Transferir stock entre depósitos' %}">
+                                                    <i class="mdi mdi-swap-horizontal"></i>
+                                                </button>
+                                                {% else %}
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Sin depósito asignado — cargá una factura para asignar depósito' %}">
+                                                    <i class="mdi mdi-swap-horizontal"></i>
+                                                </button>
+                                                {% endif %}
+                                                {% if item.por_deposito %}
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    onclick="toggleDepositos('depositos-{{ prod.id }}')"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Ver stock por depósito' %}">
+                                                    <i class="mdi mdi-chevron-down" id="chevron-{{ prod.id }}"></i>
+                                                </button>
+                                                {% else %}
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Sin datos por depósito' %}">
+                                                    <i class="mdi mdi-chevron-down"></i>
+                                                </button>
+                                                {% endif %}
                                             </div>
-                                        {% endwith %}
+                                        </td>
+                                    </tr>
+                                    {% if item.por_deposito %}
+                                    <tr id="depositos-{{ prod.id }}" style="display:none;" class="table-light">
+                                        <td colspan="6" class="py-2 ps-4">
+                                            {% for dep in item.por_deposito %}
+                                            <span class="me-4 small">
+                                                <i class="mdi mdi-warehouse text-muted me-1"></i>
+                                                <strong>{{ dep.deposito.nombre }}</strong>:
+                                                <span class="text-success fw-semibold ms-1">{{ dep.cantidad }} {{ prod.unidad_base }}</span>
+                                            </span>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endwith %}
                                     {% endfor %}
+                                    </tbody>
+                                </table>
+                                </div>
                                 {% else %}
-                                    <div class="text-center py-5 text-muted">
-                                        <i class="mdi mdi-package-variant-closed-remove display-5 d-block mb-2"></i>
-                                        {% translate "No hay insumos con movimientos" %}
-                                    </div>
+                                <div class="text-center py-5 text-muted">
+                                    <i class="mdi mdi-package-variant-closed-remove display-5 d-block mb-2"></i>
+                                    {% translate "No hay insumos con movimientos" %}
+                                </div>
                                 {% endif %}
                             </div>
                         </div>
@@ -208,6 +256,7 @@
                     ══════════════════════════════ -->
                     <div class="tab-pane fade" id="cosecha" role="tabpanel">
 
+                        <!-- cards resumen -->
                         <div class="row g-3 mb-4">
                             <div class="col-md-3">
                                 <div class="card text-center h-100 border-0 shadow-sm">
@@ -241,7 +290,7 @@
                                     <div class="card-body">
                                         <i class="mdi mdi-silo fs-4 text-muted"></i>
                                         <div class="mt-2 small text-muted">{% translate "En stock" %}</div>
-                                        <div class="fw-semibold fs-6
+                                        <div class="fw-semibold
                                             {% if total_restante_finales > 0 %}text-success
                                             {% elif total_restante_finales == 0 %}text-warning
                                             {% else %}text-danger{% endif %}">
@@ -252,56 +301,113 @@
                             </div>
                         </div>
 
-                        <div class="card card-rounded border-0 shadow-sm">
-                            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h5 class="fw-bold mb-1">
-                                        <i class="mdi mdi-grain me-1"></i>
-                                        {% translate "Producción cosechada" %}
-                                    </h5>
-                                    <p class="text-muted small mb-0">{{ productos_finales|length }} {% translate "registros" %}</p>
-                                </div>
+                        <!-- tabla cosecha -->
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="fw-bold mb-1">
+                                    <i class="mdi mdi-grain me-1"></i>{% translate "Producción cosechada" %}
+                                </h5>
+                                <p class="text-muted small mb-0">{{ productos_finales|length }} {% translate "registros" %}</p>
                             </div>
                             <div class="card-body p-0">
                                 {% if productos_finales %}
+                                <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="width:35%">{% translate "Producto" %}</th>
+                                            <th style="width:12%">{% translate "Categoría" %}</th>
+                                            <th style="width:13%" class="text-end">{% translate "Cosechado" %}</th>
+                                            <th style="width:13%" class="text-end">{% translate "Vendido" %}</th>
+                                            <th style="width:12%" class="text-end">{% translate "En stock" %}</th>
+                                            <th style="width:15%" class="text-center">{% translate "Acciones" %}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
                                     {% for item in productos_finales %}
-                                        {% with prod=item.obj %}
-                                            <div class="border-bottom px-4 py-3">
-                                                <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-                                                    <div>
-                                                        <div class="fw-semibold">
-                                                            <a href="{% url 'vista_movimientos_producto' prod.id %}" class="text-decoration-none text-dark">
-                                                                {{ prod.nombre|truncatewords:7 }}
-                                                            </a>
-                                                        </div>
-                                                        <div class="small text-muted">{% translate "Ver movimientos" %}</div>
-                                                        <div class="small text-muted mt-2">
-                                                            <span>{% translate "Código" %}: <strong>{{ prod.codigo }}</strong></span>
-                                                            <span class="ms-3">{% translate "Cosechado" %}: <strong>{{ item.ingresado }}</strong> {{ prod.unidad_base }}</span>
-                                                            <span class="ms-3">{% translate "Vendido" %}: <strong>{{ item.consumido }}</strong> {{ prod.unidad_base }}</span>
-                                                        </div>
-                                                    </div>
-                                                    <div class="text-end">
-                                                        <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle d-block mb-1">
-                                                            {% translate "Producto final" %}
-                                                        </span>
-                                                        <div class="small text-muted">{% translate "En stock" %}</div>
-                                                        <div class="fw-semibold fs-6
-                                                            {% if item.restante > 0 %}text-success
-                                                            {% elif item.restante == 0 %}text-warning
-                                                            {% else %}text-danger{% endif %}">
-                                                            {{ item.restante }} {{ prod.unidad_base }}
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                    {% with prod=item.obj %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold small">{{ prod.nombre|truncatewords:8 }}</div>
+                                            <div class="text-muted" style="font-size:.72rem">{{ prod.codigo }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">
+                                                {% translate "Producto final" %}
+                                            </span>
+                                        </td>
+                                        <td class="text-end small">{{ item.ingresado }} {{ prod.unidad_base }}</td>
+                                        <td class="text-end small">{{ item.consumido }} {{ prod.unidad_base }}</td>
+                                        <td class="text-end">
+                                            <span class="fw-semibold small
+                                                {% if item.restante > 0 %}text-success
+                                                {% elif item.restante == 0 %}text-warning
+                                                {% else %}text-danger{% endif %}">
+                                                {{ item.restante }} {{ prod.unidad_base }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-1">
+                                                <a href="{% url 'vista_movimientos_producto' prod.id %}"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Ver historial de movimientos' %}">
+                                                    <i class="mdi mdi-history"></i>
+                                                </a>
+                                                {% if item.por_deposito %}
+                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    onclick="abrirModalMover({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ prod.unidad_base }}', {{ prod.unidad_base.id }})"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Transferir stock entre depósitos' %}">
+                                                    <i class="mdi mdi-swap-horizontal"></i>
+                                                </button>
+                                                {% else %}
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Sin depósito asignado — cargá una factura para asignar depósito' %}">
+                                                    <i class="mdi mdi-swap-horizontal"></i>
+                                                </button>
+                                                {% endif %}
+                                                {% if item.por_deposito %}
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    onclick="toggleDepositos('depositos-{{ prod.id }}')"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Ver stock por depósito' %}">
+                                                    <i class="mdi mdi-chevron-down" id="chevron-{{ prod.id }}"></i>
+                                                </button>
+                                                {% else %}
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Sin datos por depósito' %}">
+                                                    <i class="mdi mdi-chevron-down"></i>
+                                                </button>
+                                                {% endif %}
                                             </div>
-                                        {% endwith %}
+                                        </td>
+                                    </tr>
+                                    {% if item.por_deposito %}
+                                    <tr id="depositos-{{ prod.id }}" style="display:none;" class="table-light">
+                                        <td colspan="6" class="py-2 ps-4">
+                                            {% for dep in item.por_deposito %}
+                                            <span class="me-4 small">
+                                                <i class="mdi mdi-warehouse text-muted me-1"></i>
+                                                <strong>{{ dep.deposito.nombre }}</strong>:
+                                                <span class="text-success fw-semibold ms-1">{{ dep.cantidad }} {{ prod.unidad_base }}</span>
+                                            </span>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endwith %}
                                     {% endfor %}
+                                    </tbody>
+                                </table>
+                                </div>
                                 {% else %}
-                                    <div class="text-center py-5 text-muted">
-                                        <i class="mdi mdi-sprout display-5 d-block mb-2"></i>
-                                        {% translate "No hay producción cosechada registrada" %}
-                                    </div>
+                                <div class="text-center py-5 text-muted">
+                                    <i class="mdi mdi-sprout display-5 d-block mb-2"></i>
+                                    {% translate "No hay producción cosechada registrada" %}
+                                </div>
                                 {% endif %}
                             </div>
                         </div>
@@ -312,29 +418,217 @@
         </div>
     </div>
 </div>
+
+<!-- ══════════════════════════════
+     MODAL TRANSFERENCIA
+══════════════════════════════ -->
+<div class="modal fade" id="modal-transferencia" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="mdi mdi-swap-horizontal me-1"></i>{% translate "Transferir stock" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <div id="modal-nombre-producto" class="fw-semibold mb-3 text-muted small"></div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="modal-select-origen">{% translate "Desde depósito" %}</label>
+                    <select id="modal-select-origen" class="form-select"></select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="modal-select-destino">{% translate "Hacia depósito" %}</label>
+                    <select id="modal-select-destino" class="form-select">
+                        <option value="">---------</option>
+                        {% for dep in depositos %}
+                        <option value="{{ dep.id }}">{{ dep.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">{% translate "Cantidad" %}</label>
+                    <div class="input-group">
+                        <input type="number" id="modal-cantidad" class="form-control" min="0.001" step="0.001">
+                        <select id="modal-select-unidad" class="form-select" style="max-width:110px;"></select>
+                    </div>
+                    <div class="form-text text-muted" id="modal-unidad-info"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="modal-fecha">{% translate "Fecha" %}</label>
+                    <input type="date" id="modal-fecha" class="form-control">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="modal-observacion">{% translate "Observación" %} ({% translate "opcional" %})</label>
+                    <input type="text" id="modal-observacion" class="form-control">
+                </div>
+
+                <div id="modal-error" class="alert alert-danger" style="display:none;"></div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                <button type="button" id="btn-confirmar-transferencia" class="btn btn-primary">
+                    <i class="mdi mdi-check me-1"></i>{% translate "Confirmar" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- datos de depósitos por producto (para poblar el select origen) -->
+<script>
+var depositosPorProducto = {
+    {% for item in insumos %}{% with prod=item.obj %}
+    {{ prod.id }}: [{% for dep in item.por_deposito %}{"id": {{ dep.deposito.id }}, "nombre": "{{ dep.deposito.nombre|escapejs }}", "cantidad": "{{ dep.cantidad }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    {% endwith %}{% endfor %}
+    {% for item in productos_finales %}{% with prod=item.obj %}
+    {{ prod.id }}: [{% for dep in item.por_deposito %}{"id": {{ dep.deposito.id }}, "nombre": "{{ dep.deposito.nombre|escapejs }}", "cantidad": "{{ dep.cantidad }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    {% endwith %}{% endfor %}
+};
+</script>
+
 {% endblock %}
 
 {% block custom_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    setTimeout(function () {
-        document.querySelectorAll('.alert').forEach(function(alert) {
-            new bootstrap.Alert(alert).close();
-        });
-    }, 5000);
+var productoIdActual = null;
 
-    // Activar tab por parámetro URL (?tab=cosecha)
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('tab') === 'cosecha') {
-        const cosechaTab = document.getElementById('tab-cosecha');
-        if (cosechaTab) new bootstrap.Tab(cosechaTab).show();
+function toggleDepositos(divId) {
+    var div = document.getElementById(divId);
+    var prodId = divId.replace('depositos-', '');
+    var chevron = document.getElementById('chevron-' + prodId);
+    if (div.style.display === 'none') {
+        div.style.display = 'block';
+        chevron.classList.remove('mdi-chevron-down');
+        chevron.classList.add('mdi-chevron-up');
+    } else {
+        div.style.display = 'none';
+        chevron.classList.remove('mdi-chevron-up');
+        chevron.classList.add('mdi-chevron-down');
+    }
+}
+
+function abrirModalMover(productoId, productoNombre, unidadAbrev, unidadBaseId) {
+    productoIdActual = productoId;
+
+    document.getElementById('modal-nombre-producto').textContent = productoNombre;
+    document.getElementById('modal-cantidad').value = '';
+    document.getElementById('modal-observacion').value = '';
+    document.getElementById('modal-error').style.display = 'none';
+    document.getElementById('modal-unidad-info').textContent = '';
+
+    var hoy = new Date().toISOString().split('T')[0];
+    document.getElementById('modal-fecha').value = hoy;
+
+    // poblar select origen
+    var selectOrigen = document.getElementById('modal-select-origen');
+    selectOrigen.innerHTML = '<option value="">---------</option>';
+    var deps = depositosPorProducto[productoId] || [];
+    for (var i = 0; i < deps.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = deps[i].id;
+        opt.textContent = deps[i].nombre + ' (' + deps[i].cantidad + ' ' + unidadAbrev + ')';
+        selectOrigen.appendChild(opt);
     }
 
-    // Guardar tab activo al cambiar
+    // poblar select unidad: primero poner la unidad base, luego las conversiones
+    var selectUnidad = document.getElementById('modal-select-unidad');
+    selectUnidad.innerHTML = '<option value="' + unidadBaseId + '">' + unidadAbrev + ' (base)</option>';
+
+    $.ajax({
+        url: "{% url 'ajax_unidades_por_base' %}",
+        method: "GET",
+        data: { unidad_base_id: unidadBaseId },
+        success: function(r) {
+            if (r.ok && r.unidades.length > 0) {
+                r.unidades.forEach(function(u) {
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.abreviatura;
+                    opt.setAttribute('data-factor', u.factor);
+                    selectUnidad.appendChild(opt);
+                });
+                document.getElementById('modal-unidad-info').textContent = 'Se convierte automáticamente a ' + unidadAbrev + ' al guardar.';
+            }
+        }
+    });
+
+    var modal = new bootstrap.Modal(document.getElementById('modal-transferencia'));
+    modal.show();
+}
+
+document.getElementById('btn-confirmar-transferencia').addEventListener('click', function() {
+    var errorDiv = document.getElementById('modal-error');
+    errorDiv.style.display = 'none';
+
+    var origenId  = document.getElementById('modal-select-origen').value;
+    var destinoId = document.getElementById('modal-select-destino').value;
+    var cantidad  = document.getElementById('modal-cantidad').value;
+    var fecha     = document.getElementById('modal-fecha').value;
+    var unidadId  = document.getElementById('modal-select-unidad').value;
+
+    if (!origenId || !destinoId || !cantidad || !fecha) {
+        errorDiv.textContent = 'Completá todos los campos obligatorios.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    if (origenId === destinoId) {
+        errorDiv.textContent = 'El depósito origen y destino no pueden ser el mismo.';
+        errorDiv.style.display = 'block';
+        return;
+    }
+
+    $.ajax({
+        url: "{% url 'ajax_transferir_stock' %}",
+        method: "POST",
+        data: {
+            csrfmiddlewaretoken: "{{ csrf_token }}",
+            producto_id:         productoIdActual,
+            deposito_origen_id:  origenId,
+            deposito_destino_id: destinoId,
+            cantidad:            cantidad,
+            unidad_id:           unidadId,
+            fecha:               fecha,
+            observacion:         document.getElementById('modal-observacion').value
+        },
+        success: function(resp) {
+            if (resp.ok) {
+                location.reload();
+            } else {
+                errorDiv.textContent = resp.error;
+                errorDiv.style.display = 'block';
+            }
+        },
+        error: function() {
+            errorDiv.textContent = 'Error de conexión. Intentá de nuevo.';
+            errorDiv.style.display = 'block';
+        }
+    });
+});
+
+// activar tab por parámetro URL (?tab=cosecha)
+document.addEventListener('DOMContentLoaded', function() {
+    // tooltips
+    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+        new bootstrap.Tooltip(el);
+    });
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'cosecha') {
+        var cosechaTab = document.getElementById('tab-cosecha');
+        if (cosechaTab) new bootstrap.Tab(cosechaTab).show();
+    }
     document.querySelectorAll('[data-bs-toggle="tab"]').forEach(function(tab) {
         tab.addEventListener('shown.bs.tab', function(e) {
-            const tabId = e.target.getAttribute('href').replace('#', '');
-            const url = new URL(window.location);
+            var tabId = e.target.getAttribute('href').replace('#', '');
+            var url = new URL(window.location);
             url.searchParams.set('tab', tabId);
             window.history.replaceState({}, '', url);
         });
