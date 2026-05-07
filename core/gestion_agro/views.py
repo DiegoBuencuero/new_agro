@@ -845,6 +845,7 @@ def ajax_productos_por_actividad(request):
     ]
 
     return JsonResponse({"ok": True, "productos": data})
+
 @login_required
 def ajax_valores_actividad(request):
     tipo_id = request.GET.get("tipo_id")
