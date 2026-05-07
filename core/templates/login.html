@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 {% load static %}
+{% load i18n %}
 <html lang="es">
 <head>
     <meta charset="utf-8">
@@ -107,23 +108,23 @@
         </div>
     {% endif %}
 
-    <h4>¡Bienvenido de nuevo!</h4>
-    <p>Ingresa tus credenciales para acceder al sistema</p>
+    <h4>{% translate "¡Bienvenido de nuevo!" %}</h4>
+    <p>{% translate "Ingresá tus credenciales para acceder al sistema" %}</p>
 
     <form method="post">
         {% csrf_token %}
 
         <div class="form-group">
-            <label>Usuario</label>
+            <label>{% translate "Usuario" %}</label>
             {{ form.username }}
         </div>
 
         <div class="form-group">
-            <label>Contraseña</label>
+            <label>{% translate "Contraseña" %}</label>
             {{ form.password }}
         </div>
 
-        <button class="btn" type="submit">Iniciar Sesión</button>
+        <button class="btn" type="submit">{% translate "Iniciar sesión" %}</button>
     </form>
 
 </div>
