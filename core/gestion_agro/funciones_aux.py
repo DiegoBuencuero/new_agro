@@ -11,7 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from agro.models import ConversionUM, Unidad
 from gestion_agro.models import ( MovimientoStock, FaseAgricola, ActividadProductiva,
-                                 
+                                   ActividadInsumo, CamposInspeccion,
 )
 
 def obtener_valores_costos(tipo, subtipo, empresa):
@@ -142,7 +142,6 @@ def validar_reglas_generales(ciclo, fase, tipo, subtipo, fecha,  abre_fase):
     return True, None
 
 def validar_insumos(tipo, insumo_formset):
-    # chequeo que tenga insumos si corresponde
     if not tipo.requiere_insumo:
         return True, None
 
@@ -150,17 +149,36 @@ def validar_insumos(tipo, insumo_formset):
         return False, _("Hay errores en los insumos.")
 
     hay_insumos = False
+    semillas_count = 0
 
     for formulario in insumo_formset:
-        if hasattr(formulario, "cleaned_data"):
-            if formulario.cleaned_data and not formulario.cleaned_data.get("DELETE", False):
-                hay_insumos = True
-                break
+        if not hasattr(formulario, "cleaned_data"):
+            continue
+        cd = formulario.cleaned_data
+        if not cd or cd.get("DELETE", False):
+            continue
+        hay_insumos = True
+        producto = cd.get("producto")
+        if producto and hasattr(producto, "categoria") and producto.categoria.es_semilla:
+            semillas_count += 1
 
     if not hay_insumos:
         return False, _("Debe cargar al menos un insumo.")
 
+    if tipo.nombre.lower() == "siembra" and semillas_count > 1:
+        return False, _("Solo se permite una semilla por siembra.")
+
     return True, None
+
+def validar_inspeccion(tipo, inspeccion_form):
+    if not tipo.requiere_inspeccion:
+        return True, None
+
+    if not inspeccion_form or not inspeccion_form.is_valid():
+        return False, _("Hay errores en los datos de inspección.")
+
+    return True, None
+
 
 def validar_monitoreo(tipo, vistoria_form):
     # valida vistoria si aplica
@@ -173,12 +191,25 @@ def validar_monitoreo(tipo, vistoria_form):
     return True, None
 
 def validar_cosecha(ciclo, tipo, fecha, cosecha_form):
-    # valida cosecha y que exista siembra previa
     if not tipo.requiere_cosecha:
         return True, None
 
     if not cosecha_form or not cosecha_form.is_valid():
-        return False, _("Hay errores en los datos de cosecha.")
+        errores = []
+        if cosecha_form:
+            for field, errs in cosecha_form.errors.items():
+                for e in errs:
+                    errores.append(f"{field}: {e}")
+        msg = " | ".join(errores) if errores else _("Hay errores en los datos de cosecha.")
+        return False, msg
+
+    rendimiento = cosecha_form.cleaned_data.get("rendimiento")
+    if not rendimiento or rendimiento <= 0:
+        return False, _("El rendimiento es obligatorio y debe ser mayor a 0.")
+
+    um_id = cosecha_form.cleaned_data.get("um")
+    if not um_id:
+        return False, _("Debe seleccionar la unidad de medida del rendimiento.")
 
     existe_siembra = ActividadProductiva.objects.filter(
         fase__ciclo=ciclo,
@@ -413,6 +444,13 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa):
                 insumo.cantidad_real = cantidad
                 insumo.costo_total   = algo["costo_total"]
                 insumo.costo_ha      = algo["costo_total"] / superficie if superficie else Decimal("0")
+                # auto-calcular densidad si es semilla con PMG
+                try:
+                    pmg = insumo.producto.datos_semilla.variedad.pmg
+                    if pmg and pmg > 0:
+                        insumo.densidad_siembra = round(insumo.dosis * Decimal("1000000") / pmg)
+                except Exception:
+                    pass
                 insumo.save()
 
     return insumos
@@ -426,14 +464,24 @@ def guardar_monitoreo(actividad, tipo, vistoria_form):
     vistoria.actividad = actividad
     vistoria.save()
 
+def guardar_inspeccion(actividad, tipo, inspeccion_form):
+    if not tipo.requiere_inspeccion or not inspeccion_form:
+        return None
+
+    inspeccion = inspeccion_form.save(commit=False)
+    inspeccion.actividad = actividad
+    inspeccion.save()
+    return inspeccion
+
+
 def guardar_cosecha(actividad, tipo, cosecha_form):
-    # guarda datos de cosecha
     if not tipo.requiere_cosecha or not cosecha_form:
-        return
+        return None
 
     cosecha = cosecha_form.save(commit=False)
     cosecha.actividad = actividad
     cosecha.save()
+    return cosecha
     
 def registrar_actividad_aux(
     ciclo,
@@ -443,6 +491,7 @@ def registrar_actividad_aux(
     insumo_formset,
     vistoria_form=None,
     cosecha_form=None,
+    inspeccion_form=None,
 ):
     tipo = actividad_form.cleaned_data["tipo"]
     subtipo = actividad_form.cleaned_data.get("subtipo")
@@ -463,6 +512,11 @@ def registrar_actividad_aux(
 
     # 4. monitoreo
     ok, msg = validar_monitoreo(tipo, vistoria_form)
+    if not ok:
+        return False, msg
+
+    # 4b. inspección semilla
+    ok, msg = validar_inspeccion(tipo, inspeccion_form)
     if not ok:
         return False, msg
 
@@ -520,50 +574,144 @@ def registrar_actividad_aux(
 
     # 13. guardar extras
     guardar_monitoreo(actividad, tipo, vistoria_form)
-    guardar_cosecha(actividad, tipo, cosecha_form)
-
+    guardar_inspeccion(actividad, tipo, inspeccion_form)
+    cosecha_obj = guardar_cosecha(actividad, tipo, cosecha_form)
 
     from datetime import datetime
     import datetime as dt
 
-    # 13b. movimiento de stock si es cosecha
+    # 13b. movimientos de stock por cosecha
+    # Tres orígenes claros en MovimientoStock:
+    #   factura_item IS NOT NULL  → COMPRA (insumo)
+    #   cosecha      IS NOT NULL  → PRODUCCIÓN PROPIA (semilla o consumo de cosecha)
+    #   actividad_item IS NOT NULL → CONSUMO en actividad
     if tipo.requiere_cosecha and ciclo.producto_final:
-        rendimiento = cosecha_form.cleaned_data.get("rendimiento")
-        um_id = cosecha_form.cleaned_data.get("um")
-        deposito_destino = cosecha_form.cleaned_data.get("deposito_destino")
+        rendimiento      = cosecha_form.cleaned_data.get("rendimiento")
+        um_id            = cosecha_form.cleaned_data.get("um")
+        deposito_semilla = cosecha_form.cleaned_data.get("deposito_semilla")
+        deposito_consumo = cosecha_form.cleaned_data.get("deposito_consumo") or cosecha_form.cleaned_data.get("deposito_destino")
 
-        # si no eligió depósito, buscar default
-        if not deposito_destino:
-            deposito_destino = (
-                ciclo.producto_final.deposito_default
-                or empresa.deposito_producto_final_default
-            )
+        dep_consumo_default = (
+            ciclo.producto_final.deposito_default
+            or empresa.deposito_producto_final_default
+        )
+        if not deposito_consumo:
+            deposito_consumo = dep_consumo_default
+        if not deposito_semilla:
+            deposito_semilla = dep_consumo_default
 
         if rendimiento:
-            factor = Decimal("1")
             unidad_base = ciclo.producto_final.unidad_base
+            factor = Decimal("1")
             if um_id and um_id != unidad_base.id:
                 try:
-                    conversion = ConversionUM.objects.get(
-                        um_origen_id=um_id,
-                        um_destino=unidad_base,
-                    )
-                    factor = conversion.factor
+                    conv = ConversionUM.objects.get(um_origen_id=um_id, um_destino=unidad_base)
+                    factor = conv.factor
                 except ConversionUM.DoesNotExist:
                     pass
+
             cantidad_total = rendimiento * ciclo.superficie_ha * factor
-            MovimientoStock.objects.create(
-                producto=ciclo.producto_final,
-                tipo=MovimientoStock.Tipo.ENTRADA,
-                cantidad=cantidad_total,
-                um=unidad_base,
-                fecha=datetime.combine(actividad.fecha, dt.time.min),
-                actividad=actividad,
-                actividad_item=None,
-                factura_item=None,
-                precio_unitario=None,
-                deposito_destino=deposito_destino,
+            fecha_cosecha  = datetime.combine(actividad.fecha, dt.time.min)
+
+            # Usar kg_semilla/kg_consumo del formulario si el usuario los ingresó
+            kg_semilla_form = cosecha_form.cleaned_data.get("kg_semilla")
+            kg_consumo_form = cosecha_form.cleaned_data.get("kg_consumo")
+
+            # Desdoblamiento si hay inspección aprobada O si el produto es semilla
+            _tiene_insp = CamposInspeccion.objects.filter(
+                actividad__fase__ciclo=ciclo,
+                resultado=CamposInspeccion.Resultado.APROBADO,
+            ).exists()
+            es_semilla_ciclo = _tiene_insp or bool(
+                ciclo.producto_final.categoria and
+                ciclo.producto_final.categoria.es_semilla
             )
+
+            # Verificar si la inspección requiere PMG (no confiar en kg_semilla_form del JS)
+            inspeccion_pmg = None
+            if _tiene_insp:
+                inspeccion_pmg = CamposInspeccion.objects.filter(
+                    actividad__fase__ciclo=ciclo,
+                    resultado=CamposInspeccion.Resultado.APROBADO,
+                ).select_related("um").order_by("-actividad__fecha").first()
+
+            _usa_pmg = inspeccion_pmg and inspeccion_pmg.um and inspeccion_pmg.um.requiere_pmg
+            # Si la unidad requiere PMG, ignorar el kg_semilla del form (JS no puede calcularlo)
+            kg_semilla_usar = kg_semilla_form if (kg_semilla_form and not _usa_pmg) else None
+
+            if es_semilla_ciclo and kg_semilla_usar:
+                # El usuario ingresó kg_semilla manualmente (unidad sin PMG)
+                kg_semilla = min(Decimal(str(kg_semilla_usar)), cantidad_total)
+                kg_consumo = cantidad_total - kg_semilla
+            elif es_semilla_ciclo:
+                # Calcular desde inspección aprobada si existe
+                inspeccion = CamposInspeccion.objects.filter(
+                    actividad__fase__ciclo=ciclo,
+                    resultado=CamposInspeccion.Resultado.APROBADO,
+                ).order_by("-actividad__fecha").first()
+
+                if inspeccion and inspeccion.cant_semilla_mult_ha:
+                    um_insp    = inspeccion.um
+                    factor_insp = Decimal("1")
+                    if um_insp and um_insp.requiere_pmg:
+                        pmg = None
+                        try:
+                            insumo_s = ActividadInsumo.objects.filter(
+                                actividad__fase__ciclo=ciclo,
+                                actividad__tipo__nombre__iexact="siembra",
+                                producto__categoria__es_semilla=True,
+                            ).select_related("producto__datos_semilla__variedad").first()
+                            pmg = insumo_s.producto.datos_semilla.variedad.pmg
+                        except Exception:
+                            pass
+                        kg_semilla = (
+                            min(inspeccion.cant_semilla_mult_ha * ciclo.superficie_ha * pmg / Decimal("1000000"), cantidad_total)
+                            if pmg and pmg > 0 else Decimal("0")
+                        )
+                    else:
+                        if um_insp and um_insp != unidad_base:
+                            try:
+                                c = ConversionUM.objects.get(um_origen=um_insp, um_destino=unidad_base)
+                                factor_insp = c.factor
+                            except ConversionUM.DoesNotExist:
+                                pass
+                        kg_semilla = min(
+                            inspeccion.cant_semilla_mult_ha * ciclo.superficie_ha * factor_insp,
+                            cantidad_total,
+                        )
+                    kg_consumo = cantidad_total - kg_semilla
+                else:
+                    kg_semilla = Decimal("0")
+                    kg_consumo = cantidad_total
+            else:
+                kg_semilla = Decimal("0")
+                kg_consumo = cantidad_total
+
+            def _crear_mov(cantidad, deposito, es_semilla_mov):
+                MovimientoStock.objects.create(
+                    producto=ciclo.producto_final,
+                    tipo=MovimientoStock.Tipo.ENTRADA,
+                    cantidad=cantidad,
+                    um=unidad_base,
+                    fecha=fecha_cosecha,
+                    actividad=actividad,
+                    cosecha=cosecha_obj,
+                    es_semilla_cosecha=bool(es_semilla_mov),
+                    actividad_item=None,
+                    factura_item=None,
+                    precio_unitario=Decimal("0"),
+                    deposito_destino=deposito,
+                )
+
+            if kg_semilla > 0:
+                _crear_mov(kg_semilla, deposito_semilla, True)
+            if kg_consumo > 0:
+                _crear_mov(kg_consumo, deposito_consumo, False)
+
+            if cosecha_obj:
+                cosecha_obj.kg_semilla = kg_semilla
+                cosecha_obj.kg_consumo = kg_consumo
+                cosecha_obj.save()
 
 
     # 14. cerrar fase

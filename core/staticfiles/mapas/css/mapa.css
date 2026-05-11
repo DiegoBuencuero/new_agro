@@ -1,3 +1,13 @@
+/* Cancelar padding y footer para páginas de mapa */
+.page-mapa .content-wrapper {
+  padding: 0 !important;
+  background: #fff !important;
+  overflow: hidden;
+}
+.page-mapa .footer {
+  display: none !important;
+}
+
 /* Layout 30/70 full-height */
 .mapa-wrapper {
   display: flex;

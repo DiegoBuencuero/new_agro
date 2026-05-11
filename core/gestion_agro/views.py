@@ -10,7 +10,8 @@ from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Prefetch, Q
+from django.db.models import Prefetch, Q, Sum
+from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.http import JsonResponse
 from django.utils import timezone
@@ -20,16 +21,16 @@ from .funciones_aux import parse_nfe_pdf, br_to_float, _buscar_candidatos, _scor
 from agro.models import (ConversionUM, Unidad, Pais, Provincia, Ciudad, Nacionalidad, Genero, Tipodoc, Empresa)
 
 from .funciones_aux import ( registrar_actividad_aux, obtener_valores_costos, _detectar_contenido_unidad  )
-from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm, ProductoForm, ProductoModalForm,PresentacionProductoForm,
-                                ActividadProductivaForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm,
-                                StockFiltroForm,CultivoProductoFinalForm, FacturaCompraForm, FacturaCompraItemFormSet, FacturaManualItemFormSet,  
-                                CultivoForm,CultivoEditarForm, CultivoProductoFinalForm,  CultivoEditarForm, DepositoForm
+from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm, ProductoForm, ProductoModalForm, VariedadPMGForm, PresentacionProductoForm,
+                                ActividadProductivaForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm, CamposInspeccionForm,
+                                StockFiltroForm, CultivoProductoFinalForm, FacturaCompraForm, FacturaCompraItemFormSet, FacturaManualItemFormSet,
+                                CultivoForm, CultivoEditarForm, CultivoProductoFinalForm, CultivoEditarForm, DepositoForm
                                 )
 from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
                                 ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
-                                ActividadInsumo, CategoriaProducto, MovimientoStock, 
-                                FacturaCompra, Proveedor,  PresentacionProducto, FacturaCompraItem, Variedad,
-                                Proveedor, Cultivo, ProductoSemilla, Deposito
+                                ActividadInsumo, CategoriaProducto, MovimientoStock,
+                                FacturaCompra, Proveedor, PresentacionProducto, FacturaCompraItem, Variedad,
+                                Proveedor, Cultivo, ProductoSemilla, Deposito, CamposCosecha
                                 )
 
 @login_required
@@ -395,21 +396,37 @@ def vista_editar_producto(request, id_prod):
     except Producto.DoesNotExist:
         messages.error(request, _("Producto no encontrado."))
         return redirect('vista_producto')
+
+    datos_semilla = getattr(producto, "datos_semilla", None)
+    variedad      = datos_semilla.variedad if datos_semilla else None
+
     if request.method == 'POST':
-        form = ProductoForm(request.POST, instance=producto)
+        form         = ProductoForm(request.POST, instance=producto)
+        variedad_form = VariedadPMGForm(request.POST, instance=variedad) if variedad else None
+
         if form.is_valid():
             if request.POST.get('borrar') == '':
                 producto.delete()
                 messages.success(request, _("Producto eliminado."))
-            else:
-                form.save()
-                messages.success(request, _("Producto actualizado."))
+                return redirect('vista_producto')
+
+            form.save()
+            if variedad_form and variedad_form.is_valid():
+                variedad_form.save()
+            messages.success(request, _("Producto actualizado."))
             return redirect('vista_producto')
     else:
-        form = ProductoForm(instance=producto)
+        form          = ProductoForm(instance=producto)
+        variedad_form = VariedadPMGForm(instance=variedad) if variedad else None
+
     return render(request, 'vista_producto.html', {
-        'form': form, 'empresa': empresa, 'productos': productos,
-        'prod': producto, 'modificacion': True
+        'form': form,
+        'semilla_form': variedad_form,
+        'variedad': variedad,
+        'empresa': empresa,
+        'productos': productos,
+        'prod': producto,
+        'modificacion': True,
     })
 
 @login_required
@@ -582,7 +599,9 @@ def vista_detalle_ciclo(request, id_ciclo):
         .filter(fase__ciclo=ciclo)
         .select_related("fase", "tipo", "subtipo")
         .prefetch_related(
-            Prefetch("insumos", queryset=insumos_qs)
+            Prefetch("insumos", queryset=insumos_qs),
+            "camposcosecha",
+            "camposinspeccion__um",
         )
         .order_by("fecha", "id")
     )
@@ -649,11 +668,13 @@ def ajax_subtipos_tipo_actividad(request):
     return JsonResponse({
         "ok": True,
         "subtipos": data,
-        "requiere_mo":      tipo.requiere_mo,
-        "requiere_maq":     tipo.requiere_maq,
-        "requiere_insumo":  tipo.requiere_insumo,
-        "requiere_vist":    tipo.requiere_vist,
-        "requiere_cosecha": tipo.requiere_cosecha,
+        "requiere_mo":          tipo.requiere_mo,
+        "requiere_maq":         tipo.requiere_maq,
+        "requiere_insumo":      tipo.requiere_insumo,
+        "requiere_vist":        tipo.requiere_vist,
+        "requiere_cosecha":     tipo.requiere_cosecha,
+        "requiere_inspeccion":  tipo.requiere_inspeccion,
+        "es_siembra":           tipo.nombre.lower() == "siembra",
     })
 
 @login_required
@@ -677,31 +698,49 @@ def vista_agregar_actividad(request, id_ciclo):
         .first()
     )
 
+    # ── Inspección aprobada y flag semilla — calculado UNA vez para GET y POST ──
+    from gestion_agro.models import CamposInspeccion
+    inspeccion_aprobada = (
+        CamposInspeccion.objects
+        .filter(actividad__fase__ciclo=ciclo, resultado=CamposInspeccion.Resultado.APROBADO)
+        .select_related("um")
+        .order_by("-actividad__fecha")
+        .first()
+    )
+    es_semilla = bool(inspeccion_aprobada) or bool(
+        ciclo.producto_final and
+        ciclo.producto_final.categoria and
+        ciclo.producto_final.categoria.es_semilla
+    )
+
+    # PMG de la variedad usada en siembra (para pre-calcular kg_semilla en el form PMG)
+    pmg_siembra = None
+    if inspeccion_aprobada and inspeccion_aprobada.um and inspeccion_aprobada.um.requiere_pmg:
+        try:
+            _insumo_s = ActividadInsumo.objects.filter(
+                actividad__fase__ciclo=ciclo,
+                actividad__tipo__nombre__iexact="siembra",
+                producto__categoria__es_semilla=True,
+            ).select_related("producto__datos_semilla__variedad").first()
+            pmg_siembra = float(_insumo_s.producto.datos_semilla.variedad.pmg)
+        except Exception:
+            pmg_siembra = None
+
     if request.method == "POST":
-        actividad_form = ActividadProductivaForm(request.POST)
-
-        insumo_formset = ActividadInsumoFormSet(
-            request.POST,
-            prefix="insumos",
-            form_kwargs={"empresa": empresa},
-            superficie=ciclo.superficie_ha, 
+        actividad_form    = ActividadProductivaForm(request.POST, fase=fase, ciclo=ciclo)
+        insumo_formset    = ActividadInsumoFormSet(
+            request.POST, prefix="insumos",
+            form_kwargs={"empresa": empresa}, superficie=ciclo.superficie_ha,
         )
-
-        vistoria_form = CamposVistoriaForm(
-            request.POST,
-            request.FILES,
-            prefix="vistoria",
+        vistoria_form     = CamposVistoriaForm(request.POST, request.FILES, prefix="vistoria")
+        cosecha_form      = CamposCosechaForm(
+            request.POST, prefix="cosecha",
+            depositos=depositos, es_semilla=es_semilla,
         )
-
-        cosecha_form = CamposCosechaForm(
-            request.POST,
-            prefix="cosecha",
-            depositos=Deposito.objects.filter(empresa=empresa),
-        )
+        inspeccion_form   = CamposInspeccionForm(request.POST, prefix="inspeccion", empresa=empresa)
 
         if actividad_form.is_valid():
             tipo = actividad_form.cleaned_data["tipo"]
-
             forms_validos = True
 
             if tipo.requiere_insumo and not insumo_formset.is_valid():
@@ -718,55 +757,55 @@ def vista_agregar_actividad(request, id_ciclo):
 
             if tipo.requiere_cosecha and not cosecha_form.is_valid():
                 forms_validos = False
+                for field, errs in cosecha_form.errors.items():
+                    for e in errs:
+                        lbl = getattr(cosecha_form.fields.get(field), "label", field) or field
+                        messages.error(request, f"Cosecha — {lbl}: {e}")
+
+            if tipo.requiere_inspeccion and not inspeccion_form.is_valid():
+                forms_validos = False
 
             if forms_validos:
                 ok, resultado = registrar_actividad_aux(
-                    ciclo=ciclo,
-                    fase=fase,
-                    empresa=empresa,
+                    ciclo=ciclo, fase=fase, empresa=empresa,
                     actividad_form=actividad_form,
                     insumo_formset=insumo_formset,
                     vistoria_form=vistoria_form,
                     cosecha_form=cosecha_form,
+                    inspeccion_form=inspeccion_form,
                 )
-
                 if ok:
-                    if resultado["inicio_fase"]:
-                        messages.success(request, _("Actividad registrada e inicio de fase generado."))
-                    else:
-                        messages.success(request, _("Actividad registrada correctamente."))
-
+                    msg = _("Actividad registrada e inicio de fase generado.") if resultado["inicio_fase"] else _("Actividad registrada correctamente.")
+                    messages.success(request, msg)
                     return redirect("vista_detalle_ciclo", id_ciclo=ciclo.id)
-
                 messages.error(request, resultado)
-
         else:
             messages.error(request, _("Hay errores en el formulario."))
 
     else:
-        actividad_form = ActividadProductivaForm(
-            initial={"fecha": timezone.localdate()}
+        actividad_form  = ActividadProductivaForm(
+            initial={"fecha": timezone.localdate()}, fase=fase, ciclo=ciclo,
         )
-
-        insumo_formset = ActividadInsumoFormSet(
-            prefix="insumos",
-            form_kwargs={"empresa": empresa},
-            superficie=ciclo.superficie_ha,
+        insumo_formset  = ActividadInsumoFormSet(
+            prefix="insumos", form_kwargs={"empresa": empresa}, superficie=ciclo.superficie_ha,
         )
-
-        vistoria_form = CamposVistoriaForm(prefix="vistoria")
-        cosecha_form = CamposCosechaForm(
-            prefix="cosecha",
-            depositos=depositos,
-            initial={"deposito_destino": empresa.deposito_producto_final_default}
+        vistoria_form   = CamposVistoriaForm(prefix="vistoria")
+        cosecha_form    = CamposCosechaForm(
+            prefix="cosecha", depositos=depositos, es_semilla=es_semilla,
+            initial={"deposito_destino": empresa.deposito_producto_final_default},
         )
+        inspeccion_form = CamposInspeccionForm(prefix="inspeccion", empresa=empresa)
 
     context = {
-        "ciclo": ciclo,
-        "actividad_form": actividad_form,
-        "insumo_formset": insumo_formset,
-        "vistoria_form": vistoria_form,
-        "cosecha_form": cosecha_form,
+        "ciclo":               ciclo,
+        "actividad_form":      actividad_form,
+        "insumo_formset":      insumo_formset,
+        "vistoria_form":       vistoria_form,
+        "cosecha_form":        cosecha_form,
+        "inspeccion_form":     inspeccion_form,
+        "es_semilla":          es_semilla,
+        "inspeccion_aprobada": inspeccion_aprobada,
+        "pmg_siembra":         pmg_siembra,
     }
 
     return render(request, "vista_agregar_actividad.html", context)
@@ -832,17 +871,21 @@ def ajax_productos_por_actividad(request):
 
     productos = productos.select_related("unidad_base").order_by("nombre")
 
-    data = [
-        {
-            "id": producto.id,
-            "nombre": producto.nombre,
-            "unidad_id": producto.unidad_base_id,
-            "unidad_abreviatura": (
-                producto.unidad_base.abreviatura if producto.unidad_base else ""
-            ),
-        }
-        for producto in productos
-    ]
+    data = []
+    for producto in productos.select_related("categoria", "datos_semilla__variedad"):
+        pmg = None
+        if producto.categoria.es_semilla:
+            ds = getattr(producto, "datos_semilla", None)
+            if ds and ds.variedad:
+                pmg = float(ds.variedad.pmg) if ds.variedad.pmg else None
+        data.append({
+            "id":                producto.id,
+            "nombre":            producto.nombre,
+            "unidad_id":         producto.unidad_base_id,
+            "unidad_abreviatura": producto.unidad_base.abreviatura if producto.unidad_base else "",
+            "es_semilla":        producto.categoria.es_semilla,
+            "pmg":               pmg,
+        })
 
     return JsonResponse({"ok": True, "productos": data})
 
@@ -930,7 +973,7 @@ def vista_lista_stock(request):
         fecha_desde = form.cleaned_data.get("fecha_entrada_desde")
         fecha_hasta = form.cleaned_data.get("fecha_entrada_hasta")
 
-    if producto_txt:
+    if producto_txt: # buscar por nombre o código , es mas flexible para el usuario que no recuerde exactamente el nombre o quiera buscar por código
         productos = productos.filter(
             Q(nombre__icontains=producto_txt) |
             Q(codigo__icontains=producto_txt)
@@ -953,6 +996,7 @@ def vista_lista_stock(request):
     total_ingresado_finales = Decimal("0")
     total_consumido_finales = Decimal("0")
     total_restante_finales = Decimal("0")
+    total_cosechado_real = Decimal("0")  # solo origen cosecha
 
     for producto in productos:
         movimientos = MovimientoStock.objects.filter(producto=producto).select_related(
@@ -1001,10 +1045,10 @@ def vista_lista_stock(request):
         restante = ingresado - consumido
 
         item = {
-            "obj": producto,
-            "ingresado": ingresado,
-            "consumido": consumido,
-            "restante": restante,
+            "obj":          producto,
+            "ingresado":    ingresado,
+            "consumido":    consumido,
+            "restante":     restante,
             "por_deposito": por_deposito,
         }
 
@@ -1013,11 +1057,31 @@ def vista_lista_stock(request):
         total_restante += restante
 
         if producto.producto_final:
+            # Solo contar como "cosechado" los movimientos con origen en cosecha
+            cosechado_cosecha = Decimal("0")
+            for mov in movimientos:
+                if mov.tipo == "ENTRADA" and mov.cosecha_id:
+                    cosechado_cosecha += convertir_unidad(mov.cantidad, mov.um, unidad_base)
+
+            # Split semilla/consumo desde CamposCosecha
+            split = CamposCosecha.objects.filter(
+                actividad__fase__ciclo__producto_final=producto,
+                kg_semilla__isnull=False,
+            ).aggregate(
+                sem=Coalesce(Sum("kg_semilla"), Decimal("0")),
+                con=Coalesce(Sum("kg_consumo"), Decimal("0")),
+            )
+            item["cosechado_cosecha"] = cosechado_cosecha
+            item["kg_semilla_cosecha"] = split["sem"]
+            item["kg_consumo_cosecha"] = split["con"]
+
             lista_productos_finales.append(item)
             total_ingresado_finales += ingresado
             total_consumido_finales += consumido
             total_restante_finales += restante
+            total_cosechado_real += cosechado_cosecha
         else:
+            # Insumos: semillas compradas, herbicidas, fertilizantes, etc.
             lista_insumos.append(item)
             total_ingresado_insumos += ingresado
             total_consumido_insumos += consumido
@@ -1054,6 +1118,7 @@ def vista_lista_stock(request):
         "total_ingresado_finales": total_ingresado_finales,
         "total_consumido_finales": total_consumido_finales,
         "total_restante_finales": total_restante_finales,
+        "total_cosechado_real": total_cosechado_real,
     }
 
     return render(request, "vista_lista_stock.html", context)
@@ -1106,59 +1171,45 @@ def vista_movimientos_producto(request, producto_id):
         origen_mov = "Manual"
         observacion = "-"
 
-        if mov.actividad_item:
+        if mov.cosecha_id:
+            # PRODUCCIÓN PROPIA — grano de cosecha (semilla o consumo)
+            cosecha_act = mov.cosecha.actividad if mov.cosecha else None
+            if cosecha_act and cosecha_act.fase and cosecha_act.fase.ciclo:
+                c = cosecha_act.fase.ciclo
+                partes = [p for p in [
+                    c.campo.nombre if c.campo else "",
+                    c.nombre_lote or "",
+                    str(c.cultivo) if c.cultivo else "",
+                ] if p]
+                observacion = " - ".join(partes) or "-"
+                tipo_porcion = _("Semilla") if mov.es_semilla_cosecha else _("Consumo")
+                if mov.deposito_destino_id:
+                    observacion += f" [{tipo_porcion}] → {mov.deposito_destino}"
+                else:
+                    observacion += f" [{tipo_porcion}]"
+            else:
+                observacion = "Cosecha"
+            origen_mov = "Producción propia"
+
+        elif mov.actividad_item:
             origen_mov = "Actividad"
-
-            actividad = mov.actividad_item.actividad
-
+            actividad  = mov.actividad_item.actividad
             if actividad and actividad.fase and actividad.fase.ciclo:
-                ciclo = actividad.fase.ciclo
-
-                campo = ""
-                lote = ""
-                cultivo = ""
-
-                if ciclo.campo:
-                    campo = ciclo.campo.nombre
-
-                if ciclo.nombre_lote:
-                    lote = ciclo.nombre_lote
-
-                if ciclo.cultivo:
-                    cultivo = str(ciclo.cultivo)
-
-                observacion = campo
-
-                if lote:
-                    if observacion:
-                        observacion = observacion + " - " + lote
-                    else:
-                        observacion = lote
-
-                if cultivo:
-                    if observacion:
-                        observacion = observacion + " - " + cultivo
-                    else:
-                        observacion = cultivo
-
-                if not observacion:
-                    observacion = "-"
+                c = actividad.fase.ciclo
+                partes = [p for p in [
+                    c.campo.nombre if c.campo else "",
+                    c.nombre_lote or "",
+                    str(c.cultivo) if c.cultivo else "",
+                ] if p]
+                observacion = " - ".join(partes) or "-"
 
         elif mov.factura_item and mov.factura_item.factura:
             numero = mov.factura_item.factura.numero or ""
-            print(numero)
-            if numero:
-                observacion = "Fact: " + str(numero)
-            else:
-                observacion = "-"
-
-            if mov.factura_item.factura.numero:
-                origen_mov = "Factura manual"
-            else:
-                origen_mov = "Factura"
+            origen_mov  = "Compra"
+            observacion = f"Fact: {numero}" if numero else "-"
 
         else:
-            origen_mov = "Manual"
+            origen_mov  = "Manual"
             observacion = "-"
 
         if origen and origen != origen_mov:
@@ -1388,7 +1439,7 @@ def ajax_variedades_cultivo(request):
     if not cultivo_id:
         return JsonResponse({"ok": False, "variedades": []})
     variedades = list(
-        Variedad.objects.filter(cultivo_id=cultivo_id).order_by("nombre").values("id", "nombre")
+        Variedad.objects.filter(cultivo_id=cultivo_id).order_by("nombre").values("id", "nombre", "pmg")
     )
     return JsonResponse({"ok": True, "variedades": variedades})
 
@@ -1442,6 +1493,14 @@ def ajax_crear_producto(request):
                     cultivo=cultivo,
                     nombre=variedad_nueva
                 )
+            # Guardar PMG si fue enviado (aplica a variedad existente o nueva)
+            pmg_raw = request.POST.get("pmg")
+            if variedad and pmg_raw:
+                try:
+                    variedad.pmg = Decimal(pmg_raw)
+                    variedad.save(update_fields=["pmg"])
+                except Exception:
+                    pass
             else:
                 producto.delete()
                 return JsonResponse({"ok": False, "error": "Seleccioná o escribí una variedad."}, status=400)
@@ -1780,6 +1839,15 @@ def vista_revisar_factura(request):
             None,
     )
 
+        # Si el candidato es semilla, pre-cargar cultivo para que el form muestre variedades
+        cultivo_inicial = None
+        if mejor_producto and mejor_producto.categoria and mejor_producto.categoria.es_semilla:
+            try:
+                ps = mejor_producto.datos_semilla
+                cultivo_inicial = ps.cultivo
+            except Exception:
+                pass
+
         initial_data.append({
             "descripcion":               desc,
             "unidad_detectada":          unid_factura,
@@ -1788,10 +1856,10 @@ def vista_revisar_factura(request):
             "subtotal":                  cant * p_u,
             "contenido_por_envase":      contenido,
             "unidad_medida":             unidad,
-            "nueva_presentacion_nombre": pres_nombre,
+            "nueva_presentacion_nombre": f"Envase {contenido} {unidad}",
             "producto_existente":        mejor_producto.id if mejor_producto else None,
             "presentacion_existente":    pres_match.id if pres_match else None,
-            "nueva_presentacion_nombre": f"Envase {contenido} {unidad}",
+            "cultivo":                   cultivo_inicial,
         })
 
         match_info.append({
@@ -1812,12 +1880,18 @@ def vista_revisar_factura(request):
         form_kwargs={"empresa": empresa},
     )
 
-    # Pre-cargar presentaciones en el form según el candidato principal
+    # Pre-cargar presentaciones y variedades en el form según el candidato principal
     for i, form in enumerate(formset):
         prod = initial_data[i].get("producto_existente")
         if prod:
             form.fields["presentacion_existente"].queryset = (
                 PresentacionProducto.objects.filter(producto_id=prod).order_by("nombre")
+            )
+        cultivo_ini = initial_data[i].get("cultivo")
+        if cultivo_ini:
+            cultivo_id = cultivo_ini.id if hasattr(cultivo_ini, "id") else cultivo_ini
+            form.fields["variedad"].queryset = (
+                Variedad.objects.filter(cultivo_id=cultivo_id).order_by("nombre")
             )
 
     context = {
@@ -2000,6 +2074,12 @@ def vista_confirmar_factura(request):
                     maneja_stock=True,
                     unidad_base=unidad_base,
                 )
+
+            # ── Guardar PMG en la variedad si fue informado ───────────────
+            pmg_val = cd.get("pmg")
+            if variedad_obj and pmg_val:
+                variedad_obj.pmg = pmg_val
+                variedad_obj.save(update_fields=["pmg"])
 
             # ── Crear ProductoSemilla si corresponde ───────────────────────
             if es_semilla and cultivo and variedad_obj:

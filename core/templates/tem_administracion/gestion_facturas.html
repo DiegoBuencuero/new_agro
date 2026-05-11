@@ -1,0 +1,358 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<div class="col-12 grid-margin">
+  <div class="card">
+    <div class="card-body">
+
+      <h4 class="card-title">
+        <i class="mdi mdi-cash-check icon-agro me-2"></i>
+        {% translate "Gestión de Facturas" %}
+      </h4>
+      <p class="card-description">{% translate "Consulte facturas y pagos por proveedor y rango de fechas." %}</p>
+
+      <!-- FILTRO COMPARTIDO -->
+      <form id="form-filtro" class="row g-3 mb-3">
+        {% csrf_token %}
+        <div class="col-md-4">
+          <label class="form-label">{{ form.proveedor.label }}</label>
+          {{ form.proveedor }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">{{ form.fecha_desde.label }}</label>
+          {{ form.fecha_desde }}
+        </div>
+        <div class="col-md-3">
+          <label class="form-label">{{ form.fecha_hasta.label }}</label>
+          {{ form.fecha_hasta }}
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="mdi mdi-magnify me-1"></i>{% translate "Buscar" %}
+          </button>
+        </div>
+      </form>
+
+      <!-- INDICADORES -->
+      <div id="panel-indicadores" class="row g-0 mb-4 border-bottom pb-3" style="display:none;">
+        <div class="col-md-3 text-center px-3">
+          <div class="text-muted small mb-1">{% translate "Total facturas" %}</div>
+          <div id="ind-total" class="fw-bold fs-4">—</div>
+        </div>
+        <div class="col-md-3 text-center px-3 border-start">
+          <div class="text-muted small mb-1">{% translate "Saldo pendiente" %}</div>
+          <div id="ind-saldo" class="fw-bold fs-5 text-success">—</div>
+        </div>
+        <div class="col-md-3 text-center px-3 border-start">
+          <div class="text-muted small mb-1">{% translate "Vencidas" %}</div>
+          <div id="ind-vencidas" class="fw-bold fs-4">—</div>
+        </div>
+        <div class="col-md-3 text-center px-3 border-start">
+          <div class="text-muted small mb-1">{% translate "Próx. vencimiento" %}</div>
+          <div id="ind-prox" class="fw-semibold">—</div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <ul class="nav nav-tabs mb-3" id="tabPrincipal" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="tab-facturas" data-bs-toggle="tab"
+                  data-bs-target="#pane-facturas" type="button" role="tab">
+            <i class="mdi mdi-file-document-outline me-1"></i>{% translate "Facturas" %}
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="tab-pagos" data-bs-toggle="tab"
+                  data-bs-target="#pane-pagos" type="button" role="tab">
+            <i class="mdi mdi-cash-multiple me-1"></i>{% translate "Pagos Realizados" %}
+          </button>
+        </li>
+      </ul>
+
+      <div class="tab-content">
+
+        <!-- TAB FACTURAS -->
+        <div class="tab-pane fade show active" id="pane-facturas" role="tabpanel">
+          <div id="resultado-facturas"></div>
+
+          <!-- PANEL DE PAGO -->
+          <div id="panel-pago" class="card border-primary mt-3" style="display:none;">
+            <div class="card-body">
+              <h5 class="card-title text-primary">
+                <i class="mdi mdi-cash-plus me-1"></i>{% translate "Registrar Pago" %}
+              </h5>
+              <div id="resumen-pago" class="mb-3 small text-muted"></div>
+              <div id="alerta-pago" class="alert alert-danger d-none"></div>
+              <button id="btn-confirmar-pago" class="btn btn-success">
+                <i class="mdi mdi-check me-1"></i>{% translate "Confirmar Pago" %}
+              </button>
+              <button id="btn-cancelar-pago" class="btn btn-outline-secondary ms-2">
+                {% translate "Cancelar" %}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB PAGOS -->
+        <div class="tab-pane fade" id="pane-pagos" role="tabpanel">
+          <div id="resultado-pagos"></div>
+        </div>
+
+      </div><!-- /tab-content -->
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL COMPROBANTE -->
+<div class="modal fade" id="modalComprobante" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="mdi mdi-receipt me-2"></i>{% translate "Comprobante de Pago" %}
+          <span id="modal-pago-id" class="text-muted small ms-2"></span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="modal-comprobante-body">
+        <div class="text-center py-4">
+          <div class="spinner-border text-primary" role="status"></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+          {% translate "Cerrar" %}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block custom_js %}
+<script>
+$(function () {
+
+var URL_FACTURAS    = "{% url 'ajax_buscar_facturas' %}";
+var URL_PAGOS       = "{% url 'ajax_buscar_pagos' %}";
+var URL_PAGAR       = "{% url 'ajax_registrar_pago' %}";
+var URL_COMPROBANTE = "{% url 'ajax_detalle_pago' pago_id=0 %}".replace("/0/", "/");
+var URL_INDICADORES = "{% url 'ajax_indicadores_proveedor' %}";
+var CSRF            = '{{ csrf_token }}';
+
+// ── Toggle detalle pagos por fila ────────────────────────────────
+$(document).on('click', '.toggle-pagos', function () {
+    var target = '#' + $(this).data('target');
+    var $icon  = $(this).find('i');
+    $(target).toggle();
+    $icon.toggleClass('mdi-chevron-right mdi-chevron-down');
+});
+
+// ── Al cambiar proveedor ─────────────────────────────────────────
+$('#id_proveedor').on('change', function () {
+    cargarIndicadores($(this).val());
+    ejecutarBusqueda();
+});
+
+// ── Submit filtro ────────────────────────────────────────────────
+$('#form-filtro').on('submit', function (e) {
+    e.preventDefault();
+    ejecutarBusqueda();
+});
+
+function ejecutarBusqueda() {
+    var tabActivo = $('#tabPrincipal .nav-link.active').attr('id');
+    if (tabActivo === 'tab-pagos') {
+        buscarPagos();
+    } else {
+        buscarFacturas();
+    }
+}
+
+// ── Auto-carga tab Pagos ─────────────────────────────────────────
+$('#tab-pagos').on('shown.bs.tab', function () {
+    if ($('#resultado-pagos').html().trim() === '') {
+        buscarPagos();
+    }
+});
+
+// ── Indicadores ──────────────────────────────────────────────────
+function cargarIndicadores(proveedorId) {
+    $.ajax({
+        url: URL_INDICADORES,
+        type: "POST",
+        data: { proveedor_id: proveedorId || '', csrfmiddlewaretoken: CSRF },
+        success: function (res) {
+            if (res.error) return;
+            $('#ind-total').text(res.total_facturas);
+            $('#ind-saldo').text('$' + parseFloat(res.saldo_pendiente).toLocaleString('es-AR', { minimumFractionDigits: 2 }));
+            var cls = res.vencidas > 0 ? 'fw-bold fs-4 text-danger' : 'fw-bold fs-4 text-success';
+            $('#ind-vencidas').text(res.vencidas).attr('class', cls);
+            $('#ind-prox').text(res.prox_vencimiento);
+            $('#panel-indicadores').show();
+        }
+    });
+}
+
+// ── Buscar facturas ──────────────────────────────────────────────
+function buscarFacturas() {
+    $.ajax({
+        url: URL_FACTURAS,
+        type: "POST",
+        data: $('#form-filtro').serialize(),
+        success: function (res) {
+            if (res.error) {
+                $('#resultado-facturas').html('<div class="alert alert-danger">' + res.error + '</div>');
+                return;
+            }
+            $('#resultado-facturas').html(res.html);
+            $('#panel-pago').hide();
+            bindTablaFacturas();
+        }
+    });
+}
+
+function bindTablaFacturas() {
+    $('.check-factura').on('change', function () {
+        var $inp = $(this).closest('tr').find('.monto-pago');
+        $inp.prop('disabled', !this.checked);
+        if (!this.checked) $inp.val('');
+        actualizarPanelPago();
+    });
+    $('.monto-pago').on('input', actualizarPanelPago);
+}
+
+function actualizarPanelPago() {
+    var $filas = $('.fila-factura .check-factura:checked');
+    if ($filas.length === 0) { $('#panel-pago').hide(); return; }
+
+    var items = [], total = 0;
+    $filas.each(function () {
+        var $tr   = $(this).closest('tr');
+        var monto = parseFloat($tr.find('.monto-pago').val().replace(',', '.')) || 0;
+        total += monto;
+        items.push($tr.data('numero') + ': $' + monto.toFixed(2));
+    });
+    $('#resumen-pago').html(items.join(' &nbsp;|&nbsp; ') +
+        ' &nbsp;— <strong>{% translate "Total" %}: $' + total.toFixed(2) + '</strong>');
+    $('#panel-pago').show();
+}
+
+// ── Confirmar pago ───────────────────────────────────────────────
+$('#btn-confirmar-pago').on('click', function () {
+    var $filas      = $('.fila-factura .check-factura:checked');
+    var $alerta     = $('#alerta-pago').addClass('d-none');
+    var proveedorId = $('#proveedor-id-hidden').val() || '';
+    var data        = { csrfmiddlewaretoken: CSRF, proveedor_id: proveedorId, 'factura_id[]': [], 'monto[]': [] };
+    var valido      = true;
+
+    $filas.each(function () {
+        var $tr   = $(this).closest('tr');
+        var $inp  = $tr.find('.monto-pago');
+        var monto = parseFloat($inp.val().replace(',', '.'));
+        if (!monto || monto <= 0) {
+            valido = false;
+            $inp.addClass('is-invalid');
+        } else {
+            $inp.removeClass('is-invalid');
+            data['factura_id[]'].push($tr.data('factura-id'));
+            data['monto[]'].push($inp.val());
+        }
+    });
+
+    if (!valido) {
+        $alerta.text("{% translate 'Ingrese un monto válido para cada factura seleccionada.' %}").removeClass('d-none');
+        return;
+    }
+
+    var $btn = $(this).prop('disabled', true);
+
+    $.ajax({
+        url: URL_PAGAR,
+        type: "POST",
+        data: data,
+        success: function (res) {
+            $btn.prop('disabled', false);
+            if (res.ok) {
+                buscarFacturas();
+                cargarIndicadores($('#id_proveedor').val());
+                $('#panel-pago').hide();
+                var $msg = $('<div class="alert alert-success alert-dismissible fade show">' +
+                    res.message + ' <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>');
+                $('#resultado-facturas').prepend($msg);
+                setTimeout(function () { $msg.alert('close'); }, 5000);
+            } else {
+                $alerta.text(res.error).removeClass('d-none');
+            }
+        },
+        error: function (xhr) {
+            $btn.prop('disabled', false);
+            var msg = "{% translate 'Error al conectar con el servidor.' %}";
+            try { msg = $.parseJSON(xhr.responseText).error || msg; } catch(e) {}
+            $alerta.text(msg).removeClass('d-none');
+        }
+    });
+});
+
+$('#btn-cancelar-pago').on('click', function () {
+    $('.check-factura:checked').each(function () {
+        $(this).prop('checked', false).closest('tr').find('.monto-pago').prop('disabled', true).val('');
+    });
+    $('#panel-pago').hide();
+});
+
+// ── Buscar pagos ─────────────────────────────────────────────────
+function buscarPagos() {
+    $.ajax({
+        url: URL_PAGOS,
+        type: "POST",
+        data: $('#form-filtro').serialize(),
+        success: function (res) {
+            if (res.error) {
+                $('#resultado-pagos').html('<div class="alert alert-danger">' + res.error + '</div>');
+                return;
+            }
+            $('#resultado-pagos').html(res.html);
+            bindTablaPagos();
+        }
+    });
+}
+
+function bindTablaPagos() {
+    $('.btn-ver-comprobante').on('click', function () {
+        abrirComprobante($(this).data('pago-id'));
+    });
+}
+
+// ── Modal comprobante ────────────────────────────────────────────
+function abrirComprobante(pagoId) {
+    $('#modal-pago-id').text('#' + pagoId);
+    $('#modal-comprobante-body').html(
+        '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></div>'
+    );
+    new bootstrap.Modal(document.getElementById('modalComprobante')).show();
+
+    $.ajax({
+        url: URL_COMPROBANTE + pagoId + '/',
+        type: "GET",
+        success: function (res) {
+            if (res.error) {
+                $('#modal-comprobante-body').html('<div class="alert alert-danger">' + res.error + '</div>');
+                return;
+            }
+            $('#modal-comprobante-body').html(res.html);
+        }
+    });
+}
+
+}); // fin $(function)
+</script>
+{% endblock %}
+
+{% block nav %}
+{% include 'nav_home.html' %}
+{% endblock %}

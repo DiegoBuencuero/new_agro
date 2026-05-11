@@ -369,7 +369,7 @@
 
                         <div class="col-6">
                             <label class="form-label">{% translate "Variedad" %} *</label>
-                            <select id="mp_variedad" class="form-select form-select-sm">
+                            <select id="mp_variedad" class="form-select form-select-sm" onchange="onVariedadChange()">
                                 <option value="">— {% translate "Seleccionar cultivo" %} —</option>
                             </select>
                         </div>
@@ -386,6 +386,13 @@
                         <button type="button" class="btn btn-link btn-sm p-0" onclick="toggleVariedadNueva()">
                             + {% translate "variedad nueva" %}
                         </button>
+                    </div>
+
+                    <div class="mt-2">
+                        <label class="form-label">{% translate "PMG" %} <span class="text-muted small">(g/1000 semillas)</span></label>
+                        <input type="number" id="mp_pmg" class="form-control form-control-sm"
+                               step="0.01" min="0" placeholder="Ej: 165">
+                        <div class="form-text">{% translate "Peso de Mil Granos — necesario para calcular kg de semilla en cosecha." %}</div>
                     </div>
                 </div>
 
@@ -511,6 +518,7 @@ function resetModal() {
     document.getElementById("mp_variedad").innerHTML = '<option value="">— {% translate "Seleccionar cultivo" %} —</option>';
     document.getElementById("mp_variedad_nueva").value         = "";
     document.getElementById("mp_variedad_nueva").style.display = "none";
+    document.getElementById("mp_pmg").value                    = "";
     document.getElementById("mp_pres_unidad").innerHTML        = '<option value="">---</option>';
     document.getElementById("mp_error").textContent            = "";
     document.getElementById("campos_semilla").style.display    = "none";
@@ -536,9 +544,19 @@ function cargarVariedades() {
         url: "{% url 'ajax_variedades_cultivo' %}", type: "GET", data: { cultivo_id: cultivo_id },
         success: function(r) {
             sel.innerHTML = '<option value="">— {% translate "Seleccionar" %} —</option>';
-            r.variedades.forEach(function(v) { sel.innerHTML += '<option value="' + v.id + '">' + v.nombre + '</option>'; });
+            r.variedades.forEach(function(v) {
+                var label = v.nombre + (v.pmg ? '  [PMG: ' + v.pmg + ' g]' : '');
+                sel.innerHTML += '<option value="' + v.id + '" data-pmg="' + (v.pmg || '') + '">' + label + '</option>';
+            });
         }
     });
+}
+
+function onVariedadChange() {
+    var sel = document.getElementById("mp_variedad");
+    var opt = sel.selectedOptions[0];
+    var pmg = opt ? opt.getAttribute("data-pmg") : "";
+    if (pmg) document.getElementById("mp_pmg").value = pmg;
 }
 
 function toggleVariedadNueva() {
@@ -648,6 +666,8 @@ function guardarProductoCompleto() {
         data.cultivo = cultivo;
         data.variedad = variedad;
         data.variedad_nueva = variedadNueva;
+        var pmg = document.getElementById("mp_pmg").value;
+        if (pmg) data.pmg = pmg;
     }
 
     $.ajax({

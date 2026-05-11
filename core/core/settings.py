@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'agro',
     'gestion_agro',
     'mapas',
+    'administracion',
 
 
 ]
@@ -55,6 +56,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'agro.middleware.PerfilActivoMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -157,3 +159,11 @@ MESSAGE_TAGS = {
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
+
+# Copernicus Data Space — credenciales NDVI (sin costo)
+# Registro en https://dataspace.copernicus.eu/ (solo email, sin tarjeta)
+# Luego crear OAuth client en el dashboard y pegar los valores aquí
+# o usar variables de entorno: CDSE_CLIENT_ID / CDSE_CLIENT_SECRET
+import os
+CDSE_CLIENT_ID     = os.environ.get("CDSE_CLIENT_ID", "sh-7f292d5f-e56e-493f-8555-c8e3fb93e3af")
+CDSE_CLIENT_SECRET = os.environ.get("CDSE_CLIENT_SECRET", "lfTHEgJFwzOagijfscUkQw6zwYY2k1aK")

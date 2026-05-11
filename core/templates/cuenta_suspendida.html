@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+{% load static %}
+{% load i18n %}
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>AgroInnova | {% translate "Cuenta suspendida" %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="shortcut icon" href="{% static 'images/favicon.png' %}">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #F5F7F6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      width: 440px;
+      background: #fff;
+      padding: 48px 40px;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.08);
+      text-align: center;
+    }
+    .icon { font-size: 3rem; margin-bottom: 16px; }
+    h4 { margin-bottom: 8px; color: #c62828; }
+    p { color: #607D8B; line-height: 1.6; }
+    a {
+      display: inline-block;
+      margin-top: 24px;
+      padding: 12px 28px;
+      border-radius: 8px;
+      background: #035426;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">🔒</div>
+  <h4>{% translate "Cuenta suspendida" %}</h4>
+  <p>{% translate "Tu cuenta ha sido suspendida. Contactá al administrador del sistema para más información." %}</p>
+  <form method="POST" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button type="submit" style="display:inline-block;margin-top:24px;padding:12px 28px;border-radius:8px;background:#035426;color:white;border:none;font-weight:600;cursor:pointer;">
+      {% translate "Cerrar sesión" %}
+    </button>
+  </form>
+</div>
+</body>
+</html>

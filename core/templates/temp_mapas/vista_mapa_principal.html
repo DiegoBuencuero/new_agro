@@ -3,11 +3,10 @@
 {% load i18n %}
 
 {% block content %}
+<script>document.body.classList.add('page-mapa');</script>
 
-<link rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin="" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"/>
 <link rel="stylesheet" href="{% static 'mapas/css/mapa.css' %}">
 
 <div class="mapa-wrapper">
@@ -36,9 +35,42 @@
     </div>
 
     <div class="sidebar-section">
-      <button class="btn btn-success btn-sm w-100" id="btn-subir-capa" disabled>
+      <button class="btn btn-success btn-sm w-100 mb-2" id="btn-subir-capa" disabled>
         <i class="mdi mdi-upload"></i> {% translate "Subir nueva capa" %}
       </button>
+    </div>
+
+    <!-- ÁREAS DEL CAMPO -->
+    <div class="sidebar-section" id="section-areas" style="display:none;">
+      <h6><i class="mdi mdi-vector-polygon me-1"></i> {% translate "Áreas del campo" %}</h6>
+
+      <div id="lista-areas" class="mb-2">
+        <p class="small text-muted">{% translate "Sin áreas definidas" %}</p>
+      </div>
+
+      <button class="btn btn-outline-primary btn-sm w-100 mb-1" id="btn-agregar-area-dibujar">
+        <i class="mdi mdi-draw me-1"></i>{% translate "Dibujar área" %}
+      </button>
+      <button class="btn btn-outline-secondary btn-sm w-100" id="btn-agregar-area-shp">
+        <i class="mdi mdi-file-upload me-1"></i>{% translate "Cargar archivo" %}
+      </button>
+
+      <!-- panel dibujando -->
+      <div id="areas-panel-dibujando" style="display:none;" class="mt-2">
+        <div class="alert alert-primary p-2 small mb-2">
+          <i class="mdi mdi-information me-1"></i>
+          {% translate "Completá el polígono con doble click" %}
+        </div>
+        <input type="text" id="nueva-area-nombre" class="form-control form-control-sm mb-2"
+               placeholder="{% translate 'Nombre del área' %}" maxlength="100">
+        <div class="small text-muted mb-2">{% translate "Área:" %} <strong id="nueva-area-preview">—</strong></div>
+        <button class="btn btn-success btn-sm w-100 mb-1" id="btn-guardar-area-dibujada" disabled>
+          <i class="mdi mdi-content-save me-1"></i>{% translate "Guardar" %}
+        </button>
+        <button class="btn btn-outline-secondary btn-sm w-100" id="btn-cancelar-dibujo-area">
+          <i class="mdi mdi-close me-1"></i>{% translate "Cancelar" %}
+        </button>
+      </div>
     </div>
 
     <div class="sidebar-section" id="panel-leyenda" style="display:none;">
@@ -155,6 +187,48 @@
   </div>
 </div>
 
+<div class="modal fade" id="modalSubirArea" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="mdi mdi-file-upload me-1"></i> {% translate "Cargar área" %}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="form-subir-area" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">{% translate "Nombre del área" %}</label>
+            <input type="text" id="area-shp-nombre" class="form-control"
+                   placeholder="Ej: Lote Norte, Parcela A">
+          </div>
+
+          <div id="dropzone-area"
+               style="border:2px dashed #adb5bd;border-radius:8px;padding:32px 16px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s">
+            <i class="mdi mdi-folder-open-outline" style="font-size:2rem;color:#6c757d"></i>
+            <p class="text-muted small mt-2 mb-0">
+              {% translate "Arrastrá los archivos acá" %}<br>
+              <span style="font-size:.75rem">.shp + .shx + .dbf &nbsp;·&nbsp; .kml &nbsp;·&nbsp; .kmz</span>
+            </p>
+            <input type="file" id="input-area-files" multiple accept=".shp,.shx,.dbf,.kml,.kmz"
+                   style="display:none">
+          </div>
+
+          <div id="area-files-status" class="mt-3" style="display:none">
+            <div class="d-flex gap-2 flex-wrap" id="area-badges"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+          <button type="submit" id="btn-subir-area-shp" class="btn btn-primary btn-sm" disabled>
+            <i class="mdi mdi-upload me-1"></i>{% translate "Subir y crear área" %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content border-0 rounded-4 shadow">
@@ -230,15 +304,21 @@
         integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
         crossorigin="anonymous"></script>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-        crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
 
 <script>
   window.MAPA_URLS = {
-    listarCapas:  "{% url 'ajax_listar_capas' 0 %}",
-    subirCapa:    "{% url 'ajax_subir_capa' 0 %}",
-    eliminarCapa: "{% url 'ajax_eliminar_capa' 0 %}",
+    listarCapas:       "{% url 'ajax_listar_capas' 0 %}",
+    subirCapa:         "{% url 'ajax_subir_capa' 0 %}",
+    eliminarCapa:      "{% url 'ajax_eliminar_capa' 0 %}",
+    getBoundary:       "{% url 'ajax_get_boundary' 0 %}",
+    listarAreas:       "{% url 'ajax_listar_areas' 0 %}",
+    crearArea:         "{% url 'ajax_crear_area' 0 %}",
+    subirAreaShp:      "{% url 'ajax_cargar_area_shapefile' 0 %}",
+    subirAreaKml:      "{% url 'ajax_cargar_area_kml' 0 %}",
+    guardarAreaGeojson:"{% url 'ajax_guardar_area_geojson' 0 %}",
+    eliminarArea:      "{% url 'ajax_eliminar_area' 0 %}",
   };
   window.CSRF_TOKEN = "{{ csrf_token }}";
 </script>

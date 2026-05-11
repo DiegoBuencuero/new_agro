@@ -2,7 +2,9 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from agro.views import index,login_page
+from agro.views import index, login_page, vista_configuracion, vista_registro, vista_cuenta_suspendida
+from administracion.views import (vista_gestion_facturas, ajax_indicadores_proveedor,
+    ajax_buscar_facturas, ajax_registrar_pago, ajax_buscar_pagos, ajax_detalle_pago)
 from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo,
 vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
 vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo, ajax_get_ciclos_data, vista_agregar_actividad,
@@ -18,10 +20,10 @@ urlpatterns = [
     path('', index, name='index'),
     path('i18n/', include('django.conf.urls.i18n')), 
 
-    path('login/', login_page, name='login'),
-    # path('signup/', signup, name='signup'),
-    # path('activate/<uidb64>/<token>/', activate, name='activate'),
     path('accounts/', include('django.contrib.auth.urls')),
+    path('login/', login_page, name='login'),
+    path('registro/', vista_registro, name='registro'),
+    path('cuenta-suspendida/', vista_cuenta_suspendida, name='cuenta_suspendida'),
 
     path('campos/', vista_crear_campo, name='vista_crear_campo'),
     path('campos/<int:id_campo>/', vista_editar_campo, name='vista_editar_campo'),
@@ -67,6 +69,15 @@ urlpatterns = [
   
 
     path('mapas/', include('mapas.urls')),
+
+    path('configuracion/', vista_configuracion, name='vista_configuracion'),
+
+    path('administracion/gestion-facturas/', vista_gestion_facturas, name='vista_gestion_facturas'),
+    path('administracion/ajax/indicadores-proveedor/', ajax_indicadores_proveedor, name='ajax_indicadores_proveedor'),
+    path('administracion/ajax/buscar-facturas/', ajax_buscar_facturas, name='ajax_buscar_facturas'),
+    path('administracion/ajax/registrar-pago/', ajax_registrar_pago, name='ajax_registrar_pago'),
+    path('administracion/ajax/buscar-pagos/', ajax_buscar_pagos, name='ajax_buscar_pagos'),
+    path('administracion/ajax/detalle-pago/<int:pago_id>/', ajax_detalle_pago, name='ajax_detalle_pago'),
 ]
 
 if settings.DEBUG:

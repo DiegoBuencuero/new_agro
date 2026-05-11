@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block plugin_css %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+  {% if messages %}
+  <div class="mb-4">
+    {% for message in messages %}
+    <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+      <i class="mdi {% if 'success' in message.tags %}mdi-check-circle{% elif 'danger' in message.tags %}mdi-alert-circle{% else %}mdi-information{% endif %} me-2"></i>
+      <div>{{ message }}</div>
+      <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="upload-card">
+
+    <div class="upload-header d-flex align-items-start justify-content-between gap-3 mb-4">
+      <div>
+        <h3 class="mb-1">
+          <i class="mdi mdi-cog-outline icon-agro me-2"></i>
+          {% translate "Parámetros del sistema" %}
+        </h3>
+        <div class="small text-muted">{{ empresa.nombre }}</div>
+      </div>
+    </div>
+
+    <div class="col-lg-12 grid-margin stretch-card">
+      <div class="card">
+        <div class="card-body">
+          <form method="POST">
+            {% csrf_token %}
+
+            <!-- COSTOS OPERATIVOS -->
+            <p class="card-description">{% translate "Costos operativos" %}</p>
+            <div class="row">
+              <div class="col-md-6">
+                <div class="form-group row">
+                  <label class="col-sm-4 col-form-label">
+                    {% translate "Valor hora MO" %}
+                  </label>
+                  <div class="col-sm-8">
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      {{ form.valor_mobra }}
+                    </div>
+                    {{ form.valor_mobra.errors }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-group row">
+                  <label class="col-sm-4 col-form-label">
+                    {% translate "Valor hora máquina" %}
+                  </label>
+                  <div class="col-sm-8">
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      {{ form.valor_maquina }}
+                    </div>
+                    {{ form.valor_maquina.errors }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <!-- STOCK E INVENTARIO -->
+            <p class="card-description">{% translate "Stock e inventario" %}</p>
+            <div class="row">
+              <div class="col-md-4">
+                <div class="form-group row">
+                  <label class="col-sm-4 col-form-label">{% translate "Cálculo costo" %}</label>
+                  <div class="col-sm-8">
+                    {{ form.calculo_costo }}
+                    {{ form.calculo_costo.errors }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group row">
+                  <label class="col-sm-4 col-form-label">{% translate "Depósito insumos" %}</label>
+                  <div class="col-sm-8">
+                    {{ form.deposito_insumos_default }}
+                    <small class="text-muted">{% translate "Default al cargar facturas de compra" %}</small>
+                    {{ form.deposito_insumos_default.errors }}
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-group row">
+                  <label class="col-sm-4 col-form-label">{% translate "Depósito cosecha" %}</label>
+                  <div class="col-sm-8">
+                    {{ form.deposito_producto_final_default }}
+                    <small class="text-muted">{% translate "Default al registrar cosecha propia" %}</small>
+                    {{ form.deposito_producto_final_default.errors }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <!-- SEMILLA -->
+            <p class="card-description">{% translate "Semilla" %}</p>
+            <div class="row">
+              <div class="col-md-4">
+                <div class="form-group row">
+                  <label class="col-sm-5 col-form-label">{% translate "Unidad inspección semilla" %}</label>
+                  <div class="col-sm-7">
+                    {{ form.unidad_inspeccion_semilla }}
+                    <small class="text-muted">{% translate "Unidad por defecto al registrar inspección" %}</small>
+                    {{ form.unidad_inspeccion_semilla.errors }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <button type="submit" class="btn btn-success">
+                <i class="mdi mdi-content-save me-1"></i>{% translate "Guardar" %}
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  setTimeout(function () {
+    document.querySelectorAll('.alert').forEach(function(el) {
+      new bootstrap.Alert(el).close();
+    });
+  }, 5000);
+});
+</script>
+{% endblock %}
+
+{% block nav %}
+{% include 'nav_home.html' %}
+{% endblock %}

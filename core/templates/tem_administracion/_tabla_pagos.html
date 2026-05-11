@@ -1,0 +1,37 @@
+{% load i18n %}
+
+{% if not pagos %}
+<div class="alert alert-info">{% translate "No se encontraron pagos con los filtros seleccionados." %}</div>
+{% else %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>{% translate "Fecha" %}</th>
+        <th>{% translate "Proveedor" %}</th>
+        <th class="text-center">{% translate "Facturas" %}</th>
+        <th class="text-end">{% translate "Total Pagado" %}</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pago in pagos %}
+      <tr>
+        <td class="text-muted small">{{ pago.id }}</td>
+        <td>{{ pago.fecha|date:"d/m/Y H:i" }}</td>
+        <td>{{ pago.proveedor }}</td>
+        <td class="text-center">{{ pago.aplicaciones.count }}</td>
+        <td class="text-end fw-semibold">${{ pago.monto_total|floatformat:2 }}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary btn-ver-comprobante"
+                  data-pago-id="{{ pago.id }}">
+            <i class="mdi mdi-file-document-outline me-1"></i>{% translate "Comprobante" %}
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

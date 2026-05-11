@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 
 class CapaAnalisis(models.Model):
@@ -20,13 +21,8 @@ class CapaAnalisis(models.Model):
         ("otro", _("Otro")),
     ]
 
-    empresa = models.ForeignKey(
-        "agro.Empresa", on_delete=models.CASCADE, related_name="capas"
-    )
-    campo = models.ForeignKey(
-        "gestion_agro.Campo", on_delete=models.CASCADE, related_name="capas"
-    )
-
+    empresa = models.ForeignKey("agro.Empresa", on_delete=models.CASCADE, related_name="capas")
+    campo = models.ForeignKey("gestion_agro.Campo", on_delete=models.CASCADE, related_name="capas")
     nombre = models.CharField(max_length=120)
     tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="otro")
 
@@ -46,7 +42,7 @@ class CapaAnalisis(models.Model):
     valor_promedio = models.FloatField(null=True, blank=True)
     num_features = models.IntegerField(default=0)
 
-    # Bounding box pre-calculado (para centrar el mapa rápido)
+    # rectángulo delimitador pre-calculado (para centrar el mapa rápido)
     bbox_min_lng = models.FloatField(null=True, blank=True)
     bbox_min_lat = models.FloatField(null=True, blank=True)
     bbox_max_lng = models.FloatField(null=True, blank=True)
@@ -68,3 +64,51 @@ class CapaAnalisis(models.Model):
     @property
     def geojson_url(self):
         return self.geojson_file.url if self.geojson_file else ""
+
+
+class NDVICaptura(models.Model):
+
+    class Origen(models.TextChoices):
+        AUTO   = "AUTO",   _("Sentinel-2 automático")
+        MANUAL = "MANUAL", _("Subida manual")
+
+    campo        = models.ForeignKey(
+        "gestion_agro.Campo", on_delete=models.CASCADE,
+        related_name="ndvi_capturas", verbose_name=_("Campo"),
+    )
+    ciclo        = models.ForeignKey(
+        "gestion_agro.CicloAgricola", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="ndvi_capturas", verbose_name=_("Ciclo"),
+    )
+    fecha_imagen  = models.DateField(verbose_name=_("Fecha imagen satélite"))
+    fecha_proceso = models.DateTimeField(default=timezone.now, verbose_name=_("Fecha proceso"))
+    origen        = models.CharField(max_length=10, choices=Origen.choices, default=Origen.AUTO)
+
+    ndvi_promedio = models.FloatField(null=True, blank=True, verbose_name=_("NDVI promedio"))
+    ndvi_min      = models.FloatField(null=True, blank=True, verbose_name=_("NDVI mínimo"))
+    ndvi_max      = models.FloatField(null=True, blank=True, verbose_name=_("NDVI máximo"))
+    nubosidad_pct = models.FloatField(default=0, verbose_name=_("% Nubosidad"))
+
+    imagen_png    = models.ImageField(upload_to="ndvi/imagenes/", null=True, blank=True, verbose_name=_("Imagen PNG"))
+    geojson_file  = models.FileField(upload_to="ndvi/geojson/", null=True, blank=True, verbose_name=_("GeoJSON"))
+
+    class Meta:
+        ordering = ["-fecha_imagen"]
+        unique_together = ("campo", "fecha_imagen")
+        verbose_name = _("Captura NDVI")
+        verbose_name_plural = _("Capturas NDVI")
+
+    def __str__(self):
+        return f"{self.campo.nombre} – {self.fecha_imagen} – NDVI {self.ndvi_promedio:.3f}" if self.ndvi_promedio else f"{self.campo.nombre} – {self.fecha_imagen}"
+
+    @property
+    def estado(self):
+        if self.ndvi_promedio is None:
+            return "sin_datos"
+        if self.ndvi_promedio >= 0.5:
+            return "optimo"
+        if self.ndvi_promedio >= 0.3:
+            return "normal"
+        if self.ndvi_promedio >= 0.1:
+            return "estres"
+        return "critico"

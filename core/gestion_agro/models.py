@@ -18,6 +18,7 @@ class Campo(models.Model):
     )
     image = models.ImageField( default="default.jpg", upload_to="campos", verbose_name=_("Imagen"),)
     observaciones = models.TextField(null=True, blank=True, verbose_name=_("Observaciones"),)
+    boundary_geojson = models.TextField(null=True, blank=True, verbose_name=_("Contorno del campo (GeoJSON)"))
 
     class Meta:
         verbose_name = _("Campo")
@@ -25,6 +26,41 @@ class Campo(models.Model):
 
     def __str__(self):
         return f"{self.nombre} ({self.superficie_ha} ha)"
+
+    @property
+    def areas_geojson_union(self):
+        """GeoJSON FeatureCollection con todas las áreas del campo."""
+        features = []
+        for area in self.areas.all():
+            if area.boundary_geojson:
+                import json
+                try:
+                    geom = json.loads(area.boundary_geojson)
+                    features.append({
+                        "type": "Feature",
+                        "properties": {"id": area.id, "nombre": area.nombre},
+                        "geometry": geom if geom.get("type") != "FeatureCollection" else geom["features"][0]["geometry"],
+                    })
+                except Exception:
+                    pass
+        return {"type": "FeatureCollection", "features": features}
+
+
+class AreaCampo(models.Model):
+    campo         = models.ForeignKey(Campo, on_delete=models.CASCADE, related_name="areas", verbose_name=_("Campo"))
+    nombre        = models.CharField(max_length=100, verbose_name=_("Nombre del área"))
+    boundary_geojson = models.TextField(null=True, blank=True, verbose_name=_("GeoJSON"))
+    superficie_ha = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name=_("Superficie (ha)"))
+    descripcion   = models.CharField(max_length=255, blank=True, verbose_name=_("Descripción"))
+    creado        = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name        = _("Área del campo")
+        verbose_name_plural = _("Áreas del campo")
+        ordering            = ["nombre"]
+
+    def __str__(self):
+        return f"{self.campo.nombre} — {self.nombre}"
 
 class Lote(models.Model):
     class Meta:
@@ -74,7 +110,13 @@ class Cultivo(models.Model):
 
 class Variedad(models.Model):
     cultivo = models.ForeignKey(Cultivo, on_delete=models.CASCADE, related_name="variedades", verbose_name=_("Cultura"))
-    nombre = models.CharField(max_length=100, verbose_name=_("Variedade"))
+    nombre  = models.CharField(max_length=100, verbose_name=_("Variedade"))
+    pmg     = models.DecimalField(
+        max_digits=8, decimal_places=2,
+        null=True, blank=True,
+        verbose_name=_("PMG (g)"),
+        help_text=_("Peso de mil granos en gramos"),
+    )
 
     class Meta:
         verbose_name = _("Variedade")
@@ -232,8 +274,9 @@ class TipoActividad(models.Model):
     requiere_insumo = models.BooleanField(default=False)
     requiere_mo = models.BooleanField(default=False)
     requiere_maq = models.BooleanField(default=False)
-    requiere_vist = models.BooleanField(default=False)
-    requiere_cosecha = models.BooleanField(default=False)
+    requiere_vist       = models.BooleanField(default=False)
+    requiere_cosecha    = models.BooleanField(default=False)
+    requiere_inspeccion = models.BooleanField(default=False, verbose_name=_("Requiere inspección semilla"))
     valor_x_ha_mo = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name=_("Horas de mano de obra por ha"))
     valor_x_ha_mq = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name=_("Horas de máquina por ha"))
     valor_mo = models.DecimalField(max_digits=18, decimal_places=4, default=0, null=True, blank=True, verbose_name=_("Costo por hora de mano de obra"))
@@ -268,7 +311,6 @@ class ActividadProductiva(models.Model):
     cantidad_h_maq = models.DecimalField(max_digits=10, decimal_places=2, default=0, null=True, blank=True)
     valor_h_maq = models.DecimalField(max_digits=18, decimal_places=2, default=0, null=True, blank=True)
 
-  # Para  historicos borrar dejar como calculo─────────────────────────────────────────
     total_mo  = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
     total_maq = models.DecimalField(max_digits=8,decimal_places=2, null=True, blank=True)
     total     = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
@@ -288,6 +330,25 @@ class CamposVistoria(models.Model):
     def __str__(self):
         return f"Vistoria · {self.actividad.fecha.strftime('%d/%m/%Y')}"
     
+class CamposInspeccion(models.Model):
+    class Resultado(models.TextChoices):
+        APROBADO  = 'APROBADO',  _('Aprobado')
+        RECHAZADO = 'RECHAZADO', _('Rechazado')
+
+    actividad          = models.OneToOneField(ActividadProductiva, on_delete=models.CASCADE)
+    cant_semilla_mult_ha = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, verbose_name=_("Cantidad aprobada (por ha)"))
+    um                 = models.ForeignKey('agro.Unidad', on_delete=models.CASCADE, related_name='inspeccion_unidad_medida', verbose_name=_("Unidad"))
+    resultado          = models.CharField(max_length=10, choices=Resultado.choices, null=True, blank=True, verbose_name=_("Resultado"))
+    responsable        = models.CharField(max_length=255, blank=True, null=True, verbose_name=_("Responsable"))
+
+    class Meta:
+        verbose_name        = _("Inspección de semilla")
+        verbose_name_plural = _("Inspecciones de semilla")
+
+    def __str__(self):
+        return f"Inspección · {self.actividad.fecha.strftime('%d/%m/%Y')} · {self.get_resultado_display() or '—'}"
+    
+    
 class CamposCosecha(models.Model):
     actividad = models.OneToOneField(ActividadProductiva, on_delete=models.CASCADE)
     rendimiento = models.DecimalField(
@@ -295,18 +356,33 @@ class CamposCosecha(models.Model):
         decimal_places=2,
         null=True,
         blank=True,
+        verbose_name=_("Rendimiento (por ha)"),
         help_text=_("Rendimiento obtenido (kg/ha, qq/ha, t/ha, según estándar)"),
+    )
+    kg_semilla = models.DecimalField(
+        max_digits=12, decimal_places=3,
+        null=True, blank=True,
+        verbose_name=_("Kg destinados a semilla"),
+    )
+    kg_consumo = models.DecimalField(
+        max_digits=12, decimal_places=3,
+        null=True, blank=True,
+        verbose_name=_("Kg destinados a consumo"),
     )
     comentarios_cosecha = models.TextField(
         null=True,
         blank=True,
-        help_text=_("Observaciones específicas de la cosecha"),
+        verbose_name=_("Comentarios de cosecha"),
     )
     observaciones = models.TextField(
         blank=True,
         null=True,
-        help_text=_("Observaciones generales de la actividad"),
+        verbose_name=_("Observaciones"),
     )
+
+    class Meta:
+        verbose_name        = _("Cosecha")
+        verbose_name_plural = _("Cosechas")
 
 class CategoriaProducto(models.Model):
     codigo = models.CharField(max_length=10, unique=True, verbose_name=_("Código"))
@@ -347,7 +423,7 @@ class Producto(models.Model):
 
 class ProductoSemilla(models.Model):
     producto = models.OneToOneField(Producto, on_delete=models.CASCADE, related_name="datos_semilla", verbose_name=_("Producto"))
-    cultivo = models.ForeignKey(Cultivo, on_delete=models.PROTECT, related_name="productos_semilla", verbose_name=_("Cultivo"))
+    cultivo  = models.ForeignKey(Cultivo, on_delete=models.PROTECT, related_name="productos_semilla", verbose_name=_("Cultivo"))
     variedad = models.ForeignKey(Variedad, on_delete=models.PROTECT, related_name="productos_semilla", verbose_name=_("Variedad"))
 
     class Meta:
@@ -376,13 +452,14 @@ class ProductoSemilla(models.Model):
 
 class ActividadInsumo(models.Model):
 
-    actividad = models.ForeignKey("ActividadProductiva", on_delete=models.CASCADE, related_name="insumos")
-    producto = models.ForeignKey("gestion_agro.Producto", on_delete=models.CASCADE, null=True, blank=True)
-    dosis = models.DecimalField(max_digits=10, decimal_places=2)
-    um = models.ForeignKey( Unidad, on_delete=models.CASCADE, null=True, blank=True, related_name='actividad_insumos' )
-    cantidad_real = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    costo_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    costo_ha = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    actividad       = models.ForeignKey("ActividadProductiva", on_delete=models.CASCADE, related_name="insumos")
+    producto        = models.ForeignKey("gestion_agro.Producto", on_delete=models.CASCADE, null=True, blank=True)
+    dosis           = models.DecimalField(max_digits=10, decimal_places=2)
+    um              = models.ForeignKey(Unidad, on_delete=models.CASCADE, null=True, blank=True, related_name='actividad_insumos')
+    densidad_siembra = models.DecimalField(max_digits=12, decimal_places=0, null=True, blank=True, verbose_name=_("Densidad de siembra (semillas/ha)"))
+    cantidad_real   = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    costo_total     = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    costo_ha        = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
 
 class MovimientoStock(models.Model):
     class Tipo(models.TextChoices):
@@ -397,6 +474,8 @@ class MovimientoStock(models.Model):
     actividad_item = models.ForeignKey(   "gestion_agro.ActividadInsumo",  on_delete=models.CASCADE,  null=True,  blank=True, related_name="movimientos_stock" )
     actividad = models.ForeignKey( "ActividadProductiva",  on_delete=models.CASCADE,   blank=True,  null=True,  related_name="movimientos_stock" )    
     factura_item = models.ForeignKey("FacturaCompraItem", on_delete=models.CASCADE, null=True, blank=True)
+    cosecha      = models.ForeignKey("CamposCosecha", on_delete=models.SET_NULL, null=True, blank=True, related_name="movimientos_stock", verbose_name=_("Cosecha"))
+    es_semilla_cosecha = models.BooleanField(default=False, verbose_name=_("Es porción semilla de cosecha"))
     precio_unitario = models.DecimalField( max_digits=14, decimal_places=6, help_text=_("Precio promedio aplicado al momento del consumo"), null=True,  blank=False, )
     deposito_origen  = models.ForeignKey(Deposito, on_delete=models.CASCADE,null=True, blank=True, related_name="salidas")
     deposito_destino = models.ForeignKey(Deposito, on_delete=models.CASCADE, null=True, blank=True, related_name="entradas")
@@ -457,6 +536,7 @@ class FacturaCompra(models.Model):
     numero = models.CharField(max_length=50, verbose_name=_("Número factura"))
     fecha = models.DateField(verbose_name=_("Fecha"))
     total = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Total"))
+    fecha_vencimiento = models.DateField(null=True, blank=True, verbose_name=_("Fecha vencimiento"))
     archivo_pdf = models.FileField(upload_to="facturas_compra/", blank=True, null=True)
     creada = models.DateTimeField(auto_now_add=True)
 
@@ -507,7 +587,71 @@ class Proveedor(models.Model):
 
     def __str__(self):
         return self.razon_social
-    
+
+
+class Cliente(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
+    razon_social = models.CharField(max_length=255, verbose_name=_("Razón social"))
+    identificador = models.CharField(max_length=30, blank=True, null=True, verbose_name=_("CUIT / CNPJ"))
+
+    class Meta:
+        verbose_name = _("Cliente")
+        verbose_name_plural = _("Clientes")
+        unique_together = ("empresa", "razon_social")
+
+    def __str__(self):
+        return self.razon_social
+
+
+class EntregaDepositoExterno(models.Model):
+
+    class TipoGrano(models.TextChoices):
+        CONSUMO = "CONSUMO", _("Consumo")
+        SEMILLA = "SEMILLA", _("Semilla")
+
+    movimiento = models.OneToOneField(
+        MovimientoStock,
+        on_delete=models.CASCADE,
+        related_name="entrega_externa",
+        verbose_name=_("Movimiento de stock"),
+    )
+    ciclo = models.ForeignKey(
+        CicloAgricola,
+        on_delete=models.CASCADE,
+        related_name="entregas_externas",
+        verbose_name=_("Ciclo agrícola"),
+    )
+    tipo = models.CharField(max_length=10, choices=TipoGrano.choices, verbose_name=_("Tipo"))
+
+    nfe_numero     = models.CharField(max_length=20, blank=True, verbose_name=_("NF-e número"))
+    nfe_serie      = models.CharField(max_length=5, blank=True, default="1", verbose_name=_("Serie"))
+    ticket_balanza = models.CharField(max_length=20, blank=True, verbose_name=_("Ticket balanza"))
+
+    peso_bruto       = models.DecimalField(max_digits=10, decimal_places=3, verbose_name=_("Peso bruto (kg)"))
+    tara             = models.DecimalField(max_digits=10, decimal_places=3, verbose_name=_("Tara (kg)"))
+    pct_impureza     = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name=_("% Impureza"))
+    kg_impureza      = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name=_("kg Impureza"))
+    pct_umidade      = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name=_("% Umidade"))
+    kg_umidade       = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name=_("kg Umidade"))
+    graus_umidade    = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name=_("Graus umidade"))
+    total_descuentos = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name=_("Total descuentos (kg)"))
+    # peso_liquido = movimiento.cantidad
+
+    chave_nfe   = models.CharField(max_length=60, blank=True, verbose_name=_("Chave NF-e"))
+    archivo_pdf = models.FileField(upload_to="entregas_externas/", blank=True, null=True, verbose_name=_("PDF"))
+
+    class Meta:
+        verbose_name = _("Entrega depósito externo")
+        verbose_name_plural = _("Entregas depósito externo")
+        ordering = ["-movimiento__fecha"]
+
+    def __str__(self):
+        return f"{self.movimiento.deposito_destino} – {self.movimiento.fecha.date()} – {self.movimiento.cantidad} kg"
+
+    @property
+    def peso_liquido(self):
+        return self.movimiento.cantidad
+
 
 class ProductoNormalizado(models.Model):
     """Productos extraídos y normalizados de facturas"""

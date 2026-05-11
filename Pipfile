@@ -7,6 +7,9 @@ name = "pypi"
 django = "*"
 pillow = "*"
 pdfplumber = "*"
+sentinelhub = "*"
+numpy = "*"
+pyshp = "*"
 
 [dev-packages]
 

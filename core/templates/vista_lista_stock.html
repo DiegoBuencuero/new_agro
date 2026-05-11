@@ -82,11 +82,11 @@
                                     value="{{ request.GET.fecha_entrada_hasta }}">
                             </div>
                             <div class="col-md-2 d-flex gap-2">
-                                <button type="submit" class="btn btn-success btn-sm">
-                                    <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
+                                <button type="submit" class="btn btn-primary text-white">
+                                    <i class="icon-check me-1"></i>{% translate "Filtrar" %}
                                 </button>
-                                <a href="{% url 'vista_lista_stock' %}" class="btn btn-dark btn-sm">
-                                    <i class="mdi mdi-close me-1"></i>{% translate "Limpiar" %}
+                                <a href="{% url 'vista_lista_stock' %}" class="btn btn-otline-dark">
+                                    <i class="icon-close me-1"></i>{% translate "Limpiar" %}
                                 </a>
                             </div>
                         </form>
@@ -272,7 +272,7 @@
                                     <div class="card-body">
                                         <i class="mdi mdi-arrow-down-bold fs-4 text-success"></i>
                                         <div class="mt-2 small text-muted">{% translate "Total cosechado" %}</div>
-                                        <div class="fw-semibold text-success">{{ total_ingresado_finales }}</div>
+                                        <div class="fw-semibold text-success">{{ total_cosechado_real|floatformat:0 }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -281,7 +281,7 @@
                                     <div class="card-body">
                                         <i class="mdi mdi-arrow-up-bold fs-4 text-muted"></i>
                                         <div class="mt-2 small text-muted">{% translate "Total vendido" %}</div>
-                                        <div class="fw-semibold">{{ total_consumido_finales }}</div>
+                                        <div class="fw-semibold">{{ total_consumido_finales|floatformat:0 }}</div>
                                     </div>
                                 </div>
                             </div>
@@ -294,7 +294,7 @@
                                             {% if total_restante_finales > 0 %}text-success
                                             {% elif total_restante_finales == 0 %}text-warning
                                             {% else %}text-danger{% endif %}">
-                                            {{ total_restante_finales }}
+                                            {{ total_restante_finales|floatformat:0 }}
                                         </div>
                                     </div>
                                 </div>
@@ -312,38 +312,52 @@
                             <div class="card-body p-0">
                                 {% if productos_finales %}
                                 <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th style="width:35%">{% translate "Producto" %}</th>
-                                            <th style="width:12%">{% translate "Categoría" %}</th>
-                                            <th style="width:13%" class="text-end">{% translate "Cosechado" %}</th>
-                                            <th style="width:13%" class="text-end">{% translate "Vendido" %}</th>
-                                            <th style="width:12%" class="text-end">{% translate "En stock" %}</th>
-                                            <th style="width:15%" class="text-center">{% translate "Acciones" %}</th>
+                                <table class="table align-middle mb-0" style="border-collapse:separate;border-spacing:0">
+                                    <thead>
+                                        <tr style="background:#f8f9fa;border-bottom:2px solid #e9ecef">
+                                            <th class="px-4 py-3" style="width:35%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Producto" %}</th>
+                                            <th class="px-3 py-3" style="width:12%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Tipo" %}</th>
+                                            <th class="px-3 py-3 text-end" style="width:13%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Cosechado" %}</th>
+                                            <th class="px-3 py-3 text-end" style="width:13%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Vendido" %}</th>
+                                            <th class="px-3 py-3 text-end" style="width:12%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "En stock" %}</th>
+                                            <th class="px-3 py-3 text-center" style="width:15%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Acciones" %}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                     {% for item in productos_finales %}
                                     {% with prod=item.obj %}
-                                    <tr>
-                                        <td>
-                                            <div class="fw-semibold small">{{ prod.nombre|truncatewords:8 }}</div>
-                                            <div class="text-muted" style="font-size:.72rem">{{ prod.codigo }}</div>
+                                    <tr style="border-bottom:1px solid #f1f3f5;transition:background .15s" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''">
+                                        <td class="px-4 py-3">
+                                            <div class="fw-semibold" style="font-size:.9rem;color:#212529">{{ prod.nombre|truncatewords:8 }}</div>
+                                            <div class="text-muted mt-1" style="font-size:.75rem;letter-spacing:.03em">{{ prod.codigo }}</div>
                                         </td>
-                                        <td>
-                                            <span class="badge bg-success bg-opacity-10 text-success border border-success-subtle">
-                                                {% translate "Producto final" %}
-                                            </span>
+                                        <td class="px-3 py-3">
+                                            {% if item.kg_semilla_cosecha > 0 %}
+                                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600;background:#fff8e6;color:#92680a;border:1px solid #fcd97d;white-space:nowrap;margin-bottom:3px">
+                                                    <i class="mdi mdi-sprout" style="font-size:.85rem"></i> {% translate "Semilla" %}: {{ item.kg_semilla_cosecha|floatformat:0 }} {{ prod.unidad_base }}
+                                                </span>
+                                            {% endif %}
+                                            {% if item.kg_consumo_cosecha > 0 %}
+                                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600;background:#eaf6ee;color:#1a6b3a;border:1px solid #a3d9b1;white-space:nowrap">
+                                                    <i class="mdi mdi-grain" style="font-size:.85rem"></i> {% translate "Consumo" %}: {{ item.kg_consumo_cosecha|floatformat:0 }} {{ prod.unidad_base }}
+                                                </span>
+                                            {% endif %}
+                                            {% if item.kg_semilla_cosecha == 0 and item.kg_consumo_cosecha == 0 %}
+                                                <span class="text-muted small">—</span>
+                                            {% endif %}
                                         </td>
-                                        <td class="text-end small">{{ item.ingresado }} {{ prod.unidad_base }}</td>
-                                        <td class="text-end small">{{ item.consumido }} {{ prod.unidad_base }}</td>
-                                        <td class="text-end">
-                                            <span class="fw-semibold small
-                                                {% if item.restante > 0 %}text-success
-                                                {% elif item.restante == 0 %}text-warning
-                                                {% else %}text-danger{% endif %}">
-                                                {{ item.restante }} {{ prod.unidad_base }}
+                                        <td class="px-3 py-3 text-end">
+                                            <span style="font-size:.88rem;color:#495057">{{ item.cosechado_cosecha|floatformat:0 }} <span class="text-muted">{{ prod.unidad_base }}</span></span>
+                                        </td>
+                                        <td class="px-3 py-3 text-end">
+                                            <span style="font-size:.88rem;color:#495057">{{ item.consumido|floatformat:0 }} <span class="text-muted">{{ prod.unidad_base }}</span></span>
+                                        </td>
+                                        <td class="px-3 py-3 text-end">
+                                            <span class="fw-semibold" style="font-size:.92rem;
+                                                {% if item.restante > 0 %}color:#1a6b3a
+                                                {% elif item.restante == 0 %}color:#856404
+                                                {% else %}color:#842029{% endif %}">
+                                                {{ item.restante|floatformat:0 }} <span style="font-weight:400;font-size:.78rem;opacity:.7">{{ prod.unidad_base }}</span>
                                             </span>
                                         </td>
                                         <td class="text-center">

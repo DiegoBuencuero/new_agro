@@ -450,6 +450,73 @@
                                                                             </div>
                                                                         {% endif %}
 
+                                                                        {% with cosecha=act.camposcosecha %}
+                                                                        {% if cosecha %}
+                                                                            <div class="mt-3 border-top pt-3">
+                                                                                <div class="fw-bold mb-2">
+                                                                                    <i class="mdi mdi-basket-fill me-1 text-warning"></i>
+                                                                                    {% translate "Cosecha" %}
+                                                                                </div>
+                                                                                <div class="row g-2 small">
+                                                                                    <div class="col-md-3">
+                                                                                        <span class="text-muted">{% translate "Rendimiento" %}:</span>
+                                                                                        <strong>{{ cosecha.rendimiento|floatformat:2 }}</strong>
+                                                                                    </div>
+                                                                                    {% if cosecha.kg_semilla %}
+                                                                                    <div class="col-md-3">
+                                                                                        <span class="text-muted">{% translate "Semilla" %}:</span>
+                                                                                        <strong class="text-success">{{ cosecha.kg_semilla|floatformat:0 }} kg</strong>
+                                                                                    </div>
+                                                                                    {% endif %}
+                                                                                    {% if cosecha.kg_consumo %}
+                                                                                    <div class="col-md-3">
+                                                                                        <span class="text-muted">{% translate "Consumo" %}:</span>
+                                                                                        <strong>{{ cosecha.kg_consumo|floatformat:0 }} kg</strong>
+                                                                                    </div>
+                                                                                    {% endif %}
+                                                                                    {% if cosecha.comentarios_cosecha %}
+                                                                                    <div class="col-12 text-muted fst-italic">{{ cosecha.comentarios_cosecha }}</div>
+                                                                                    {% endif %}
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endif %}
+                                                                        {% endwith %}
+
+                                                                        {% with insp=act.camposinspeccion %}
+                                                                        {% if insp %}
+                                                                            <div class="mt-3 border-top pt-3">
+                                                                                <div class="fw-bold mb-2">
+                                                                                    <i class="mdi mdi-clipboard-check-outline me-1 text-info"></i>
+                                                                                    {% translate "Inspección de semilla" %}
+                                                                                </div>
+                                                                                <div class="row g-2 small">
+                                                                                    <div class="col-md-3">
+                                                                                        <span class="text-muted">{% translate "Resultado" %}:</span>
+                                                                                        {% if insp.resultado == "APROBADO" %}
+                                                                                            <span class="badge bg-success ms-1">{% translate "Aprobado" %}</span>
+                                                                                        {% elif insp.resultado == "RECHAZADO" %}
+                                                                                            <span class="badge bg-danger ms-1">{% translate "Rechazado" %}</span>
+                                                                                        {% else %}
+                                                                                            <span class="badge bg-secondary ms-1">—</span>
+                                                                                        {% endif %}
+                                                                                    </div>
+                                                                                    {% if insp.cant_semilla_mult_ha %}
+                                                                                    <div class="col-md-3">
+                                                                                        <span class="text-muted">{% translate "Aprobadas/ha" %}:</span>
+                                                                                        <strong>{{ insp.cant_semilla_mult_ha|floatformat:0 }} {% if insp.um %}{{ insp.um.abreviatura }}{% endif %}</strong>
+                                                                                    </div>
+                                                                                    {% endif %}
+                                                                                    {% if insp.responsable %}
+                                                                                    <div class="col-md-3">
+                                                                                        <span class="text-muted">{% translate "Responsable" %}:</span>
+                                                                                        <strong>{{ insp.responsable }}</strong>
+                                                                                    </div>
+                                                                                    {% endif %}
+                                                                                </div>
+                                                                            </div>
+                                                                        {% endif %}
+                                                                        {% endwith %}
+
                                                                     </div>
                                                                 </div>
                                                             </div>

@@ -209,6 +209,10 @@
                                                         cancelar
                                                     </button>
                                                 </div>
+                                                <div class="mt-2">
+                                                    <label class="small-label">{% translate "PMG" %} <span class="text-muted">(g/1000 sem)</span></label>
+                                                    {{ form.pmg }}
+                                                </div>
                                             </div>
                                         </td>
 
@@ -499,6 +503,17 @@ function actualizarSemilla(idx) {
     if (!scat || !campos) return;
     var texto = scat.options[scat.selectedIndex] ? scat.options[scat.selectedIndex].text.toLowerCase() : "";
     campos.style.display = (texto.indexOf("semilla") !== -1) ? "block" : "none";
+}
+
+/* ── auto-fill PMG al seleccionar variedad ── */
+function autoFillPMG(sel) {
+    var opt = sel.selectedOptions[0];
+    var pmg = opt ? opt.getAttribute("data-pmg") : "";
+    // buscar el input PMG más cercano (en el mismo semilla_fields div)
+    var row = sel.closest("[id^='semilla_fields_']");
+    if (!row) return;
+    var pmgInput = row.querySelector("input[name$='-pmg']");
+    if (pmgInput && pmg) pmgInput.value = pmg;
 }
 
 /* ── variedad inline ── */

@@ -1,0 +1,43 @@
+{% load i18n %}
+
+<div class="row mb-4 border-bottom pb-3">
+  <div class="col-6">
+    <div class="text-muted small mb-1">{% translate "Proveedor" %}</div>
+    <div class="fw-semibold">{{ pago.proveedor }}</div>
+  </div>
+  <div class="col-3">
+    <div class="text-muted small mb-1">{% translate "Fecha" %}</div>
+    <div>{{ pago.fecha|date:"d/m/Y" }}</div>
+  </div>
+  <div class="col-3 text-end">
+    <div class="text-muted small mb-1">{% translate "Hora" %}</div>
+    <div>{{ pago.fecha|date:"H:i" }}</div>
+  </div>
+</div>
+
+<table class="table table-sm table-bordered">
+  <thead class="table-light">
+    <tr>
+      <th>{% translate "Factura N°" %}</th>
+      <th>{% translate "Fecha Factura" %}</th>
+      <th class="text-end">{% translate "Total Factura" %}</th>
+      <th class="text-end">{% translate "Monto Aplicado" %}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ap in pago.aplicaciones.all %}
+    <tr>
+      <td>{{ ap.factura.numero }}</td>
+      <td>{{ ap.factura.fecha|date:"d/m/Y" }}</td>
+      <td class="text-end">${{ ap.factura.total|floatformat:2 }}</td>
+      <td class="text-end fw-semibold text-success">${{ ap.monto_aplicado|floatformat:2 }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr class="table-light">
+      <td colspan="3" class="text-end fw-semibold">{% translate "Total Pagado" %}</td>
+      <td class="text-end fw-bold fs-6">${{ pago.monto_total|floatformat:2 }}</td>
+    </tr>
+  </tfoot>
+</table>

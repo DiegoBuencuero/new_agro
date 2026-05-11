@@ -126,13 +126,19 @@ class Empresa(models.Model):
     valor_maquina = models.DecimalField(max_digits=18, decimal_places=2, default=0, verbose_name=_("Costo Maquina"))
     calculo_costo = models.CharField(max_length=1, choices=[('F', 'FIFO'), ('L', 'LIFO'),('P','PONDERADO') ], default='F', verbose_name=_("Cálculo de costo"))  
     deposito_insumos_default = models.ForeignKey('gestion_agro.Deposito', on_delete=models.SET_NULL, null=True, blank=True, related_name="empresas_insumos_default")
-    deposito_producto_final_default = models.ForeignKey('gestion_agro.Deposito', on_delete=models.SET_NULL, null=True, blank=True, related_name="empresas_producto_final_default" )
-
+    deposito_producto_final_default = models.ForeignKey('gestion_agro.Deposito', on_delete=models.SET_NULL, null=True, blank=True, related_name="empresas_producto_final_default")
+    pct_prima_semilla = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name=_("% Prima semilla"), help_text=_("Porcentaje adicional sobre precio de consumo para grano certificado como semilla"))
+    unidad_inspeccion_semilla = models.ForeignKey("Unidad", on_delete=models.CASCADE, null=True, blank=True, related_name="empresas_inspeccion_semilla", verbose_name=_("Unidad inspección semilla"),
+        help_text=_("Unidad por defecto para cantidad aprobada en inspección (ej: semillas)"),
+    )
 
 class Unidad(models.Model):
-    nombre = models.CharField(max_length=50, verbose_name=_("Nombre"))
-    abreviatura = models.CharField(max_length=10, verbose_name=_("Abreviatura"))
+    nombre        = models.CharField(max_length=50, verbose_name=_("Nombre"))
+    abreviatura   = models.CharField(max_length=10, verbose_name=_("Abreviatura"))
     factor_a_base = models.DecimalField(max_digits=10, decimal_places=6, verbose_name=_("Factor a unidad base"))
+    requiere_pmg  = models.BooleanField(default=False, verbose_name=_("Requiere PMG"),
+        help_text=_("Si es verdadero, la conversión a kg usa el PMG de la variedad en lugar de un factor fijo."),
+    )
 
     class Meta:
         verbose_name = _("Unidad")

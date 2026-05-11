@@ -127,6 +127,13 @@
         <button class="btn" type="submit">{% translate "Iniciar sesión" %}</button>
     </form>
 
+    <p style="text-align:center;margin-top:20px;font-size:0.875rem;color:#607D8B;">
+        {% translate "¿No tenés cuenta?" %}
+        <a href="{% url 'registro' %}" style="color:#035426;font-weight:600;text-decoration:none;">
+            {% translate "Crear cuenta" %}
+        </a>
+    </p>
+
 </div>
 
 <script>

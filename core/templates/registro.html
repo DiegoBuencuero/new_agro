@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+{% load static %}
+{% load i18n %}
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>AgroInnova | {% translate "Crear cuenta" %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'vendors/ti-icons/css/themify-icons.css' %}">
+  <link rel="shortcut icon" href="{% static 'images/favicon.png' %}">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #F5F7F6;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+    .register-card {
+      width: 520px;
+      background: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.08);
+    }
+    .logo { text-align: center; margin-bottom: 28px; }
+    .logo img { max-width: 160px; }
+    h4 { margin-bottom: 4px; font-size: 1.2rem; }
+    .subtitle { color: #607D8B; margin-bottom: 24px; font-size: 0.9rem; }
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: #035426;
+      margin: 20px 0 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e8f5e9;
+    }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 0.875rem; }
+    .form-control {
+      width: 100%;
+      padding: 11px 13px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color .15s;
+    }
+    .form-control:focus { outline: none; border-color: #035426; }
+    .error-list { color: #c62828; font-size: 0.8rem; margin-top: 4px; padding-left: 0; list-style: none; }
+    .btn-submit {
+      width: 100%;
+      padding: 13px;
+      border-radius: 8px;
+      border: none;
+      background: #035426;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-top: 8px;
+      transition: background .15s;
+    }
+    .btn-submit:hover { background: #024d22; }
+    .login-link { text-align: center; margin-top: 20px; font-size: 0.875rem; color: #607D8B; }
+    .login-link a { color: #035426; font-weight: 600; text-decoration: none; }
+    .alert-error {
+      background: #fdecea; border: 1px solid #c62828;
+      color: #c62828; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: .875rem;
+    }
+    .alert-success {
+      background: #e8f5e9; border: 1px solid #2e7d32;
+      color: #2e7d32; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: .875rem;
+    }
+  </style>
+</head>
+<body>
+<div class="register-card">
+
+  <div class="logo">
+    <img src="{% static 'images/agroinnova.png' %}" alt="AgroInnova">
+  </div>
+
+  <h4>{% translate "Crear cuenta" %}</h4>
+  <p class="subtitle">{% translate "Completá los datos de tu empresa y usuario para comenzar" %}</p>
+
+  {% if messages %}
+    {% for message in messages %}
+    <div class="alert-{% if 'success' in message.tags %}success{% else %}error{% endif %}">
+      {{ message }}
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <form method="POST" novalidate>
+    {% csrf_token %}
+
+    <div class="section-label">{% translate "Datos de la empresa" %}</div>
+
+    <div class="form-group">
+      <label>{{ form.empresa_nombre.label }}</label>
+      {{ form.empresa_nombre }}
+      {% if form.empresa_nombre.errors %}<ul class="error-list">{% for e in form.empresa_nombre.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    <div class="form-group">
+      <label>{{ form.empresa_razon_social.label }}</label>
+      {{ form.empresa_razon_social }}
+      {% if form.empresa_razon_social.errors %}<ul class="error-list">{% for e in form.empresa_razon_social.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    <div class="form-group">
+      <label>{{ form.empresa_cuit.label }}</label>
+      {{ form.empresa_cuit }}
+      {% if form.empresa_cuit.errors %}<ul class="error-list">{% for e in form.empresa_cuit.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+
+    <div class="section-label">{% translate "Datos del usuario" %}</div>
+
+    <div class="form-group">
+      <label>{{ form.username.label }}</label>
+      {{ form.username }}
+      {% if form.username.errors %}<ul class="error-list">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    <div class="form-group">
+      <label>{{ form.email.label }}</label>
+      {{ form.email }}
+      {% if form.email.errors %}<ul class="error-list">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    <div class="form-group">
+      <label>{{ form.password1.label }}</label>
+      {{ form.password1 }}
+      {% if form.password1.errors %}<ul class="error-list">{% for e in form.password1.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    <div class="form-group">
+      <label>{{ form.password2.label }}</label>
+      {{ form.password2 }}
+      {% if form.password2.errors %}<ul class="error-list">{% for e in form.password2.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+
+    <button type="submit" class="btn-submit">{% translate "Crear cuenta" %}</button>
+  </form>
+
+  <p class="login-link">
+    {% translate "¿Ya tenés cuenta?" %} <a href="{% url 'login' %}">{% translate "Ingresá aquí" %}</a>
+  </p>
+
+</div>
+</body>
+</html>

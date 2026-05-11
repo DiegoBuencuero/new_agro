@@ -272,9 +272,22 @@
               <div class="collapse" id="analisis">
                 <ul class="nav flex-column sub-menu">
                   <li class="nav-item"><a class="nav-link" href="{% url 'vista_mapas' %}">{% translate "Mapas" %}</a></li>
-                  <li class="nav-item"><a class="nav-link" href="#">{% translate "NDVI" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_ndvi' %}">{% translate "NDVI" %}</a></li>
                   <li class="nav-item"><a class="nav-link" href="#">{% translate "Ambientes" %}</a></li>
                   <li class="nav-item"><a class="nav-link" href="#">{% translate "Comparativas" %}</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="collapse" href="#administracion" aria-expanded="false" aria-controls="administracion">
+                <i class="menu-icon mdi mdi-cash-multiple"></i>
+                <span class="menu-title">{% translate "Administración" %}</span>
+                <i class="menu-arrow"></i>
+              </a>
+              <div class="collapse" id="administracion">
+                <ul class="nav flex-column sub-menu">
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_gestion_facturas' %}">{% translate "Gestión de Facturas" %}</a></li>
                 </ul>
               </div>
             </li>
@@ -288,7 +301,7 @@
               <div class="collapse" id="configuracion">
                 <ul class="nav flex-column sub-menu">
                   <li class="nav-item"><a class="nav-link" href="#">{% translate "Usuarios" %}</a></li>
-                  <li class="nav-item"><a class="nav-link" href="#">{% translate "Parámetros del sistema" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_configuracion' %}">{% translate "Parámetros del sistema" %}</a></li>
                 </ul>
               </div>
             </li>

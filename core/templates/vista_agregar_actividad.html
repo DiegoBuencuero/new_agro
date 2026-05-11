@@ -105,7 +105,7 @@
         <div class="grid-margin stretch-card">
             <div class="card">
                 <div class="card-body">
-                    <form method="post" id="actividadForm" enctype="multipart/form-data">
+                    <form method="post" id="actividadForm" enctype="multipart/form-data" novalidate>
                         {% csrf_token %}
 
                         {% if actividad_form.non_field_errors %}
@@ -223,6 +223,7 @@
                                                 <th>{% translate "Producto" %}</th>
                                                 <th>{% translate "Dosis" %}</th>
                                                 <th>{% translate "Unidad" %}</th>
+                                                <th class="col-densidad" style="display:none">{% translate "≈ sem/ha" %}</th>
                                                 <th>{% translate "Total a usar" %}</th>
                                                 <th class="text-center">{% translate "Acción" %}</th>
                                             </tr>
@@ -234,6 +235,9 @@
                                                     <td>{{ form_insumo.producto }}{{ form_insumo.producto.errors }}</td>
                                                     <td>{{ form_insumo.dosis }}{{ form_insumo.dosis.errors }}</td>
                                                     <td>{{ form_insumo.um }}{{ form_insumo.um.errors }}</td>
+                                                    <td class="col-densidad" style="display:none">
+                                                        <input type="text" class="form-control insumo-sem-ha" readonly placeholder="—" style="min-width:110px">
+                                                    </td>
                                                     <td>
                                                         <input type="text" class="form-control insumo-total-unidad" readonly placeholder="—" style="min-width:110px">
                                                     </td>
@@ -255,6 +259,9 @@
                                         <td>{{ insumo_formset.empty_form.producto }}</td>
                                         <td>{{ insumo_formset.empty_form.dosis }}</td>
                                         <td>{{ insumo_formset.empty_form.um }}</td>
+                                        <td class="col-densidad" style="display:none">
+                                            <input type="text" class="form-control insumo-sem-ha" readonly placeholder="—" style="min-width:110px">
+                                        </td>
                                         <td>
                                             <input type="text" class="form-control insumo-total-unidad" readonly placeholder="—" style="min-width:110px">
                                         </td>
@@ -303,10 +310,43 @@
                             </div>
                         </div>
 
+                        <!-- INSPECCIÓN SEMILLA -->
+                        <div class="card mb-4" id="inspeccionSection" style="display: none;">
+                            <div class="card-header">
+                                <strong>{% translate "Inspección de semilla" %}</strong>
+                            </div>
+                            <div class="card-body">
+                                {% if inspeccion_form.non_field_errors %}
+                                    <div class="alert alert-danger">{{ inspeccion_form.non_field_errors }}</div>
+                                {% endif %}
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label for="{{ inspeccion_form.resultado.id_for_label }}" class="form-label">{{ inspeccion_form.resultado.label }}</label>
+                                        {{ inspeccion_form.resultado }}{{ inspeccion_form.resultado.errors }}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="{{ inspeccion_form.cant_semilla_mult_ha.id_for_label }}" class="form-label">{{ inspeccion_form.cant_semilla_mult_ha.label }}</label>
+                                        {{ inspeccion_form.cant_semilla_mult_ha }}{{ inspeccion_form.cant_semilla_mult_ha.errors }}
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label for="{{ inspeccion_form.um.id_for_label }}" class="form-label">{{ inspeccion_form.um.label }}</label>
+                                        {{ inspeccion_form.um }}{{ inspeccion_form.um.errors }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="{{ inspeccion_form.responsable.id_for_label }}" class="form-label">{{ inspeccion_form.responsable.label }}</label>
+                                        {{ inspeccion_form.responsable }}{{ inspeccion_form.responsable.errors }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- COSECHA -->
                         <div class="card mb-4" id="cosechaSection" style="display: none;">
                             <div class="card-header">
                                 <strong>{% translate "Datos de cosecha" %}</strong>
+                                {% if es_semilla %}
+                                <span class="badge bg-success ms-2">{% translate "Semilla" %}</span>
+                                {% endif %}
                             </div>
                             <div class="card-body">
                                 {% if cosecha_form.non_field_errors %}
@@ -322,20 +362,71 @@
                                         <select id="cosecha_um_select" class="form-select">
                                             <!-- se llena via AJAX -->
                                         </select>
-                                        {{ cosecha_form.um }}  {# hidden con id_cosecha-um #}
+                                        {{ cosecha_form.um }}
                                     </div>
                                     <div class="col-md-3">
+                                        <label for="{{ cosecha_form.deposito_destino.id_for_label }}" class="form-label">{% translate "Depósito destino" %}</label>
+                                        {{ cosecha_form.deposito_destino }}{{ cosecha_form.deposito_destino.errors }}
+                                    </div>
+                                </div>
+
+                                {% if es_semilla %}
+                                <!-- BIFURCACIÓN SEMILLA / CONSUMO -->
+                                <hr class="my-3">
+                                <p class="card-description mb-2">
+                                    <i class="mdi mdi-source-fork me-1"></i>{% translate "Destino del grano" %}
+                                </p>
+
+                                {% if inspeccion_aprobada %}
+                                <div class="alert alert-success py-2 small mb-3">
+                                    <i class="mdi mdi-check-circle me-1"></i>
+                                    {% translate "Inspección aprobada:" %}
+                                    <strong>{{ inspeccion_aprobada.cant_semilla_mult_ha }} {{ inspeccion_aprobada.um }}</strong>
+                                    {% translate "por ha" %} —
+                                    {% translate "Responsable:" %} {{ inspeccion_aprobada.responsable|default:"—" }}
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning py-2 small mb-3">
+                                    <i class="mdi mdi-alert me-1"></i>
+                                    {% translate "No hay inspección aprobada para este ciclo. Podés ingresar kg_semilla manualmente." %}
+                                </div>
+                                {% endif %}
+
+                                <div class="row g-3">
+                                    <!-- Semilla producción -->
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold text-success">
+                                            <i class="mdi mdi-seed me-1"></i>{{ cosecha_form.kg_semilla.label }}
+                                        </label>
+                                        {{ cosecha_form.kg_semilla }}{{ cosecha_form.kg_semilla.errors }}
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">{{ cosecha_form.deposito_semilla.label }}</label>
+                                        {{ cosecha_form.deposito_semilla }}{{ cosecha_form.deposito_semilla.errors }}
+                                        <small class="text-muted">{% translate "Depósito semilla certificada" %}</small>
+                                    </div>
+                                    <!-- Consumo -->
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-semibold text-primary">
+                                            <i class="mdi mdi-barley me-1"></i>{{ cosecha_form.kg_consumo.label }}
+                                        </label>
+                                        {{ cosecha_form.kg_consumo }}{{ cosecha_form.kg_consumo.errors }}
+                                        <small class="text-muted">{% translate "Calculado automáticamente" %}</small>
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-start pt-4">
+                                        <div class="small text-muted mt-2">
+                                            {% translate "Total:" %} <strong id="total-kg-cosecha">—</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="row g-3 mt-1">
+                                    <div class="col-md-6">
                                         <label for="{{ cosecha_form.comentarios_cosecha.id_for_label }}" class="form-label">{{ cosecha_form.comentarios_cosecha.label }}</label>
                                         {{ cosecha_form.comentarios_cosecha }}{{ cosecha_form.comentarios_cosecha.errors }}
                                     </div>
-                                    <div class="col-md-3">
-                                        <label for="{{ cosecha_form.deposito_destino.id_for_label }}" class="form-label">
-                                            {% translate "Depósito destino" %}
-                                        </label>
-                                        {{ cosecha_form.deposito_destino }}
-                                        {{ cosecha_form.deposito_destino.errors }}
-                                    </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-6">
                                         <label for="{{ cosecha_form.observaciones.id_for_label }}" class="form-label">{{ cosecha_form.observaciones.label }}</label>
                                         {{ cosecha_form.observaciones }}{{ cosecha_form.observaciones.errors }}
                                     </div>
@@ -378,11 +469,14 @@ $(document).ready(function () {
     const subtipoSelect = $("#id_subtipo");
     const subtipoContainer = $("#subtipoContainer");
 
-    const manoObraSection = $("#manoObraSection");
+    const manoObraSection   = $("#manoObraSection");
     const maquinariaSection = $("#maquinariaSection");
-    const insumosSection = $("#insumosSection");
-    const vistoriaSection = $("#vistoriaSection");
-    const cosechaSection = $("#cosechaSection");
+    const insumosSection    = $("#insumosSection");
+    const vistoriaSection   = $("#vistoriaSection");
+    const cosechaSection    = $("#cosechaSection");
+    const inspeccionSection = $("#inspeccionSection");
+
+    let esSiembra = false;
 
     const cantidadHombreInput = $("#id_cantidad_hombre");
     const valorHombreInput = $("#id_valor_hombre");
@@ -420,6 +514,17 @@ $(document).ready(function () {
         insumosSection.hide();
         vistoriaSection.hide();
         cosechaSection.hide();
+        inspeccionSection.hide();
+        esSiembra = false;
+        $(".col-densidad").hide();
+    }
+
+    function actualizarColumnaDensidad() {
+        if (esSiembra) {
+            $(".col-densidad").show();
+        } else {
+            $(".col-densidad").hide();
+        }
     }
 
     function limpiarValoresActividad() {
@@ -458,6 +563,20 @@ $(document).ready(function () {
         } else {
             $("#totalHsMaquinaria").val("");
             $("#costoTotalMaquinaria").val("");
+        }
+    }
+
+    function calcularSemHa(row) {
+        const selectProducto = row.find('select[name$="-producto"]');
+        const pmg = parseFloat(selectProducto.find('option:selected').attr('data-pmg')) || 0;
+        const dosis = parseFloat(row.find('input[name$="-dosis"]').val()) || 0;
+        const inputSemHa = row.find('.insumo-sem-ha');
+
+        if (pmg > 0 && dosis > 0) {
+            const semHa = Math.round(dosis * 1000000 / pmg);
+            inputSemHa.val(semHa.toLocaleString('es') + ' sem');
+        } else {
+            inputSemHa.val(pmg === 0 ? 'sin PMG' : '');
         }
     }
 
@@ -514,6 +633,8 @@ $(document).ready(function () {
                         .text(producto.nombre)
                         .attr("data-unidad-id", producto.unidad_id || "")
                         .attr("data-unidad-abreviatura", producto.unidad_abreviatura || "")
+                        .attr("data-es-semilla", producto.es_semilla ? "1" : "0")
+                        .attr("data-pmg", producto.pmg || "")
                 );
             });
 
@@ -629,11 +750,13 @@ $(document).ready(function () {
                 }
 
                 ocultarSecciones();
-                if (data.requiere_mo)      { manoObraSection.show(); calcularSubtotalManoObra(); }
-                if (data.requiere_maq)     { maquinariaSection.show(); calcularSubtotalMaquinaria(); }
-                if (data.requiere_insumo)  { insumosSection.show(); }
-                if (data.requiere_vist)    { vistoriaSection.show(); }
-                if (data.requiere_cosecha) { cosechaSection.show(); cargarUnidadesCosecha(); }
+                if (data.requiere_mo)          { manoObraSection.show(); calcularSubtotalManoObra(); }
+                if (data.requiere_maq)         { maquinariaSection.show(); calcularSubtotalMaquinaria(); }
+                if (data.requiere_insumo)      { insumosSection.show(); }
+                if (data.requiere_vist)        { vistoriaSection.show(); }
+                if (data.requiere_cosecha)     { cosechaSection.show(); cargarUnidadesCosecha(); }
+                if (data.requiere_inspeccion)  { inspeccionSection.show(); }
+                if (data.es_siembra)           { esSiembra = true; actualizarColumnaDensidad(); }
 
                 if (!data.subtipos.length) {
                     subtipoSelect.empty();
@@ -677,12 +800,18 @@ $(document).ready(function () {
     valorMaqInput.on("input change", calcularSubtotalMaquinaria);
 
     body.on("change", 'select[name$="-producto"]', function () {
+        const row = $(this).closest('.insumo-row');
         proponerUnidadEnFila(this);
-        calcularSubtotalInsumo($(this).closest('.insumo-row'));
+        calcularSubtotalInsumo(row);
+        const esSemilla = $(this).find("option:selected").attr("data-es-semilla") === "1";
+        row.find('.col-densidad').toggle(esSiembra && esSemilla);
+        calcularSemHa(row);
     });
 
     body.on("input change", 'input[name$="-dosis"]', function () {
-        calcularSubtotalInsumo($(this).closest('.insumo-row'));
+        const row = $(this).closest('.insumo-row');
+        calcularSubtotalInsumo(row);
+        calcularSemHa(row);
     });
 
     body.on("change", 'select[name$="-um"]', function () {
@@ -693,6 +822,11 @@ $(document).ready(function () {
         cargarSubtipos(this.value);
     });
 
+    // Inicializar secciones al cargar (modo modificación o tipo pre-seleccionado)
+    if (tipoSelect.val()) {
+        cargarSubtipos(tipoSelect.val());
+    }
+
     subtipoSelect.on("change", function () {
         cargarProductos(tipoSelect.val(), this.value);
         cargarValoresActividad(tipoSelect.val(), this.value);
@@ -701,6 +835,41 @@ $(document).ready(function () {
     $("#cosecha_um_select").on("change", function () {
         $("#id_cosecha-um").val($(this).val());
     });
+
+    // ── Bifurcación semilla / consumo ────────────────────────────────────
+    {% if es_semilla %}
+    {% if inspeccion_aprobada and inspeccion_aprobada.cant_semilla_mult_ha and not inspeccion_aprobada.um.requiere_pmg %}
+    // Unidad de inspección ya es masa/ha → cálculo directo
+    (function() {
+        var cantHa = parseFloat("{{ inspeccion_aprobada.cant_semilla_mult_ha|stringformat:'f' }}") || 0;
+        var kgSem  = cantHa * superficieHa;
+        if (kgSem > 0) { $("#id_cosecha-kg_semilla").val(kgSem.toFixed(3)); }
+    })();
+    {% elif inspeccion_aprobada and inspeccion_aprobada.um.requiere_pmg and pmg_siembra %}
+    // Unidad semillas/ha → convertir con PMG: semillas/ha × ha × PMG_g/1000sem ÷ 1.000.000
+    (function() {
+        var semHa  = parseFloat("{{ inspeccion_aprobada.cant_semilla_mult_ha|stringformat:'f' }}") || 0;
+        var pmg    = parseFloat("{{ pmg_siembra|stringformat:'f' }}") || 0;
+        var kgSem  = semHa * superficieHa * pmg / 1000000;
+        if (kgSem > 0) { $("#id_cosecha-kg_semilla").val(kgSem.toFixed(3)); }
+    })();
+    {% elif inspeccion_aprobada and inspeccion_aprobada.um.requiere_pmg %}
+    // Sin PMG de la variedad — el servidor calculará, el campo queda editable
+    console.info("Sin PMG de variedad registrado: ingresá kg_semilla manualmente o configurá el PMG de la variedad.");
+    {% endif %}
+
+    function recalcularKgCosecha() {
+        var rendimiento = parseFloat($("#id_cosecha-rendimiento").val()) || 0;
+        var kgSemilla   = parseFloat($("#id_cosecha-kg_semilla").val()) || 0;
+        var totalKg     = rendimiento * superficieHa;
+        var kgConsumo   = Math.max(0, totalKg - kgSemilla);
+        $("#id_cosecha-kg_consumo").val(kgConsumo.toFixed(3));
+        $("#total-kg-cosecha").text(totalKg.toFixed(2) + " kg");
+    }
+
+    $("#id_cosecha-rendimiento, #id_cosecha-kg_semilla").on("input", recalcularKgCosecha);
+    recalcularKgCosecha();
+    {% endif %}
 
     addBtn.on("click", function () {
         const index = parseInt(totalForms.val());

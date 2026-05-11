@@ -1,0 +1,475 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block plugin_css %}{% endblock %}
+
+{% block content %}
+<script>document.body.classList.add('page-mapa');</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<link rel="stylesheet" href="{% static 'mapas/css/mapa.css' %}">
+
+<style>
+  .ndvi-wrapper { display:flex; height:calc(100vh - 70px); overflow:hidden; }
+  .ndvi-sidebar { width:300px; min-width:300px; background:#fff; border-right:1px solid #e9ecef;
+                  overflow-y:auto; display:flex; flex-direction:column; }
+  .ndvi-main    { flex:1; position:relative; }
+  #ndvi-mapa    { width:100%; height:100%; }
+
+  .sidebar-section { padding:14px 16px; border-bottom:1px solid #f1f3f5; }
+  .sidebar-section h6 { font-size:.78rem; text-transform:uppercase; letter-spacing:.06em;
+                        color:#6c757d; font-weight:600; margin-bottom:10px; }
+
+  .captura-item { display:flex; align-items:center; gap:8px; padding:7px 10px;
+                  border-radius:6px; cursor:pointer; transition:background .15s;
+                  margin-bottom:4px; border:1px solid transparent; }
+  .captura-item:hover { background:#f8f9fa; }
+  .captura-item.activa { background:#e8f5e9; border-color:#a5d6a7; }
+  .captura-item .fecha { font-size:.82rem; font-weight:600; }
+  .captura-item .ndvi  { font-size:.75rem; color:#6c757d; }
+
+  .stat-mini { text-align:center; padding:8px 6px; }
+  .stat-mini .val { font-size:1.15rem; font-weight:700; }
+  .stat-mini .lbl { font-size:.7rem; color:#6c757d; text-transform:uppercase; letter-spacing:.05em; }
+
+  #ndvi-overlay-control { position:absolute; bottom:16px; right:16px; z-index:1000;
+    background:rgba(255,255,255,.92); border-radius:8px; padding:10px 14px;
+    box-shadow:0 2px 8px rgba(0,0,0,.15); min-width:160px; }
+</style>
+
+<div class="ndvi-wrapper">
+
+  <!-- SIDEBAR -->
+  <aside class="ndvi-sidebar">
+
+    <div class="sidebar-section">
+      <h6><i class="mdi mdi-map-marker me-1"></i>{% translate "Campo" %}</h6>
+      <select id="select-campo-ndvi" class="form-control form-control-sm">
+        <option value="">{% translate "Seleccionar campo" %}</option>
+        {% for c in campos %}
+          <option value="{{ c.id }}">{{ c.nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="sidebar-section">
+      <button id="btn-fetch-ndvi" class="btn btn-success btn-sm w-100 mb-2" disabled>
+        <i class="mdi mdi-satellite-variant me-1"></i>{% translate "Obtener Sentinel-2" %}
+      </button>
+      <button id="btn-recargar-ndvi" class="btn btn-outline-secondary btn-sm w-100" style="display:none">
+        <i class="mdi mdi-refresh me-1"></i>{% translate "Actualizar" %}
+      </button>
+      <button id="btn-forzar-ndvi" class="btn btn-outline-warning btn-sm w-100 mt-1" style="display:none"
+              title="Regenera la imagen aunque ya exista una captura para hoy">
+        <i class="mdi mdi-reload me-1"></i>{% translate "Regenerar imagen" %}
+      </button>
+      <div id="panel-log" class="mt-2" style="display:none">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <div id="spinner-fetch" class="spinner-border spinner-border-sm text-success" style="display:none"></div>
+          <span id="log-titulo" class="small fw-semibold text-muted"></span>
+        </div>
+        <div id="log-contenido" class="bg-light rounded p-2 small font-monospace"
+             style="max-height:80px;overflow-y:auto;font-size:.72rem"></div>
+      </div>
+    </div>
+
+    <!-- Alerta -->
+    <div id="panel-alerta" class="mx-2 mt-2" style="display:none">
+      <div class="alert alert-danger p-2 small mb-0">
+        <i class="mdi mdi-alert me-1"></i><strong>Estrés severo detectado</strong>
+        <div id="alerta-detalle" class="mt-1 text-muted" style="font-size:.75rem"></div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="sidebar-section" id="panel-stats" style="display:none">
+      <h6>{% translate "Indicadores" %}</h6>
+
+      <!-- NDVI + variación -->
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div>
+          <div style="font-size:1.6rem;font-weight:700;line-height:1" id="stat-promedio">—</div>
+          <div style="font-size:.7rem;color:#6c757d;text-transform:uppercase;letter-spacing:.05em">NDVI promedio</div>
+        </div>
+        <div class="text-end">
+          <div id="stat-variacion" style="font-size:1rem;font-weight:600"></div>
+          <div id="stat-tendencia" style="font-size:.75rem;color:#6c757d"></div>
+        </div>
+      </div>
+
+      <div class="row g-1 mb-1">
+        <div class="col-6">
+          <div class="stat-mini border rounded">
+            <div class="lbl">{% translate "Estado" %}</div>
+            <div id="stat-estado" class="mt-1">—</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="stat-mini border rounded">
+            <div class="lbl">{% translate "Días desde" %}</div>
+            <div class="val" id="stat-dias">—</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="stat-mini border rounded">
+            <div class="lbl">{% translate "Fecha" %}</div>
+            <div style="font-size:.8rem;font-weight:600" id="stat-fecha">—</div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="stat-mini border rounded">
+            <div class="lbl">Rango</div>
+            <div style="font-size:.75rem;font-weight:600" id="stat-rango">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de capturas -->
+    <div class="sidebar-section" style="flex:1">
+      <h6><i class="mdi mdi-history me-1"></i>{% translate "Capturas" %}</h6>
+      <div id="lista-capturas">
+        <p class="text-muted small">{% translate "Seleccioná un campo" %}</p>
+      </div>
+    </div>
+
+    <!-- Gráfico colapsable -->
+    <div class="sidebar-section">
+      <h6 role="button" data-bs-toggle="collapse" data-bs-target="#panel-chart" style="cursor:pointer">
+        <i class="mdi mdi-chart-line me-1"></i>{% translate "Evolución" %}
+        <i class="mdi mdi-chevron-down float-end"></i>
+      </h6>
+      <div class="collapse" id="panel-chart">
+        <canvas id="chart-ndvi" height="160"></canvas>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAPA PRINCIPAL -->
+  <main class="ndvi-main">
+    <div id="ndvi-mapa"></div>
+
+    <!-- Leyenda NDVI -->
+    <div id="ndvi-leyenda" style="position:absolute;top:16px;right:16px;z-index:1000;
+         background:rgba(255,255,255,.92);border-radius:8px;padding:10px 14px;
+         box-shadow:0 2px 8px rgba(0,0,0,.15);display:none;min-width:130px">
+      <div style="font-size:.72rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;margin-bottom:6px">NDVI</div>
+      {% for color,rng in leyenda_ndvi %}
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+        <div style="width:14px;height:14px;border-radius:3px;background:{{ color }};flex-shrink:0"></div>
+        <span style="font-size:.75rem">{{ rng }}</span>
+      </div>
+      {% endfor %}
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+        <div style="width:14px;height:14px;border-radius:3px;background:rgb(160,160,160);flex-shrink:0"></div>
+        <span style="font-size:.75rem">Nubes</span>
+      </div>
+    </div>
+
+    <!-- Control opacidad NDVI overlay -->
+    <div id="ndvi-overlay-control" style="display:none;position:absolute;bottom:16px;right:16px;z-index:1000;
+         background:rgba(255,255,255,.92);border-radius:8px;padding:10px 14px;
+         box-shadow:0 2px 8px rgba(0,0,0,.15);min-width:160px">
+      <div class="small fw-semibold mb-1 text-muted">{% translate "Opacidad NDVI" %}</div>
+      <input type="range" id="slider-opacidad" min="0" max="100" value="70"
+             class="form-range" style="width:140px">
+    </div>
+  </main>
+
+</div>
+
+{% endblock %}
+
+{% block custom_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+<script>
+const urlNdviBase  = "{% url 'ajax_ndvi_data' campo_id=0 %}".replace("/0/", "/");
+const urlFetchBase = "{% url 'ajax_fetch_ndvi_campo' campo_id=0 %}".replace("/0/fetch/", "/");
+const csrfToken    = "{{ csrf_token }}";
+
+const ESTADOS = {
+  optimo:    { label: "Óptimo",  badge: "bg-success" },
+  normal:    { label: "Normal",  badge: "bg-primary" },
+  estres:    { label: "Estrés",  badge: "bg-warning text-dark" },
+  critico:   { label: "Crítico", badge: "bg-danger" },
+  sin_datos: { label: "—",       badge: "bg-secondary" },
+};
+
+// ── Mapa ─────────────────────────────────────────────────────────────
+const mapa = L.map('ndvi-mapa', {
+  center: [-27.45, -51.22], zoom: 13,
+  layers: [L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 20, attribution: 'Esri World Imagery' }
+  )]
+});
+
+let ndviOverlay  = null;
+let contornoLayer = null;
+let chartNdvi    = null;
+let campoActual  = null;
+let datosCampo   = null;
+
+// ── Selector campo ────────────────────────────────────────────────────
+document.getElementById("select-campo-ndvi").addEventListener("change", function () {
+  campoActual = this.value || null;
+  document.getElementById("btn-fetch-ndvi").disabled = !campoActual;
+  document.getElementById("panel-stats").style.display = "none";
+  document.getElementById("lista-capturas").innerHTML =
+    '<p class="text-muted small">Cargando...</p>';
+  limpiarOverlay();
+
+  if (campoActual) cargarNdvi(campoActual);
+});
+
+// ── Cargar datos ──────────────────────────────────────────────────────
+function cargarNdvi(id) {
+  fetch(`${urlNdviBase}${id}/`)
+    .then(r => r.json())
+    .then(res => {
+      if (!res.ok) return;
+      datosCampo = res;
+
+      // Mostrar contorno del área
+      if (contornoLayer) mapa.removeLayer(contornoLayer);
+      if (res.area_geojson) {
+        contornoLayer = L.geoJSON(res.area_geojson, {
+          style: { color: '#fff', weight: 2, fillOpacity: 0, dashArray: '4 4' }
+        }).addTo(mapa);
+        mapa.fitBounds(contornoLayer.getBounds(), { padding: [30, 30] });
+      }
+
+      if (!res.capturas.length) {
+        document.getElementById("lista-capturas").innerHTML =
+          '<p class="text-muted small">Sin capturas. Hacé click en "Obtener Sentinel-2".</p>';
+        return;
+      }
+
+      document.getElementById("btn-recargar-ndvi").style.display = "inline-block";
+      renderStats(res.capturas);
+      renderListaCapturas(res.capturas, res.bbox);
+      renderChart(res.capturas);
+
+      // Mostrar la última captura automáticamente
+      const ultima = res.capturas[res.capturas.length - 1];
+      if (ultima.imagen_url && res.bbox) {
+        mostrarOverlay(ultima.imagen_url, res.bbox);
+        document.querySelector('.captura-item')?.classList.add('activa');
+      }
+    });
+}
+
+// ── Overlay NDVI en el mapa ───────────────────────────────────────────
+function mostrarOverlay(url, bbox) {
+  if (ndviOverlay) mapa.removeLayer(ndviOverlay);
+  const bounds  = [[bbox[0], bbox[1]], [bbox[2], bbox[3]]];
+  const opacidad = document.getElementById("slider-opacidad").value / 100;
+  ndviOverlay = L.imageOverlay(url, bounds, { opacity: opacidad }).addTo(mapa);
+  document.getElementById("ndvi-overlay-control").style.display = "block";
+  document.getElementById("ndvi-leyenda").style.display = "block";
+}
+
+function limpiarOverlay() {
+  if (ndviOverlay) { mapa.removeLayer(ndviOverlay); ndviOverlay = null; }
+  if (contornoLayer) { mapa.removeLayer(contornoLayer); contornoLayer = null; }
+  document.getElementById("ndvi-overlay-control").style.display = "none";
+  document.getElementById("ndvi-leyenda").style.display = "none";
+}
+
+document.getElementById("slider-opacidad").addEventListener("input", function () {
+  if (ndviOverlay) ndviOverlay.setOpacity(this.value / 100);
+});
+
+// ── Lista de capturas ─────────────────────────────────────────────────
+function renderListaCapturas(capturas, bbox) {
+  const lista = document.getElementById("lista-capturas");
+  lista.innerHTML = [...capturas].reverse().map((c, i) => {
+    const est = ESTADOS[c.estado] || ESTADOS.sin_datos;
+    return `
+      <div class="captura-item${i === 0 ? ' activa' : ''}"
+           data-url="${c.imagen_url || ''}" data-idx="${capturas.length - 1 - i}">
+        <div>
+          <div class="fecha">${c.fecha}</div>
+          <div class="ndvi">NDVI ${c.ndvi_promedio?.toFixed(3) ?? '—'} · ${c.nubosidad?.toFixed(0) ?? 0}% nubes</div>
+        </div>
+        <span class="badge ${est.badge} ms-auto">${est.label}</span>
+      </div>`;
+  }).join("");
+
+  lista.querySelectorAll('.captura-item').forEach(function (el) {
+    el.addEventListener('click', function () {
+      lista.querySelectorAll('.captura-item').forEach(e => e.classList.remove('activa'));
+      this.classList.add('activa');
+      const url = this.dataset.url;
+      if (url && bbox) mostrarOverlay(url, bbox);
+      else limpiarOverlay();
+    });
+  });
+}
+
+// ── Stats + KPIs ──────────────────────────────────────────────────────
+function renderStats(capturas) {
+  const u    = capturas[capturas.length - 1];
+  const prev = capturas.length > 1 ? capturas[capturas.length - 2] : null;
+
+  // NDVI promedio
+  document.getElementById("stat-promedio").textContent = u.ndvi_promedio?.toFixed(3) ?? "—";
+
+  // Variación vs captura anterior
+  const elVar = document.getElementById("stat-variacion");
+  const elTend = document.getElementById("stat-tendencia");
+  if (prev && prev.ndvi_promedio != null && u.ndvi_promedio != null) {
+    const diff = u.ndvi_promedio - prev.ndvi_promedio;
+    const pct  = (diff / prev.ndvi_promedio * 100).toFixed(1);
+    const sign = diff >= 0 ? "+" : "";
+    elVar.textContent  = `${sign}${pct}%`;
+    elVar.style.color  = diff >= 0 ? "#2e7d32" : "#c62828";
+    elTend.textContent = `vs ${prev.fecha}`;
+  } else {
+    elVar.textContent = "—"; elTend.textContent = "primera captura";
+  }
+
+  // Tendencia últimas 3
+  if (capturas.length >= 3) {
+    const vals = capturas.slice(-3).map(c => c.ndvi_promedio);
+    const trend = vals[2] > vals[0] ? "↗ Subiendo" : vals[2] < vals[0] ? "↘ Bajando" : "→ Estable";
+    elTend.textContent += " · " + trend;
+  }
+
+  // Fecha + días
+  document.getElementById("stat-fecha").textContent = u.fecha;
+  const hoy   = new Date();
+  const fecha = new Date(u.fecha);
+  const dias  = Math.floor((hoy - fecha) / 86400000);
+  document.getElementById("stat-dias").textContent = dias + "d";
+  if (dias > 21) document.getElementById("stat-dias").style.color = "#c62828";
+
+  // Rango
+  document.getElementById("stat-rango").textContent =
+    u.ndvi_min != null ? `${u.ndvi_min.toFixed(2)}–${u.ndvi_max.toFixed(2)}` : "—";
+
+  // Estado
+  const est = ESTADOS[u.estado] || ESTADOS.sin_datos;
+  document.getElementById("stat-estado").innerHTML =
+    `<span class="badge ${est.badge}">${est.label}</span>`;
+
+  // Alerta: caída > 15% en < 14 días
+  const panelAlerta = document.getElementById("panel-alerta");
+  if (prev && prev.ndvi_promedio && u.ndvi_promedio) {
+    const dropPct = (prev.ndvi_promedio - u.ndvi_promedio) / prev.ndvi_promedio * 100;
+    const fechaPrev = new Date(prev.fecha);
+    const diasEntre = Math.floor((fecha - fechaPrev) / 86400000);
+    if (dropPct > 15 && diasEntre <= 14) {
+      panelAlerta.style.display = "block";
+      document.getElementById("alerta-detalle").textContent =
+        `Caída de ${dropPct.toFixed(1)}% en ${diasEntre} días (${prev.fecha} → ${u.fecha})`;
+    } else {
+      panelAlerta.style.display = "none";
+    }
+  } else {
+    panelAlerta.style.display = "none";
+  }
+
+  document.getElementById("panel-stats").style.display = "block";
+}
+
+// ── Gráfico ───────────────────────────────────────────────────────────
+function renderChart(capturas) {
+  if (chartNdvi) chartNdvi.destroy();
+  chartNdvi = new Chart(document.getElementById("chart-ndvi"), {
+    type: "line",
+    data: {
+      labels: capturas.map(c => c.fecha),
+      datasets: [
+        { label: "NDVI prom.", data: capturas.map(c => c.ndvi_promedio),
+          borderColor: "#2e7d32", backgroundColor: "rgba(46,125,50,0.15)",
+          tension: 0.3, fill: true, pointRadius: 3 },
+        { label: "Mín", data: capturas.map(c => c.ndvi_min),
+          borderColor: "#e53935", borderDash: [3,3], tension: 0.3, fill: false, pointRadius: 2 },
+        { label: "Máx", data: capturas.map(c => c.ndvi_max),
+          borderColor: "#43a047", borderDash: [3,3], tension: 0.3, fill: false, pointRadius: 2 },
+      ],
+    },
+    options: {
+      responsive: true,
+      scales: { y: { min: 0, max: 1, ticks: { stepSize: 0.2 } } },
+      plugins: { legend: { labels: { font: { size: 10 } } } },
+    },
+  });
+}
+
+// ── Obtener Sentinel-2 ────────────────────────────────────────────────
+document.getElementById("btn-fetch-ndvi").addEventListener("click", function () {
+  if (!campoActual) return;
+  fetchNdvi(false);
+});
+
+document.getElementById("btn-recargar-ndvi").addEventListener("click", function () {
+  if (campoActual) cargarNdvi(campoActual);
+});
+
+document.getElementById("btn-forzar-ndvi").addEventListener("click", function () {
+  if (!campoActual) return;
+  this.style.display = "none";
+  fetchNdvi(true);
+});
+
+function fetchNdvi(forzar = false) {
+  const btn = document.getElementById("btn-fetch-ndvi");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Consultando...';
+
+  const logPanel  = document.getElementById("panel-log");
+  const logTitulo = document.getElementById("log-titulo");
+  const logConten = document.getElementById("log-contenido");
+  const spinner   = document.getElementById("spinner-fetch");
+
+  logPanel.style.display = "block";
+  spinner.style.display  = "inline-block";
+  logTitulo.textContent  = forzar ? "Regenerando imagen..." : "Consultando CDSE / Sentinel-2...";
+  logConten.textContent  = "";
+
+  const body = new URLSearchParams({ csrfmiddlewaretoken: csrfToken });
+  if (forzar) body.append("forzar", "1");
+
+  fetch(`${urlFetchBase}${campoActual}/fetch/`, {
+    method: "POST",
+    headers: { "X-CSRFToken": csrfToken, "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  })
+    .then(r => r.json())
+    .then(res => {
+      spinner.style.display = "none";
+      btn.disabled = false;
+      btn.innerHTML = '<i class="mdi mdi-satellite-variant me-1"></i>Obtener Sentinel-2';
+      if (res.log?.length) {
+        logConten.textContent = res.log.join("\n");
+        logConten.scrollTop   = logConten.scrollHeight;
+      }
+      if (res.sin_nuevas) {
+        logTitulo.textContent = "ℹ Sin imágenes nuevas";
+        document.getElementById("btn-forzar-ndvi").style.display = "block";
+      } else if (res.ok) {
+        logTitulo.textContent = "✓ Completado";
+        cargarNdvi(campoActual);
+      } else {
+        logTitulo.textContent = "✗ Error";
+        if (res.error) logConten.textContent += "\n" + res.error;
+      }
+    })
+    .catch(err => {
+      spinner.style.display = "none";
+      btn.disabled = false;
+      btn.innerHTML = '<i class="mdi mdi-satellite-variant me-1"></i>Obtener Sentinel-2';
+      logTitulo.textContent = "✗ Error de conexión";
+      logConten.textContent = err.toString();
+    });
+}
+</script>
+{% endblock %}
+
+{% block nav %}
+{% include 'nav_home.html' %}
+{% endblock %}
