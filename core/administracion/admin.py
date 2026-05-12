@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from .models import (
     Pago, AplicacionPago,
     FacturaVenta, FacturaVentaItem,
-    Cobro, AplicacionCobro,
+    Recibo, AplicacionRecibo,
 )
 
 
@@ -30,23 +30,23 @@ class FacturaVentaItemInline(admin.TabularInline):
 
 @admin.register(FacturaVenta)
 class FacturaVentaAdmin(admin.ModelAdmin):
-    list_display = ["id", "empresa", "cliente", "nfe_numero", "nfe_serie", "fecha", "fecha_vencimiento", "total"]
+    list_display = ["id", "empresa", "cliente", "numero", "fecha", "fecha_vencimiento"]
     list_filter = ["empresa", "cliente", "fecha"]
-    search_fields = ["nfe_numero", "cliente__nombre"]
+    search_fields = ["numero", "cliente__nombre"]
     date_hierarchy = "fecha"
     inlines = [FacturaVentaItemInline]
 
 
-class AplicacionCobroInline(admin.TabularInline):
-    model = AplicacionCobro
+class AplicacionReciboInline(admin.TabularInline):
+    model = AplicacionRecibo
     extra = 1
     autocomplete_fields = ["factura"]
 
 
-@admin.register(Cobro)
-class CobroAdmin(admin.ModelAdmin):
+@admin.register(Recibo)
+class ReciboAdmin(admin.ModelAdmin):
     list_display = ["id", "empresa", "cliente", "monto_total", "fecha"]
     list_filter = ["empresa", "cliente"]
     search_fields = ["cliente__nombre", "observaciones"]
     readonly_fields = ["fecha", "monto_total"]
-    inlines = [AplicacionCobroInline]
+    inlines = [AplicacionReciboInline]

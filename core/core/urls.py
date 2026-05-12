@@ -3,7 +3,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from agro.views import index, login_page, vista_configuracion, vista_registro, vista_cuenta_suspendida
-from administracion.views import (vista_gestion_facturas, ajax_indicadores_proveedor,
+from administracion.views import (vista_registrar_venta, vista_lista_ventas, ajax_registrar_cobro,
+    vista_gestion_facturas, ajax_indicadores_proveedor,
     ajax_buscar_facturas, ajax_registrar_pago, ajax_buscar_pagos, ajax_detalle_pago)
 from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo,
 vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
@@ -72,6 +73,9 @@ urlpatterns = [
 
     path('configuracion/', vista_configuracion, name='vista_configuracion'),
 
+    path('ventas/', vista_lista_ventas, name='vista_lista_ventas'),
+    path('ventas/nueva/', vista_registrar_venta, name='vista_registrar_venta'),
+    path('ventas/cobro/', ajax_registrar_cobro, name='ajax_registrar_cobro'),
     path('administracion/gestion-facturas/', vista_gestion_facturas, name='vista_gestion_facturas'),
     path('administracion/ajax/indicadores-proveedor/', ajax_indicadores_proveedor, name='ajax_indicadores_proveedor'),
     path('administracion/ajax/buscar-facturas/', ajax_buscar_facturas, name='ajax_buscar_facturas'),

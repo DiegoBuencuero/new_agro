@@ -462,18 +462,19 @@
                                                                                         <span class="text-muted">{% translate "Rendimiento" %}:</span>
                                                                                         <strong>{{ cosecha.rendimiento|floatformat:2 }}</strong>
                                                                                     </div>
-                                                                                    {% if cosecha.kg_semilla %}
-                                                                                    <div class="col-md-3">
-                                                                                        <span class="text-muted">{% translate "Semilla" %}:</span>
-                                                                                        <strong class="text-success">{{ cosecha.kg_semilla|floatformat:0 }} kg</strong>
-                                                                                    </div>
-                                                                                    {% endif %}
-                                                                                    {% if cosecha.kg_consumo %}
-                                                                                    <div class="col-md-3">
-                                                                                        <span class="text-muted">{% translate "Consumo" %}:</span>
-                                                                                        <strong>{{ cosecha.kg_consumo|floatformat:0 }} kg</strong>
-                                                                                    </div>
-                                                                                    {% endif %}
+                                                                                    {% for mov in cosecha.movimientos_stock.all %}
+                                                                                        {% if mov.destino == 'M' %}
+                                                                                        <div class="col-md-3">
+                                                                                            <span class="text-muted">{% translate "Semilla" %}:</span>
+                                                                                            <strong class="text-success">{{ mov.cantidad|floatformat:0 }} kg</strong>
+                                                                                        </div>
+                                                                                        {% else %}
+                                                                                        <div class="col-md-3">
+                                                                                            <span class="text-muted">{% translate "Consumo" %}:</span>
+                                                                                            <strong>{{ mov.cantidad|floatformat:0 }} kg</strong>
+                                                                                        </div>
+                                                                                        {% endif %}
+                                                                                    {% endfor %}
                                                                                     {% if cosecha.comentarios_cosecha %}
                                                                                     <div class="col-12 text-muted fst-italic">{{ cosecha.comentarios_cosecha }}</div>
                                                                                     {% endif %}

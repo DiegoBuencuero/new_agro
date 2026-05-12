@@ -1,0 +1,216 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h4 class="mb-0 fw-bold"><i class="mdi mdi-cart-outline me-2"></i>{% translate "Ventas" %}</h4>
+        <a href="{% url 'vista_lista_stock' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="mdi mdi-arrow-left me-1"></i>{% translate "Ver stock" %}
+        </a>
+    </div>
+
+    {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">{{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- Filtros -->
+    <form method="get" class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">{% translate "Cliente" %}</label>
+                    <select name="cliente" class="form-select form-select-sm">
+                        <option value="">{% translate "Todos" %}</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}" {% if cliente_id == c.id|stringformat:'s' %}selected{% endif %}>{{ c.razon_social }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">{% translate "Desde" %}</label>
+                    <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small text-muted">{% translate "Hasta" %}</label>
+                    <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary btn-sm flex-fill">{% translate "Filtrar" %}</button>
+                    <a href="{% url 'vista_lista_ventas' %}" class="btn btn-outline-secondary btn-sm">{% translate "Limpiar" %}</a>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Tabla -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            {% if facturas %}
+            <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead style="background:#f8f9fa;border-bottom:2px solid #e9ecef">
+                    <tr>
+                        <th class="px-4 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "N° Factura" %}</th>
+                        <th class="px-3 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Cliente" %}</th>
+                        <th class="px-3 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Fecha" %}</th>
+                        <th class="px-3 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Producto" %}</th>
+                        <th class="px-3 py-3 text-end" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Total" %}</th>
+                        <th class="px-3 py-3 text-end" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Cobrado" %}</th>
+                        <th class="px-3 py-3 text-end" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Saldo" %}</th>
+                        <th class="px-3 py-3 text-center" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Estado" %}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for f in facturas %}
+                <tr style="border-bottom:1px solid #f1f3f5" onmouseover="this.style.background='#f8f9fa'" onmouseout="this.style.background=''">
+                    <td class="px-4 py-3 fw-semibold">{{ f.obj.numero|default:"—" }}</td>
+                    <td class="px-3 py-3">{{ f.obj.cliente }}</td>
+                    <td class="px-3 py-3 text-muted small">{{ f.obj.fecha|date:"d/m/Y" }}</td>
+                    <td class="px-3 py-3">
+                        {% for item in f.obj.items.all %}
+                        <div class="small">
+                            {{ item.producto.nombre }}
+                            {% if item.destino == 'M' %}
+                            <span class="badge ms-1" style="background:#fff8e6;color:#92680a;font-size:.7rem">{% translate "Semilla" %}</span>
+                            {% elif item.destino == 'C' %}
+                            <span class="badge ms-1" style="background:#eaf6ee;color:#1a6b3a;font-size:.7rem">{% translate "Consumo" %}</span>
+                            {% endif %}
+                            <span class="text-muted ms-1">{{ item.cantidad|floatformat:0 }} × ${{ item.precio_unitario }}</span>
+                        </div>
+                        {% endfor %}
+                    </td>
+                    <td class="px-3 py-3 text-end fw-semibold">${{ f.total|floatformat:2 }}</td>
+                    <td class="px-3 py-3 text-end text-success">${{ f.cobrado|floatformat:2 }}</td>
+                    <td class="px-3 py-3 text-end {% if f.saldo > 0 %}text-danger{% else %}text-success{% endif %}">
+                        ${{ f.saldo|floatformat:2 }}
+                    </td>
+                    <td class="px-3 py-3 text-center">
+                        {% if f.estado == 'cobrada' %}
+                        <span class="badge bg-success">{% translate "Cobrada" %}</span>
+                        {% else %}
+                        <button class="btn btn-sm btn-outline-primary"
+                            onclick="abrirCobro({{ f.obj.id }}, '{{ f.obj.cliente }}', {{ f.saldo }})">
+                            <i class="mdi mdi-cash-check me-1"></i>{% translate "Cobrar" %}
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5 text-muted">
+                <i class="mdi mdi-cart-off display-5 d-block mb-2"></i>
+                {% translate "No hay ventas registradas" %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:9999">
+    <div id="toast-cobro" class="toast align-items-center border-0 text-white" data-bs-autohide="true" data-bs-delay="3000">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold" id="toast-cobro-msg"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Cobro -->
+<div class="modal fade" id="modalCobro" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="mdi mdi-cash-check me-2"></i>{% translate "Registrar cobro" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="cobro-error" class="alert alert-danger d-none"></div>
+                <input type="hidden" id="cobro-factura-id">
+                <div class="mb-3 p-3 rounded" style="background:#f8f9fa">
+                    <div class="small text-muted">{% translate "Cliente" %}</div>
+                    <div class="fw-semibold" id="cobro-cliente"></div>
+                    <div class="small text-muted mt-1">{% translate "Saldo pendiente" %}</div>
+                    <div class="fw-bold text-danger" id="cobro-saldo"></div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{% translate "Monto a cobrar" %} <span class="text-danger">*</span></label>
+                    <input type="number" id="cobro-monto" class="form-control" step="0.01" min="0.01">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">{% translate "Observaciones" %}</label>
+                    <textarea id="cobro-obs" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                <button type="button" id="btn-confirmar-cobro" class="btn btn-primary">
+                    <i class="mdi mdi-check me-1"></i>{% translate "Confirmar cobro" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block custom_js %}
+<script>
+function mostrarToast(msg, ok) {
+    var t = document.getElementById('toast-cobro');
+    t.className = 'toast align-items-center border-0 text-white ' + (ok ? 'bg-success' : 'bg-danger');
+    document.getElementById('toast-cobro-msg').textContent = msg;
+    bootstrap.Toast.getOrCreateInstance(t).show();
+}
+
+function abrirCobro(facturaId, cliente, saldo) {
+    document.getElementById('cobro-factura-id').value = facturaId;
+    document.getElementById('cobro-cliente').textContent = cliente;
+    document.getElementById('cobro-saldo').textContent = '$' + parseFloat(saldo).toFixed(2);
+    document.getElementById('cobro-monto').value = parseFloat(saldo).toFixed(2);
+    document.getElementById('cobro-obs').value = '';
+    document.getElementById('cobro-error').classList.add('d-none');
+    document.getElementById('btn-confirmar-cobro').disabled = false;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCobro')).show();
+}
+
+document.getElementById('btn-confirmar-cobro').addEventListener('click', function() {
+    var btn = this;
+    btn.disabled = true;
+    var data = new FormData();
+    data.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    data.append('factura_id',   document.getElementById('cobro-factura-id').value);
+    data.append('monto',        document.getElementById('cobro-monto').value);
+    data.append('observaciones',document.getElementById('cobro-obs').value);
+
+    fetch("{% url 'ajax_registrar_cobro' %}", {
+        method: 'POST',
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
+        body: data,
+    })
+    .then(r => r.json())
+    .then(resp => {
+        btn.disabled = false;
+        if (resp.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('modalCobro')).hide();
+            mostrarToast('{% translate "Cobro registrado correctamente." %}', true);
+            setTimeout(() => location.reload(), 1800);
+        } else {
+            document.getElementById('cobro-error').textContent = resp.error;
+            document.getElementById('cobro-error').classList.remove('d-none');
+            mostrarToast(resp.error, false);
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        mostrarToast('{% translate "Error de conexión." %}', false);
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

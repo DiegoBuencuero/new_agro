@@ -556,8 +556,6 @@ class CamposCosechaForm(BaseForm):
         self.fields["deposito_destino"].queryset = qs
         self.fields["deposito_semilla"].queryset = qs
         self.fields["rendimiento"].required = True
-        self.fields["kg_semilla"].required = False
-        self.fields["kg_consumo"].required = False
         if not es_semilla:
             self.fields["deposito_semilla"].widget = forms.HiddenInput()
 
@@ -575,11 +573,9 @@ class CamposCosechaForm(BaseForm):
 
     class Meta:
         model = CamposCosecha
-        fields = ["rendimiento", "kg_semilla", "kg_consumo", "comentarios_cosecha", "observaciones"]
+        fields = ["rendimiento", "comentarios_cosecha", "observaciones"]
         widgets = {
             "rendimiento":         forms.NumberInput(attrs={"step": "0.01",  "min": "0.001", "required": "required"}),
-            "kg_semilla":          forms.NumberInput(attrs={"step": "0.001", "min": "0"}),
-            "kg_consumo":          forms.NumberInput(attrs={"step": "0.001", "min": "0", "readonly": "readonly"}),
             "comentarios_cosecha": forms.Textarea(attrs={"rows": 3}),
             "observaciones":       forms.Textarea(attrs={"rows": 3}),
         }

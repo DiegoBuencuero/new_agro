@@ -4,7 +4,8 @@ from gestion_agro.models import ( Campo, Lote, Actividad, Cultivo, Variedad, Cam
     CicloAgricola, FaseAgricola, TipoActividad, 
     SubTipoActividad, ActividadProductiva, CamposVistoria, CamposCosecha, CategoriaProducto,
     Producto, ProductoSemilla, ActividadInsumo, ProductoNormalizado, PresentacionProducto,
-    Proveedor, FacturaCompra, FacturaCompraItem, MovimientoStock, TipoActividadCategoriaProducto
+    Proveedor, FacturaCompra, FacturaCompraItem, MovimientoStock, TipoActividadCategoriaProducto,
+    Cliente
 )
 
 
@@ -163,9 +164,9 @@ class FacturaCompraItemAdmin(admin.ModelAdmin):
 
 @admin.register(MovimientoStock)
 class MovimientoStockAdmin(admin.ModelAdmin):
-    list_display = ("producto", "tipo", "cantidad", "fecha", "factura_item", "actividad_item", "precio_unitario")
+    list_display = ("producto", "tipo", "destino", "cantidad", "fecha", "deposito_origen", "deposito_destino", "factura_item", "actividad_item")
     search_fields = ("producto__nombre",)
-    list_filter = ("tipo", "fecha")
+    list_filter = ("tipo", "destino", "fecha")
 
 
 @admin.register(TipoActividad)
@@ -190,3 +191,10 @@ class SubTipoActividadAdmin(admin.ModelAdmin):
     list_display = ("nombre", "codigo", "tipo_actividad", "activo")
     list_filter = ("activo", "tipo_actividad")
     search_fields = ("nombre", "codigo")
+
+
+@admin.register(Cliente)
+class ClienteAdmin(admin.ModelAdmin):
+    list_display = ("razon_social", "identificador", "empresa")
+    search_fields = ("razon_social", "identificador")
+    list_filter = ("empresa",)

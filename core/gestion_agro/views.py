@@ -30,8 +30,8 @@ from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, S
                                 ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
                                 ActividadInsumo, CategoriaProducto, MovimientoStock,
                                 FacturaCompra, Proveedor, PresentacionProducto, FacturaCompraItem, Variedad,
-                                Proveedor, Cultivo, ProductoSemilla, Deposito, CamposCosecha
-                                )
+                                Proveedor, Cultivo, ProductoSemilla, Deposito, CamposCosecha,CamposInspeccion
+        )
 
 @login_required
 def vista_crear_campo(request):
@@ -682,29 +682,31 @@ def vista_agregar_actividad(request, id_ciclo):
     empresa = request.user.profile.empresa
     depositos = Deposito.objects.filter(empresa=empresa)
 
-    ciclo = CicloAgricola.objects.filter(
-        id=id_ciclo,
-        campo__empresa=empresa,
-    ).first()
+    ciclo = CicloAgricola.objects.filter(id=id_ciclo, campo__empresa=empresa,).first()
 
     if not ciclo:
         messages.error(request, _("El ciclo no existe."))
         return redirect("vista_lista_ciclos")
 
-    fase = (
-        FaseAgricola.objects
-        .filter(ciclo=ciclo)
-        .order_by("-fecha_inicio", "-id")
-        .first()
-    )
+    fase = (FaseAgricola.objects.filter(ciclo=ciclo).order_by("-fecha_inicio", "-id").first())
+
+    # Si la fase quedó abierta pero ya tiene una actividad cierra_fase (ej: Cosecha
+    # guardada antes de que fallara el cierre), la cerramos ahora para que el formulario
+    # muestre todos los tipos disponibles (incluyendo Siembra para una nueva fase).
+    if fase and fase.estado != "cerrado":
+        acto_cierre = (ActividadProductiva.objects.filter(fase=fase, tipo__cierra_fase=True).order_by("-fecha").first())
+        if acto_cierre:
+            fase.estado = "cerrado"
+            fase.fecha_fin = acto_cierre.fecha
+            fase.save()
 
     # ── Inspección aprobada y flag semilla — calculado UNA vez para GET y POST ──
-    from gestion_agro.models import CamposInspeccion
+
     inspeccion_aprobada = (
         CamposInspeccion.objects
         .filter(actividad__fase__ciclo=ciclo, resultado=CamposInspeccion.Resultado.APROBADO)
         .select_related("um")
-        .order_by("-actividad__fecha")
+        .order_by("-actividad__fecha", "-id")
         .first()
     )
     es_semilla = bool(inspeccion_aprobada) or bool(
@@ -713,7 +715,7 @@ def vista_agregar_actividad(request, id_ciclo):
         ciclo.producto_final.categoria.es_semilla
     )
 
-    # PMG de la variedad usada en siembra (para pre-calcular kg_semilla en el form PMG)
+    # PMG de la variedad usada en siembra
     pmg_siembra = None
     if inspeccion_aprobada and inspeccion_aprobada.um and inspeccion_aprobada.um.requiere_pmg:
         try:
@@ -725,6 +727,31 @@ def vista_agregar_actividad(request, id_ciclo):
             pmg_siembra = float(_insumo_s.producto.datos_semilla.variedad.pmg)
         except Exception:
             pmg_siembra = None
+
+    # kg semilla estimados desde inspección aprobada (fijo, no depende del rendimiento)
+    kg_semilla_estimado = None
+    if inspeccion_aprobada and inspeccion_aprobada.cant_semilla_mult_ha and ciclo.superficie_ha:
+        cant_ha    = inspeccion_aprobada.cant_semilla_mult_ha
+        superficie = ciclo.superficie_ha
+        if inspeccion_aprobada.um and inspeccion_aprobada.um.requiere_pmg and pmg_siembra:
+            kg_semilla_estimado = float(cant_ha * superficie * Decimal(str(pmg_siembra)) / Decimal("1000000"))
+        else:
+            factor = Decimal("1")
+            if inspeccion_aprobada.um and ciclo.producto_final:
+                try:
+                    conv = ConversionUM.objects.get(
+                        um_origen=inspeccion_aprobada.um,
+                        um_destino=ciclo.producto_final.unidad_base,
+                    )
+                    factor = conv.factor
+                except ConversionUM.DoesNotExist:
+                    pass
+            kg_semilla_estimado = float(cant_ha * superficie * factor)
+
+    # depósito default para cosecha (semilla y consumo)
+    dep_cosecha_default = None
+    if ciclo.producto_final:
+        dep_cosecha_default = ciclo.producto_final.deposito_default or empresa.deposito_producto_final_default
 
     if request.method == "POST":
         actividad_form    = ActividadProductivaForm(request.POST, fase=fase, ciclo=ciclo)
@@ -792,7 +819,10 @@ def vista_agregar_actividad(request, id_ciclo):
         vistoria_form   = CamposVistoriaForm(prefix="vistoria")
         cosecha_form    = CamposCosechaForm(
             prefix="cosecha", depositos=depositos, es_semilla=es_semilla,
-            initial={"deposito_destino": empresa.deposito_producto_final_default},
+            initial={
+                "deposito_destino": dep_cosecha_default,
+                "deposito_semilla": dep_cosecha_default,
+            },
         )
         inspeccion_form = CamposInspeccionForm(prefix="inspeccion", empresa=empresa)
 
@@ -803,9 +833,10 @@ def vista_agregar_actividad(request, id_ciclo):
         "vistoria_form":       vistoria_form,
         "cosecha_form":        cosecha_form,
         "inspeccion_form":     inspeccion_form,
-        "es_semilla":          es_semilla,
-        "inspeccion_aprobada": inspeccion_aprobada,
-        "pmg_siembra":         pmg_siembra,
+        "es_semilla":           es_semilla,
+        "inspeccion_aprobada":  inspeccion_aprobada,
+        "pmg_siembra":          pmg_siembra,
+        "kg_semilla_estimado":  kg_semilla_estimado,
     }
 
     return render(request, "vista_agregar_actividad.html", context)
@@ -1057,29 +1088,74 @@ def vista_lista_stock(request):
         total_restante += restante
 
         if producto.producto_final:
-            # Solo contar como "cosechado" los movimientos con origen en cosecha
-            cosechado_cosecha = Decimal("0")
-            for mov in movimientos:
-                if mov.tipo == "ENTRADA" and mov.cosecha_id:
-                    cosechado_cosecha += convertir_unidad(mov.cantidad, mov.um, unidad_base)
+            # Separar movimientos por destino (M=Semilla, C=Consumo, None=compras/otros)
+            from django.db.models import Sum, Q as DQ
+            movs_list = list(movimientos.select_related("um", "deposito_origen", "deposito_destino", "cosecha"))
 
-            # Split semilla/consumo desde CamposCosecha
-            split = CamposCosecha.objects.filter(
-                actividad__fase__ciclo__producto_final=producto,
-                kg_semilla__isnull=False,
-            ).aggregate(
-                sem=Coalesce(Sum("kg_semilla"), Decimal("0")),
-                con=Coalesce(Sum("kg_consumo"), Decimal("0")),
-            )
-            item["cosechado_cosecha"] = cosechado_cosecha
-            item["kg_semilla_cosecha"] = split["sem"]
-            item["kg_consumo_cosecha"] = split["con"]
+            def _build_final_item(destino_cod, destino_label):
+                ing = Decimal("0")
+                con = Decimal("0")
+                deps_cant = {}
+                deps_obj  = {}
+                for mov in movs_list:
+                    cantidad = convertir_unidad(mov.cantidad, mov.um, unidad_base)
+                    # Entradas de cosecha solo si coincide destino; compras van a C (o sin destino)
+                    if mov.tipo == "ENTRADA":
+                        if mov.cosecha_id:
+                            if mov.destino == destino_cod:
+                                ing += cantidad
+                                if mov.deposito_destino_id:
+                                    deps_obj[mov.deposito_destino_id]  = mov.deposito_destino
+                                    deps_cant[mov.deposito_destino_id] = deps_cant.get(mov.deposito_destino_id, Decimal("0")) + cantidad
+                        elif mov.destino == destino_cod:
+                            # Entrada de transferencia interna — solo ajusta depósito
+                            if mov.deposito_destino_id:
+                                deps_obj[mov.deposito_destino_id]  = mov.deposito_destino
+                                deps_cant[mov.deposito_destino_id] = deps_cant.get(mov.deposito_destino_id, Decimal("0")) + cantidad
+                        elif not mov.destino and destino_cod == "C":
+                            # Compras y otros ingresos sin destino van a Consumo
+                            ing += cantidad
+                            if mov.deposito_destino_id:
+                                deps_obj[mov.deposito_destino_id]  = mov.deposito_destino
+                                deps_cant[mov.deposito_destino_id] = deps_cant.get(mov.deposito_destino_id, Decimal("0")) + cantidad
+                    elif mov.tipo == "VENTA" and mov.destino == destino_cod:
+                        # Venta real: descuenta del consumido y del depósito origen
+                        con += cantidad
+                        if mov.deposito_origen_id:
+                            deps_obj[mov.deposito_origen_id]  = mov.deposito_origen
+                            deps_cant[mov.deposito_origen_id] = deps_cant.get(mov.deposito_origen_id, Decimal("0")) - cantidad
+                    elif mov.tipo == "SALIDA":
+                        # Transferencia interna: solo ajusta depósitos, no cuenta como venta
+                        if mov.destino == destino_cod or (not mov.destino and destino_cod == "C"):
+                            if mov.deposito_origen_id:
+                                deps_obj[mov.deposito_origen_id]  = mov.deposito_origen
+                                deps_cant[mov.deposito_origen_id] = deps_cant.get(mov.deposito_origen_id, Decimal("0")) - cantidad
 
-            lista_productos_finales.append(item)
-            total_ingresado_finales += ingresado
-            total_consumido_finales += consumido
-            total_restante_finales += restante
-            total_cosechado_real += cosechado_cosecha
+                if ing == 0 and con == 0:
+                    return None
+
+                por_dep = [{"deposito": deps_obj[d], "cantidad": c} for d, c in deps_cant.items() if c != 0]
+                return {
+                    "obj":              producto,
+                    "destino":          destino_cod,
+                    "destino_label":    destino_label,
+                    "ingresado":        ing,
+                    "consumido":        con,
+                    "restante":         ing - con,
+                    "por_deposito":     por_dep,
+                    "cosechado_cosecha": ing if any(m.cosecha_id and m.destino == destino_cod and m.tipo == "ENTRADA" for m in movs_list) else Decimal("0"),
+                }
+
+            item_m = _build_final_item("M", "Semilla")
+            item_c = _build_final_item("C", "Consumo")
+
+            for it in [item_m, item_c]:
+                if it:
+                    lista_productos_finales.append(it)
+                    total_ingresado_finales += it["ingresado"]
+                    total_consumido_finales += it["consumido"]
+                    total_restante_finales  += it["restante"]
+                    total_cosechado_real    += it["cosechado_cosecha"]
         else:
             # Insumos: semillas compradas, herbicidas, fertilizantes, etc.
             lista_insumos.append(item)
@@ -1090,6 +1166,8 @@ def vista_lista_stock(request):
     lista_productos = lista_insumos + lista_productos_finales
 
     depositos = Deposito.objects.filter(empresa=empresa).order_by("nombre")
+    from gestion_agro.models import Cliente
+    clientes_venta = Cliente.objects.filter(empresa=empresa).order_by("razon_social")
 
     context = {
         "form": form,
@@ -1102,7 +1180,8 @@ def vista_lista_stock(request):
 
         # listas separadas
         "insumos": lista_insumos,
-        "productos_finales": lista_productos_finales,
+        "productos_finales":  lista_productos_finales,
+        "clientes_venta":     clientes_venta,
 
         # totales generales
         "total_ingresado": total_ingresado,
@@ -2191,6 +2270,7 @@ def ajax_transferir_stock(request):
     cantidad_str        = request.POST.get("cantidad")
     unidad_id           = request.POST.get("unidad_id")
     fecha               = request.POST.get("fecha")
+    destino             = request.POST.get("destino", "") or None
     observacion         = request.POST.get("observacion", "").strip()
 
     if not all([producto_id, deposito_origen_id, deposito_destino_id, cantidad_str, fecha]):
@@ -2232,19 +2312,16 @@ def ajax_transferir_stock(request):
         return JsonResponse({"ok": False, "error": "Depósito origen no encontrado."}, status=404)
 
     try:
-        destino = Deposito.objects.get(id=deposito_destino_id, empresa=empresa)
+        dep_destino = Deposito.objects.get(id=deposito_destino_id, empresa=empresa)
     except Deposito.DoesNotExist:
         return JsonResponse({"ok": False, "error": "Depósito destino no encontrado."}, status=404)
 
+    filtro_destino = {"destino": destino} if destino else {}
     entradas = MovimientoStock.objects.filter(
-        producto=producto,
-        tipo="ENTRADA",
-        deposito_destino=origen,
+        producto=producto, tipo="ENTRADA", deposito_destino=origen, **filtro_destino
     )
     salidas = MovimientoStock.objects.filter(
-        producto=producto,
-        tipo="SALIDA",
-        deposito_origen=origen,
+        producto=producto, tipo="SALIDA", deposito_origen=origen, **filtro_destino
     )
     stock_origen = sum(m.cantidad for m in entradas) - sum(m.cantidad for m in salidas)
 
@@ -2266,6 +2343,7 @@ def ajax_transferir_stock(request):
             precio_unitario=Decimal("0"),
             deposito_origen=origen,
             deposito_destino=None,
+            destino=destino,
         )
         MovimientoStock.objects.create(
             producto=producto,
@@ -2275,7 +2353,8 @@ def ajax_transferir_stock(request):
             fecha=fecha,
             precio_unitario=Decimal("0"),
             deposito_origen=None,
-            deposito_destino=destino,
+            deposito_destino=dep_destino,
+            destino=destino,
         )
 
     return JsonResponse({

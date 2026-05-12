@@ -194,7 +194,7 @@
                                                 </a>
                                                 {% if item.por_deposito %}
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
-                                                    onclick="abrirModalMover({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ prod.unidad_base }}', {{ prod.unidad_base.id }})"
+                                                    onclick="abrirModalMover({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ prod.unidad_base }}', {{ prod.unidad_base.id }}, '{{ item.destino|default:'' }}')"
                                                     data-bs-toggle="tooltip"
                                                     data-bs-title="{% translate 'Transferir stock entre depósitos' %}">
                                                     <i class="mdi mdi-swap-horizontal"></i>
@@ -208,10 +208,10 @@
                                                 {% endif %}
                                                 {% if item.por_deposito %}
                                                 <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                    onclick="toggleDepositos('depositos-{{ prod.id }}')"
+                                                    onclick="toggleDepositos('depositos-{{ prod.id }}-{{ item.destino }}')"
                                                     data-bs-toggle="tooltip"
                                                     data-bs-title="{% translate 'Ver stock por depósito' %}">
-                                                    <i class="mdi mdi-chevron-down" id="chevron-{{ prod.id }}"></i>
+                                                    <i class="mdi mdi-chevron-down" id="chevron-{{ prod.id }}-{{ item.destino }}"></i>
                                                 </button>
                                                 {% else %}
                                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled
@@ -224,7 +224,7 @@
                                         </td>
                                     </tr>
                                     {% if item.por_deposito %}
-                                    <tr id="depositos-{{ prod.id }}" style="display:none;" class="table-light">
+                                    <tr id="depositos-{{ prod.id }}-{{ item.destino }}" style="display:none;" class="table-light">
                                         <td colspan="6" class="py-2 ps-4">
                                             {% for dep in item.por_deposito %}
                                             <span class="me-4 small">
@@ -280,7 +280,7 @@
                                 <div class="card text-center h-100 border-0 shadow-sm">
                                     <div class="card-body">
                                         <i class="mdi mdi-arrow-up-bold fs-4 text-muted"></i>
-                                        <div class="mt-2 small text-muted">{% translate "Total vendido" %}</div>
+                                        <div class="mt-2 small text-muted">{% translate "Total ventas" %}</div>
                                         <div class="fw-semibold">{{ total_consumido_finales|floatformat:0 }}</div>
                                     </div>
                                 </div>
@@ -318,7 +318,7 @@
                                             <th class="px-4 py-3" style="width:35%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Producto" %}</th>
                                             <th class="px-3 py-3" style="width:12%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Tipo" %}</th>
                                             <th class="px-3 py-3 text-end" style="width:13%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Cosechado" %}</th>
-                                            <th class="px-3 py-3 text-end" style="width:13%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Vendido" %}</th>
+                                            <th class="px-3 py-3 text-end" style="width:13%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Ventas" %}</th>
                                             <th class="px-3 py-3 text-end" style="width:12%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "En stock" %}</th>
                                             <th class="px-3 py-3 text-center" style="width:15%;font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:#6c757d;font-weight:600">{% translate "Acciones" %}</th>
                                         </tr>
@@ -332,17 +332,15 @@
                                             <div class="text-muted mt-1" style="font-size:.75rem;letter-spacing:.03em">{{ prod.codigo }}</div>
                                         </td>
                                         <td class="px-3 py-3">
-                                            {% if item.kg_semilla_cosecha > 0 %}
-                                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600;background:#fff8e6;color:#92680a;border:1px solid #fcd97d;white-space:nowrap;margin-bottom:3px">
-                                                    <i class="mdi mdi-sprout" style="font-size:.85rem"></i> {% translate "Semilla" %}: {{ item.kg_semilla_cosecha|floatformat:0 }} {{ prod.unidad_base }}
+                                            {% if item.destino == 'M' %}
+                                                <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600;background:#fff8e6;color:#92680a;border:1px solid #fcd97d;white-space:nowrap">
+                                                    <i class="mdi mdi-sprout" style="font-size:.85rem"></i> {% translate "Semilla" %}
                                                 </span>
-                                            {% endif %}
-                                            {% if item.kg_consumo_cosecha > 0 %}
+                                            {% elif item.destino == 'C' %}
                                                 <span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600;background:#eaf6ee;color:#1a6b3a;border:1px solid #a3d9b1;white-space:nowrap">
-                                                    <i class="mdi mdi-grain" style="font-size:.85rem"></i> {% translate "Consumo" %}: {{ item.kg_consumo_cosecha|floatformat:0 }} {{ prod.unidad_base }}
+                                                    <i class="mdi mdi-grain" style="font-size:.85rem"></i> {% translate "Consumo" %}
                                                 </span>
-                                            {% endif %}
-                                            {% if item.kg_semilla_cosecha == 0 and item.kg_consumo_cosecha == 0 %}
+                                            {% else %}
                                                 <span class="text-muted small">—</span>
                                             {% endif %}
                                         </td>
@@ -368,9 +366,17 @@
                                                     data-bs-title="{% translate 'Ver historial de movimientos' %}">
                                                     <i class="mdi mdi-history"></i>
                                                 </a>
+                                                {% if item.restante > 0 %}
+                                                <button type="button" class="btn btn-sm btn-outline-success"
+                                                    onclick="abrirModalVenta({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ item.destino }}', '{{ item.destino_label|escapejs }}')"
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-title="{% translate 'Registrar venta' %}">
+                                                    <i class="mdi mdi-cart-outline"></i>
+                                                </button>
+                                                {% endif %}
                                                 {% if item.por_deposito %}
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
-                                                    onclick="abrirModalMover({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ prod.unidad_base }}', {{ prod.unidad_base.id }})"
+                                                    onclick="abrirModalMover({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ prod.unidad_base }}', {{ prod.unidad_base.id }}, '{{ item.destino|default:'' }}')"
                                                     data-bs-toggle="tooltip"
                                                     data-bs-title="{% translate 'Transferir stock entre depósitos' %}">
                                                     <i class="mdi mdi-swap-horizontal"></i>
@@ -384,10 +390,10 @@
                                                 {% endif %}
                                                 {% if item.por_deposito %}
                                                 <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                    onclick="toggleDepositos('depositos-{{ prod.id }}')"
+                                                    onclick="toggleDepositos('depositos-{{ prod.id }}-{{ item.destino }}')"
                                                     data-bs-toggle="tooltip"
                                                     data-bs-title="{% translate 'Ver stock por depósito' %}">
-                                                    <i class="mdi mdi-chevron-down" id="chevron-{{ prod.id }}"></i>
+                                                    <i class="mdi mdi-chevron-down" id="chevron-{{ prod.id }}-{{ item.destino }}"></i>
                                                 </button>
                                                 {% else %}
                                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled
@@ -400,7 +406,7 @@
                                         </td>
                                     </tr>
                                     {% if item.por_deposito %}
-                                    <tr id="depositos-{{ prod.id }}" style="display:none;" class="table-light">
+                                    <tr id="depositos-{{ prod.id }}-{{ item.destino }}" style="display:none;" class="table-light">
                                         <td colspan="6" class="py-2 ps-4">
                                             {% for dep in item.por_deposito %}
                                             <span class="me-4 small">
@@ -496,14 +502,97 @@
     </div>
 </div>
 
+<!-- Toast notificación -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:9999">
+    <div id="toast-venta" class="toast align-items-center border-0" role="alert" data-bs-autohide="true" data-bs-delay="3500">
+        <div class="d-flex">
+            <div class="toast-body fw-semibold" id="toast-venta-msg"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Venta -->
+<div class="modal fade" id="modalVenta" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold"><i class="mdi mdi-cart-outline me-2"></i>{% translate "Registrar venta" %}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="form-venta" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="venta-producto-id" name="producto_id">
+                <input type="hidden" id="venta-destino" name="destino">
+                <div class="modal-body">
+                    <div id="venta-error" class="alert alert-danger d-none"></div>
+
+                    <!-- Producto -->
+                    <div class="mb-3 p-3 rounded" style="background:#f8f9fa">
+                        <span class="fw-semibold fs-6" id="venta-producto-nombre"></span>
+                        <span class="ms-2" id="venta-destino-badge"></span>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{% translate "Cliente" %} <span class="text-danger">*</span></label>
+                            <select name="cliente" class="form-select" required>
+                                <option value="">---------</option>
+                                {% for c in clientes_venta %}
+                                <option value="{{ c.id }}">{{ c.razon_social }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{% translate "N° factura" %}</label>
+                            <input type="text" name="numero" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{% translate "Fecha" %} <span class="text-danger">*</span></label>
+                            <input type="date" name="fecha" id="venta-fecha" class="form-control" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{% translate "Cantidad" %} <span class="text-danger">*</span></label>
+                            <input type="number" name="cantidad" class="form-control" step="0.001" min="0.001" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{% translate "Precio unitario" %} <span class="text-danger">*</span></label>
+                            <input type="number" name="precio_unitario" class="form-control" step="0.01" min="0" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{% translate "Depósito origen" %}</label>
+                            <select name="deposito_origen" id="venta-deposito" class="form-select">
+                                <option value="">---------</option>
+                                {% for dep in depositos %}
+                                <option value="{{ dep.id }}">{{ dep.nombre }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">{% translate "Vencimiento" %}</label>
+                            <input type="date" name="fecha_vencimiento" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="mdi mdi-check me-1"></i>{% translate "Confirmar venta" %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- datos de depósitos por producto (para poblar el select origen) -->
 <script>
 var depositosPorProducto = {
     {% for item in insumos %}{% with prod=item.obj %}
-    {{ prod.id }}: [{% for dep in item.por_deposito %}{"id": {{ dep.deposito.id }}, "nombre": "{{ dep.deposito.nombre|escapejs }}", "cantidad": "{{ dep.cantidad }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    "{{ prod.id }}-": [{% for dep in item.por_deposito %}{"id": {{ dep.deposito.id }}, "nombre": "{{ dep.deposito.nombre|escapejs }}", "cantidad": "{{ dep.cantidad }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
     {% endwith %}{% endfor %}
     {% for item in productos_finales %}{% with prod=item.obj %}
-    {{ prod.id }}: [{% for dep in item.por_deposito %}{"id": {{ dep.deposito.id }}, "nombre": "{{ dep.deposito.nombre|escapejs }}", "cantidad": "{{ dep.cantidad }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
+    "{{ prod.id }}-{{ item.destino }}": [{% for dep in item.por_deposito %}{"id": {{ dep.deposito.id }}, "nombre": "{{ dep.deposito.nombre|escapejs }}", "cantidad": "{{ dep.cantidad }}"}{% if not forloop.last %},{% endif %}{% endfor %}],
     {% endwith %}{% endfor %}
 };
 </script>
@@ -513,6 +602,80 @@ var depositosPorProducto = {
 {% block custom_js %}
 <script>
 var productoIdActual = null;
+var destinoActual = '';
+
+function limpiarModalVenta() {
+    document.getElementById('form-venta').reset();
+    document.getElementById('venta-producto-id').value = '';
+    document.getElementById('venta-destino').value = '';
+    document.getElementById('venta-producto-nombre').textContent = '';
+    document.getElementById('venta-destino-badge').innerHTML = '';
+    document.getElementById('venta-fecha').value = new Date().toISOString().split('T')[0];
+    document.getElementById('venta-error').classList.add('d-none');
+    document.getElementById('form-venta').querySelector('[type=submit]').disabled = false;
+}
+
+document.getElementById('modalVenta').addEventListener('hidden.bs.modal', limpiarModalVenta);
+
+function abrirModalVenta(productoId, productoNombre, destino, destinoLabel) {
+    limpiarModalVenta();
+
+    document.getElementById('venta-producto-id').value = productoId;
+    document.getElementById('venta-destino').value = destino;
+    document.getElementById('venta-producto-nombre').textContent = productoNombre;
+
+    var badge = document.getElementById('venta-destino-badge');
+    if (destino === 'M') {
+        badge.innerHTML = '<span style="padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600;background:#fff8e6;color:#92680a;border:1px solid #fcd97d">' + destinoLabel + '</span>';
+    } else {
+        badge.innerHTML = '<span style="padding:4px 10px;border-radius:20px;font-size:.75rem;font-weight:600;background:#eaf6ee;color:#1a6b3a;border:1px solid #a3d9b1">' + destinoLabel + '</span>';
+    }
+
+    var deps = depositosPorProducto[productoId + '-' + destino] || [];
+    var sel = document.getElementById('venta-deposito');
+    sel.value = deps.length === 1 ? deps[0].id : '';
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalVenta')).show();
+}
+
+function mostrarToast(mensaje, exito) {
+    var toast   = document.getElementById('toast-venta');
+    var toastMsg = document.getElementById('toast-venta-msg');
+    toastMsg.textContent = mensaje;
+    toast.className = 'toast align-items-center border-0 text-white ' + (exito ? 'bg-success' : 'bg-danger');
+    bootstrap.Toast.getOrCreateInstance(toast).show();
+}
+
+document.getElementById('form-venta').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var errorDiv = document.getElementById('venta-error');
+    errorDiv.classList.add('d-none');
+    var btn = this.querySelector('[type=submit]');
+    btn.disabled = true;
+    var data = new FormData(this);
+    fetch("{% url 'vista_registrar_venta' %}", {
+        method: 'POST',
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
+        body: data,
+    })
+    .then(r => r.json())
+    .then(resp => {
+        btn.disabled = false;
+        if (resp.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('modalVenta')).hide();
+            mostrarToast('{% translate "Venta registrada correctamente." %}', true);
+            setTimeout(() => location.reload(), 1800);
+        } else {
+            errorDiv.textContent = resp.error;
+            errorDiv.classList.remove('d-none');
+            mostrarToast(resp.error, false);
+        }
+    })
+    .catch(() => {
+        btn.disabled = false;
+        mostrarToast('{% translate "Error de conexión." %}', false);
+    });
+});
 
 function toggleDepositos(divId) {
     var div = document.getElementById(divId);
@@ -529,8 +692,9 @@ function toggleDepositos(divId) {
     }
 }
 
-function abrirModalMover(productoId, productoNombre, unidadAbrev, unidadBaseId) {
+function abrirModalMover(productoId, productoNombre, unidadAbrev, unidadBaseId, destino) {
     productoIdActual = productoId;
+    destinoActual = destino || '';
 
     document.getElementById('modal-nombre-producto').textContent = productoNombre;
     document.getElementById('modal-cantidad').value = '';
@@ -541,10 +705,10 @@ function abrirModalMover(productoId, productoNombre, unidadAbrev, unidadBaseId) 
     var hoy = new Date().toISOString().split('T')[0];
     document.getElementById('modal-fecha').value = hoy;
 
-    // poblar select origen
+    // poblar select origen — clave = "id-destino"
     var selectOrigen = document.getElementById('modal-select-origen');
     selectOrigen.innerHTML = '<option value="">---------</option>';
-    var deps = depositosPorProducto[productoId] || [];
+    var deps = depositosPorProducto[productoId + '-' + destino] || [];
     for (var i = 0; i < deps.length; i++) {
         var opt = document.createElement('option');
         opt.value = deps[i].id;
@@ -611,6 +775,7 @@ document.getElementById('btn-confirmar-transferencia').addEventListener('click',
             cantidad:            cantidad,
             unidad_id:           unidadId,
             fecha:               fecha,
+            destino:             destinoActual,
             observacion:         document.getElementById('modal-observacion').value
         },
         success: function(resp) {

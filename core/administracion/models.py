@@ -1,8 +1,9 @@
 from django.db import models
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
-from gestion_agro.models import FacturaCompra, Proveedor, Cliente, EntregaDepositoExterno
+from gestion_agro.models import FacturaCompra, Proveedor, Cliente
 from agro.models import Empresa
+from gestion_agro.models import Producto
 
 
 class Pago(models.Model):
@@ -37,76 +38,78 @@ class AplicacionPago(models.Model):
         return f"${self.monto_aplicado} → {self.factura}"
 
 
-class FacturaVenta(models.Model):
+class FacturaVenta(models.Model): #VER TEMA IMPUESTO
     empresa  = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
     cliente  = models.ForeignKey(Cliente, on_delete=models.CASCADE, verbose_name=_("Cliente"))
-    entrega  = models.ForeignKey(
-        EntregaDepositoExterno,
-        on_delete=models.SET_NULL,
-        null=True, blank=True,
-        related_name="facturas_venta",
-        verbose_name=_("Entrega depósito externo"),
-    )
-    nfe_numero        = models.CharField(max_length=20, verbose_name=_("NF-e número"))
-    nfe_serie         = models.CharField(max_length=5, default="1", verbose_name=_("Serie"))
+    numero   = models.CharField(max_length=20, verbose_name=_("NF-e número"))
     fecha             = models.DateField(verbose_name=_("Fecha"))
     fecha_vencimiento = models.DateField(null=True, blank=True, verbose_name=_("Fecha vencimiento"))
-    total             = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Total"))
     archivo_pdf       = models.FileField(upload_to="facturas_venta/", blank=True, null=True, verbose_name=_("PDF"))
     creada            = models.DateTimeField(auto_now_add=True)
+    usuario = models.ForeignKey("auth.User", on_delete=models.SET_NULL, null=True, blank=True, verbose_name=_("Usuario que creó"))
 
     class Meta:
         verbose_name = _("Factura de venta")
         verbose_name_plural = _("Facturas de venta")
-        unique_together = ("empresa", "cliente", "nfe_numero")
-        ordering = ["-fecha"]
 
-    def __str__(self):
-        return f"{self.cliente} – {self.nfe_numero}"
+        ordering = ["-fecha"]
 
 
 class FacturaVentaItem(models.Model):
-    factura        = models.ForeignKey(FacturaVenta, on_delete=models.CASCADE, related_name="items", verbose_name=_("Factura"))
-    descripcion    = models.CharField(max_length=255, verbose_name=_("Descripción"))
-    cantidad       = models.DecimalField(max_digits=12, decimal_places=3, verbose_name=_("Cantidad (kg)"))
-    precio_unitario= models.DecimalField(max_digits=14, decimal_places=4, verbose_name=_("Precio unitario"))
-    subtotal       = models.DecimalField(max_digits=14, decimal_places=2, verbose_name=_("Subtotal"))
+    DESTINO_CHOICES = [("M", "Semilla (Multiplicación)"), ("C", "Consumo")]
+
+    factura         = models.ForeignKey(FacturaVenta, related_name="items", on_delete=models.CASCADE)
+    producto        = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad        = models.DecimalField(max_digits=12, decimal_places=3)
+    precio_unitario = models.DecimalField(max_digits=14, decimal_places=2)
+    deposito_origen = models.ForeignKey(
+        "gestion_agro.Deposito", on_delete=models.PROTECT,
+        null=True, blank=True, verbose_name=_("Depósito origen"),
+    )
+    destino = models.CharField(
+        max_length=1, choices=DESTINO_CHOICES,
+        null=True, blank=True, verbose_name=_("Destino"),
+    )
+    um = models.ForeignKey(
+        "agro.Unidad", on_delete=models.PROTECT,
+        null=True, blank=True, verbose_name=_("Unidad de medida"),
+    )
 
     class Meta:
         verbose_name = _("Ítem de factura de venta")
         verbose_name_plural = _("Ítems de factura de venta")
 
     def __str__(self):
-        return f"{self.descripcion} – {self.cantidad} kg"
+        return f"{self.producto} — {self.cantidad}"
 
 
-class Cobro(models.Model):
-    empresa      = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
-    cliente      = models.ForeignKey(Cliente, on_delete=models.CASCADE, verbose_name=_("Cliente"))
-    fecha        = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha"))
-    observaciones= models.TextField(blank=True, null=True, verbose_name=_("Observaciones"))
+class Recibo(models.Model):
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, verbose_name=_("Cliente"))
+    fecha = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha"))
+    observaciones = models.TextField(blank=True, null=True, verbose_name=_("Observaciones"))
 
     class Meta:
-        verbose_name = _("Cobro")
-        verbose_name_plural = _("Cobros")
+        verbose_name = _("Recibo")
+        verbose_name_plural = _("Recibos")
         ordering = ["-fecha"]
 
     def __str__(self):
-        return f"Cobro {self.id} – {self.cliente} – ${self.monto_total}"
+        return f"Recibo {self.id} – {self.cliente} – ${self.monto_total}"
 
     @property
     def monto_total(self):
         return self.aplicaciones.aggregate(total=Sum("monto_aplicado"))["total"] or 0
 
 
-class AplicacionCobro(models.Model):
-    cobro          = models.ForeignKey(Cobro, on_delete=models.CASCADE, related_name="aplicaciones", verbose_name=_("Cobro"))
-    factura        = models.ForeignKey(FacturaVenta, on_delete=models.CASCADE, related_name="aplicaciones", verbose_name=_("Factura"))
+class AplicacionRecibo(models.Model):
+    recibo = models.ForeignKey(Recibo, on_delete=models.CASCADE, related_name="aplicaciones", verbose_name=_("Recibo"))
+    factura = models.ForeignKey(FacturaVenta, on_delete=models.CASCADE, related_name="aplicaciones", verbose_name=_("Factura"))
     monto_aplicado = models.DecimalField(max_digits=12, decimal_places=2, verbose_name=_("Monto aplicado"))
 
     class Meta:
-        verbose_name = _("Aplicación de cobro")
-        verbose_name_plural = _("Aplicaciones de cobro")
+        verbose_name = _("Aplicación de recibo")
+        verbose_name_plural = _("Aplicaciones de recibo")
 
     def __str__(self):
         return f"${self.monto_aplicado} → {self.factura}"

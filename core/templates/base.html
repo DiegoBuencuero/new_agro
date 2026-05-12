@@ -200,6 +200,8 @@
         <!-- sidebar -->
         <nav class="sidebar sidebar-offcanvas" id="sidebar">
           <ul class="nav">
+
+            <!-- Dashboard -->
             <li class="nav-item">
               <a class="nav-link" href="{% url 'index' %}">
                 <i class="mdi mdi-grid-large menu-icon"></i>
@@ -207,46 +209,69 @@
               </a>
             </li>
 
+            <!-- Producción -->
             <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="collapse" href="#gestion-productiva" aria-expanded="false" aria-controls="gestion-productiva">
+              <a class="nav-link" data-bs-toggle="collapse" href="#produccion" aria-expanded="false" aria-controls="produccion">
                 <i class="menu-icon mdi mdi-sprout"></i>
-                <span class="menu-title">{% translate "Gestión Productiva" %}</span>
+                <span class="menu-title">{% translate "Producción" %}</span>
                 <i class="menu-arrow"></i>
               </a>
-              <div class="collapse" id="gestion-productiva">
+              <div class="collapse" id="produccion">
                 <ul class="nav flex-column sub-menu">
-                  <li class="nav-item">
-                    <a class="nav-link" href="{% url 'vista_crear_campo' %}">{% translate "Campos" %}</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link" href="{% url 'vista_crear_campana' %}">{% translate "Campañas" %}</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link" href="{% url 'vista_lista_ciclos'%}">{% translate "Ciclos Productivos" %}</a>
-                  </li>
-                  <li class="nav-item">
-                    <a class="nav-link" href="{% url 'vista_crear_cultivo'%}">{% translate "Cultivos" %}</a>
-                  </li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_lista_ciclos' %}">{% translate "Ciclos Productivos" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_crear_campo' %}">{% translate "Campos" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_crear_campana' %}">{% translate "Campañas" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_crear_cultivo' %}">{% translate "Cultivos" %}</a></li>
                 </ul>
               </div>
             </li>
 
+            <!-- Inventario -->
             <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="collapse" href="#compras-stock" aria-expanded="false" aria-controls="compras-stock">
-                <i class="menu-icon mdi mdi-cart"></i>
-                <span class="menu-title">{% translate "Compras y Stock" %}</span>
+              <a class="nav-link" data-bs-toggle="collapse" href="#inventario" aria-expanded="false" aria-controls="inventario">
+                <i class="menu-icon mdi mdi-warehouse"></i>
+                <span class="menu-title">{% translate "Inventario" %}</span>
                 <i class="menu-arrow"></i>
               </a>
-              <div class="collapse" id="compras-stock">
+              <div class="collapse" id="inventario">
                 <ul class="nav flex-column sub-menu">
-                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_lista_facturas' %}">{% translate "Lista Facturas" %}</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_producto'%}">{% translate "Productos" %}</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_lista_stock'%}">{% translate "Stock" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_lista_stock' %}">{% translate "Stock" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_producto' %}">{% translate "Productos" %}</a></li>
                   <li class="nav-item"><a class="nav-link" href="{% url 'vista_crear_deposito' %}">{% translate "Depósitos" %}</a></li>
                 </ul>
               </div>
             </li>
 
+            <!-- Compras -->
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="collapse" href="#compras" aria-expanded="false" aria-controls="compras">
+                <i class="menu-icon mdi mdi-cart-outline"></i>
+                <span class="menu-title">{% translate "Compras" %}</span>
+                <i class="menu-arrow"></i>
+              </a>
+              <div class="collapse" id="compras">
+                <ul class="nav flex-column sub-menu">
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_lista_facturas' %}">{% translate "Facturas de compra" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_gestion_facturas' %}">{% translate "Pagos a proveedores" %}</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <!-- Ventas -->
+            <li class="nav-item">
+              <a class="nav-link" data-bs-toggle="collapse" href="#ventas" aria-expanded="false" aria-controls="ventas">
+                <i class="menu-icon mdi mdi-cash-multiple"></i>
+                <span class="menu-title">{% translate "Ventas" %}</span>
+                <i class="menu-arrow"></i>
+              </a>
+              <div class="collapse" id="ventas">
+                <ul class="nav flex-column sub-menu">
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_lista_ventas' %}">{% translate "Facturas de venta" %}</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <!-- Resultados -->
             <li class="nav-item">
               <a class="nav-link" data-bs-toggle="collapse" href="#resultados" aria-expanded="false" aria-controls="resultados">
                 <i class="menu-icon mdi mdi-chart-line"></i>
@@ -263,6 +288,7 @@
               </div>
             </li>
 
+            <!-- Análisis -->
             <li class="nav-item">
               <a class="nav-link" data-bs-toggle="collapse" href="#analisis" aria-expanded="false" aria-controls="analisis">
                 <i class="menu-icon mdi mdi-map"></i>
@@ -279,19 +305,7 @@
               </div>
             </li>
 
-            <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="collapse" href="#administracion" aria-expanded="false" aria-controls="administracion">
-                <i class="menu-icon mdi mdi-cash-multiple"></i>
-                <span class="menu-title">{% translate "Administración" %}</span>
-                <i class="menu-arrow"></i>
-              </a>
-              <div class="collapse" id="administracion">
-                <ul class="nav flex-column sub-menu">
-                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_gestion_facturas' %}">{% translate "Gestión de Facturas" %}</a></li>
-                </ul>
-              </div>
-            </li>
-
+            <!-- Configuración -->
             <li class="nav-item">
               <a class="nav-link" data-bs-toggle="collapse" href="#configuracion" aria-expanded="false" aria-controls="configuracion">
                 <i class="menu-icon mdi mdi-cog"></i>
@@ -305,6 +319,7 @@
                 </ul>
               </div>
             </li>
+
           </ul>
         </nav>
 
