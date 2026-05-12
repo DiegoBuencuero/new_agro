@@ -10,6 +10,7 @@ pdfplumber = "*"
 sentinelhub = "*"
 numpy = "*"
 pyshp = "*"
+requests = "*"
 
 [dev-packages]
 

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from agro.views import index, login_page, vista_configuracion, vista_registro, vista_cuenta_suspendida
+from agro.views import index, login_page, vista_configuracion, vista_registro, vista_cuenta_suspendida, ajax_cotizaciones
 from administracion.views import (vista_registrar_venta, vista_lista_ventas, ajax_registrar_cobro,
     vista_gestion_facturas, ajax_indicadores_proveedor,
     ajax_buscar_facturas, ajax_registrar_pago, ajax_buscar_pagos, ajax_detalle_pago)
@@ -19,6 +19,7 @@ vista_crear_cultivo, vista_editar_cultivo, vista_crear_deposito, vista_editar_de
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),
+    path('ajax/cotizaciones/', ajax_cotizaciones, name='ajax_cotizaciones'),
     path('i18n/', include('django.conf.urls.i18n')), 
 
     path('accounts/', include('django.contrib.auth.urls')),
