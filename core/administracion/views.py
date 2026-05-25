@@ -13,9 +13,9 @@ from django.utils import timezone
 from decimal import Decimal as _Decimal
 from django.contrib import messages
 from django.shortcuts import redirect
-from gestion_agro.models import FacturaCompra, Proveedor, Producto, MovimientoStock
+from gestion_agro.models import FacturaCompra, Proveedor, Producto, MovimientoStock, Cliente
 from .models import Pago, AplicacionPago, FacturaVenta, FacturaVentaItem, Recibo, AplicacionRecibo
-from .forms import FiltroFacturasForm, AplicacionPagoForm, FacturaVentaForm, FacturaVentaItemForm, AplicacionReciboForm
+from .forms import FiltroFacturasForm, AplicacionPagoForm, FacturaVentaForm, FacturaVentaItemForm, AplicacionReciboForm, FacturaVentaManualForm, FacturaVentaManualItemFormSet
 
 
 @login_required
@@ -451,3 +451,402 @@ def ajax_detalle_pago(request, pago_id):
         request=request,
     )
     return JsonResponse({"html": html})
+
+
+@login_required
+def ajax_info_producto_venta(request):
+    producto_id = request.GET.get("producto_id")
+    if not producto_id:
+        return JsonResponse({"ok": False}, status=400)
+    try:
+        producto = Producto.objects.select_related(
+            "categoria", "unidad_base",
+            "datos_semilla__cultivo", "datos_semilla__variedad",
+        ).get(id=producto_id, empresa=request.user.profile.empresa, producto_final=True)
+    except Producto.DoesNotExist:
+        return JsonResponse({"ok": False}, status=404)
+
+    from django.db.models import Sum
+    from django.db.models.functions import Coalesce
+    from decimal import Decimal as D
+
+    destinos_disponibles = []
+    for valor, etiqueta in [("M", str(_("Semilla (M)"))), ("C", str(_("Consumo (C)")))]:
+        entradas = (
+            MovimientoStock.objects
+            .filter(producto=producto, tipo="ENTRADA", destino=valor)
+            .aggregate(t=Coalesce(Sum("cantidad"), D("0")))["t"]
+        )
+        ventas = (
+            MovimientoStock.objects
+            .filter(producto=producto, tipo="VENTA", destino=valor)
+            .aggregate(t=Coalesce(Sum("cantidad"), D("0")))["t"]
+        )
+        stock = entradas - ventas
+        if stock > 0:
+            destinos_disponibles.append({
+                "value": valor,
+                "label": etiqueta,
+                "stock": float(round(stock, 3)),
+                "um":    producto.unidad_base.abreviatura,
+            })
+
+    return JsonResponse({
+        "ok":      True,
+        "destinos": destinos_disponibles,
+        "unidad_base": producto.unidad_base.abreviatura,
+    })
+
+
+@login_required
+def ajax_depositos_producto_destino(request):
+    producto_id = request.GET.get("producto_id")
+    destino     = request.GET.get("destino")
+    if not producto_id or not destino:
+        return JsonResponse({"ok": False}, status=400)
+
+    empresa = request.user.profile.empresa
+    try:
+        producto = Producto.objects.get(id=producto_id, empresa=empresa, producto_final=True)
+    except Producto.DoesNotExist:
+        return JsonResponse({"ok": False}, status=404)
+
+    from django.db.models import Sum
+    from django.db.models.functions import Coalesce
+    from decimal import Decimal as D
+    from gestion_agro.models import Deposito
+
+    depositos_ids_entradas = (
+        MovimientoStock.objects
+        .filter(producto=producto, tipo="ENTRADA", destino=destino, deposito_destino__isnull=False)
+        .values_list("deposito_destino_id", flat=True)
+        .distinct()
+    )
+
+    resultado = []
+    for dep in Deposito.objects.filter(id__in=depositos_ids_entradas).order_by("nombre"):
+        entradas = (
+            MovimientoStock.objects
+            .filter(producto=producto, tipo="ENTRADA", destino=destino, deposito_destino=dep)
+            .aggregate(t=Coalesce(Sum("cantidad"), D("0")))["t"]
+        )
+        ventas = (
+            MovimientoStock.objects
+            .filter(producto=producto, tipo="VENTA", destino=destino, deposito_origen=dep)
+            .aggregate(t=Coalesce(Sum("cantidad"), D("0")))["t"]
+        )
+        stock = entradas - ventas
+        if stock > 0:
+            resultado.append({
+                "id":    dep.id,
+                "nombre": dep.nombre,
+                "stock": float(round(stock, 3)),
+                "um":    producto.unidad_base.abreviatura,
+            })
+
+    return JsonResponse({"ok": True, "depositos": resultado})
+
+
+def _productos_venta(empresa):
+    qs = (
+        Producto.objects
+        .filter(empresa=empresa, activo=True, producto_final=True)
+        .select_related("categoria", "datos_semilla__cultivo", "datos_semilla__variedad")
+        .order_by("nombre")
+    )
+    resultado = []
+    for p in qs:
+        try:
+            ds = p.datos_semilla
+            label = f"{ds.cultivo.nombre} {ds.variedad.nombre}"
+        except Exception:
+            label = p.nombre
+        resultado.append({"id": p.id, "label": label})
+    return resultado
+
+
+@login_required
+def vista_cargar_factura_venta_manual(request):
+    empresa = request.user.profile.empresa
+    from gestion_agro.models import Deposito
+
+    TEMPLATE = "tem_administracion/cargar_factura_venta.html"
+
+    def _context(factura_form, formset):
+        return {
+            "factura_form": factura_form,
+            "formset":      formset,
+            "productos":    _productos_venta(empresa),
+            "depositos":    Deposito.objects.filter(empresa=empresa).order_by("nombre"),
+        }
+
+    def _make_formset(data=None):
+        return FacturaVentaManualItemFormSet(
+            data, prefix="items", form_kwargs={"empresa": empresa}
+        )
+
+    if request.method == "POST":
+        factura_form = FacturaVentaManualForm(empresa, request.POST)
+        formset = _make_formset(request.POST)
+
+        if "agregar_item" in request.POST:
+            data = request.POST.copy()
+            data["items-TOTAL_FORMS"] = int(data.get("items-TOTAL_FORMS", 0)) + 1
+            return render(request, TEMPLATE, _context(
+                FacturaVentaManualForm(empresa, request.POST),
+                _make_formset(data),
+            ))
+
+        if "ok" in request.POST:
+            if factura_form.is_valid() and formset.is_valid():
+                items_validos = [f.cleaned_data for f in formset if f.cleaned_data]
+
+                errores_stock = []
+                for i, cd in enumerate(items_validos):
+                    producto      = cd["producto"]
+                    cantidad      = cd["cantidad"]
+                    destino       = cd.get("destino") or None
+                    deposito_orig = cd.get("deposito_origen")
+
+                    qs_entradas = MovimientoStock.objects.filter(
+                        producto=producto, tipo="ENTRADA", destino=destino
+                    )
+                    qs_ventas = MovimientoStock.objects.filter(
+                        producto=producto, tipo="VENTA", destino=destino
+                    )
+                    if deposito_orig:
+                        qs_entradas = qs_entradas.filter(deposito_destino=deposito_orig)
+                        qs_ventas   = qs_ventas.filter(deposito_origen=deposito_orig)
+
+                    from django.db.models import Sum as _Sum
+                    from django.db.models.functions import Coalesce as _Coalesce
+                    from decimal import Decimal as _D
+                    total_entradas = qs_entradas.aggregate(t=_Coalesce(_Sum("cantidad"), _D("0")))["t"]
+                    total_ventas   = qs_ventas.aggregate(t=_Coalesce(_Sum("cantidad"), _D("0")))["t"]
+                    stock_disp     = total_entradas - total_ventas
+
+                    if cantidad > stock_disp:
+                        errores_stock.append(
+                            _("Ítem %(n)s (%(p)s): stock insuficiente. Disponible: %(s)s %(u)s.") % {
+                                "n": i + 1,
+                                "p": producto.nombre,
+                                "s": round(stock_disp, 3),
+                                "u": producto.unidad_base,
+                            }
+                        )
+
+                if errores_stock:
+                    for err in errores_stock:
+                        messages.error(request, err)
+                elif items_validos:
+                    with transaction.atomic():
+                        factura = factura_form.save(commit=False)
+                        factura.empresa = empresa
+                        factura.usuario = request.user
+                        factura.save()
+
+                        for cd in items_validos:
+                            producto      = cd["producto"]
+                            destino       = cd.get("destino") or None
+                            deposito_orig = cd.get("deposito_origen")
+
+                            item = FacturaVentaItem.objects.create(
+                                factura         = factura,
+                                producto        = producto,
+                                cantidad        = cd["cantidad"],
+                                precio_unitario = cd["precio_unitario"],
+                                deposito_origen = deposito_orig,
+                                destino         = destino,
+                                um              = producto.unidad_base,
+                            )
+                            MovimientoStock.objects.create(
+                                producto           = producto,
+                                tipo               = MovimientoStock.Tipo.VENTA,
+                                cantidad           = cd["cantidad"],
+                                um                 = producto.unidad_base,
+                                fecha              = factura.fecha,
+                                deposito_origen    = deposito_orig,
+                                deposito_destino   = None,
+                                destino            = destino,
+                                precio_unitario    = cd["precio_unitario"],
+                                factura_venta_item = item,
+                            )
+
+                    messages.success(request, _("Factura de venta cargada correctamente."))
+                    return redirect("vista_lista_ventas")
+            else:
+                messages.error(request, _("Revisá los errores del formulario."))
+    else:
+        factura_form = FacturaVentaManualForm(empresa)
+        formset = _make_formset()
+
+    return render(request, TEMPLATE, _context(factura_form, formset))
+
+
+@login_required
+def vista_cuenta_corriente_proveedor(request):
+    from datetime import date
+    empresa = request.user.profile.empresa
+    hoy = date.today()
+
+    proveedores = Proveedor.objects.filter(empresa=empresa).order_by("razon_social")
+
+    proveedor_id = request.GET.get("proveedor") or ""
+    fecha_desde  = request.GET.get("fecha_desde") or ""
+    fecha_hasta  = request.GET.get("fecha_hasta") or ""
+    estado_filtro = request.GET.get("estado") or ""
+
+    qs = (
+        FacturaCompra.objects
+        .filter(empresa=empresa)
+        .annotate(pagado=Coalesce(Sum("aplicaciones__monto_aplicado"), Decimal("0")))
+        .select_related("proveedor")
+        .prefetch_related("aplicaciones__pago")
+        .order_by("fecha")
+    )
+    if proveedor_id:
+        qs = qs.filter(proveedor_id=proveedor_id)
+    if fecha_desde:
+        qs = qs.filter(fecha__gte=fecha_desde)
+    if fecha_hasta:
+        qs = qs.filter(fecha__lte=fecha_hasta)
+
+    filas = []
+    total_deuda = Decimal("0")
+    cant_vencidas = 0
+    prox_vencimiento = None
+
+    for f in qs:
+        saldo = f.total - f.pagado
+        if saldo <= 0:
+            estado = "pagada"
+        elif f.fecha_vencimiento and f.fecha_vencimiento < hoy:
+            estado = "vencida"
+        else:
+            estado = "pendiente"
+
+        if estado_filtro and estado != estado_filtro:
+            continue
+
+        if saldo > 0:
+            total_deuda += saldo
+        if estado == "vencida":
+            cant_vencidas += 1
+        if estado == "pendiente" and f.fecha_vencimiento:
+            if prox_vencimiento is None or f.fecha_vencimiento < prox_vencimiento:
+                prox_vencimiento = f.fecha_vencimiento
+
+        comprobantes = [
+            {
+                "numero": ap.pago_id,
+                "fecha":  ap.pago.fecha,
+                "monto":  ap.monto_aplicado,
+            }
+            for ap in f.aplicaciones.all()
+        ]
+
+        filas.append({
+            "obj":          f,
+            "total":        f.total,
+            "pagado":       f.pagado,
+            "saldo":        saldo,
+            "estado":       estado,
+            "comprobantes": comprobantes,
+        })
+
+    return render(request, "tem_administracion/cuenta_corriente_proveedor.html", {
+        "filas":            filas,
+        "proveedores":      proveedores,
+        "proveedor_id":     proveedor_id,
+        "fecha_desde":      fecha_desde,
+        "fecha_hasta":      fecha_hasta,
+        "estado_filtro":    estado_filtro,
+        "total_deuda":      total_deuda,
+        "cant_vencidas":    cant_vencidas,
+        "prox_vencimiento": prox_vencimiento,
+    })
+
+
+@login_required
+def vista_cuenta_corriente_cliente(request):
+    from datetime import date
+    empresa = request.user.profile.empresa
+    hoy = date.today()
+
+    clientes = Cliente.objects.filter(empresa=empresa).order_by("razon_social")
+
+    cliente_id    = request.GET.get("cliente") or ""
+    fecha_desde   = request.GET.get("fecha_desde") or ""
+    fecha_hasta   = request.GET.get("fecha_hasta") or ""
+    estado_filtro = request.GET.get("estado") or ""
+
+    qs = (
+        FacturaVenta.objects
+        .filter(empresa=empresa)
+        .annotate(cobrado=Coalesce(Sum("aplicaciones__monto_aplicado"), Decimal("0")))
+        .select_related("cliente")
+        .prefetch_related("aplicaciones__recibo", "items")
+        .order_by("fecha")
+    )
+    if cliente_id:
+        qs = qs.filter(cliente_id=cliente_id)
+    if fecha_desde:
+        qs = qs.filter(fecha__gte=fecha_desde)
+    if fecha_hasta:
+        qs = qs.filter(fecha__lte=fecha_hasta)
+
+    filas = []
+    total_por_cobrar = Decimal("0")
+    cant_vencidas = 0
+    prox_vencimiento = None
+
+    for f in qs:
+        total_fv = sum(i.cantidad * i.precio_unitario for i in f.items.all())
+        saldo = total_fv - f.cobrado
+        if saldo <= 0:
+            estado = "cobrada"
+        elif f.fecha_vencimiento and f.fecha_vencimiento < hoy:
+            estado = "vencida"
+        else:
+            estado = "pendiente"
+
+        if estado_filtro and estado != estado_filtro:
+            continue
+
+        if saldo > 0:
+            total_por_cobrar += saldo
+        if estado == "vencida":
+            cant_vencidas += 1
+        if estado == "pendiente" and f.fecha_vencimiento:
+            if prox_vencimiento is None or f.fecha_vencimiento < prox_vencimiento:
+                prox_vencimiento = f.fecha_vencimiento
+
+        comprobantes = [
+            {
+                "numero": ar.recibo_id,
+                "fecha":  ar.recibo.fecha,
+                "monto":  ar.monto_aplicado,
+            }
+            for ar in f.aplicaciones.all()
+        ]
+
+        filas.append({
+            "obj":          f,
+            "total":        total_fv,
+            "cobrado":      f.cobrado,
+            "saldo":        saldo,
+            "estado":       estado,
+            "comprobantes": comprobantes,
+        })
+
+    return render(request, "tem_administracion/cuenta_corriente_cliente.html", {
+        "filas":             filas,
+        "clientes":          clientes,
+        "cliente_id":        cliente_id,
+        "fecha_desde":       fecha_desde,
+        "fecha_hasta":       fecha_hasta,
+        "estado_filtro":     estado_filtro,
+        "total_por_cobrar":  total_por_cobrar,
+        "cant_vencidas":     cant_vencidas,
+        "prox_vencimiento":  prox_vencimiento,
+    })

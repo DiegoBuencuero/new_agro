@@ -39,7 +39,7 @@
                     <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="form-control form-control-sm">
                 </div>
                 <div class="col-md-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm flex-fill">{% translate "Filtrar" %}</button>
+                    <button type="submit" class="btn btn-success btn-sm flex-fill">{% translate "Filtrar" %}</button>
                     <a href="{% url 'vista_lista_ventas' %}" class="btn btn-outline-secondary btn-sm">{% translate "Limpiar" %}</a>
                 </div>
             </div>
@@ -151,7 +151,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
-                <button type="button" id="btn-confirmar-cobro" class="btn btn-primary">
+                <button type="button" id="btn-confirmar-cobro" class="btn btn-success">
                     <i class="mdi mdi-check me-1"></i>{% translate "Confirmar cobro" %}
                 </button>
             </div>

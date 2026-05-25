@@ -1,10 +1,8 @@
-"""
-Conversión de shapefile a GeoJSON minificado.
-Se ejecuta UNA SOLA VEZ al subir el archivo.
-"""
 import json
 import os
 import tempfile
+from decimal import Decimal
+
 import shapefile
 
 
@@ -69,9 +67,13 @@ def procesar_shapefile_a_geojson(archivos_subidos, nombre_variable="rate"):
             # Si no encuentra ese campo, usar el primer valor numérico
             if valor_variable is None:
                 for valor_campo in atributos.values():
-                    if isinstance(valor_campo, (int, float)):
+                    if isinstance(valor_campo, (int, float, Decimal)):
                         valor_variable = valor_campo
                         break
+
+            # Normalizar Decimal a float para que sea JSON-serializable como número
+            if isinstance(valor_variable, Decimal):
+                valor_variable = float(valor_variable)
 
             # Guardar para estadísticas
             if isinstance(valor_variable, (int, float)):
@@ -99,8 +101,8 @@ def procesar_shapefile_a_geojson(archivos_subidos, nombre_variable="rate"):
                 if max_y > latitud_max:
                     latitud_max = max_y
 
-            # Crear propiedades
-            propiedades = atributos.copy()
+            # Crear propiedades (Decimal → float para JSON numérico)
+            propiedades = {k: float(v) if isinstance(v, Decimal) else v for k, v in atributos.items()}
             propiedades["v"] = valor_variable
 
             # Crear feature GeoJSON

@@ -1,225 +1,724 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load i18n %}
+
 {% block plugin_css %}
+
+<link rel="stylesheet"
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
+
+<style>
+
+#mapa-contorno{
+    width:100%;
+    height:650px;
+    border-radius:12px;
+    border:1px solid #dcdcdc;
+}
+
+.leaflet-draw-tooltip{
+    background:rgba(0,0,0,0.9);
+    border:none;
+    color:white;
+    font-size:13px;
+}
+
+/* Modal upload */
+.drop-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: .75rem;
+    padding: 2rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    color: #9ca3af;
+    transition: border-color .15s, background .15s;
+}
+.drop-zone.over { border-color: #198754; background: #f0fdf4; color: #198754; }
+
+.archivo-item {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .82rem;
+    padding: .3rem .5rem;
+    border-radius: .5rem;
+    background: #f9fafb;
+    margin-bottom: .35rem;
+}
+.archivo-item .badge-ext {
+    font-size: .68rem;
+    font-weight: 700;
+    padding: .15rem .45rem;
+    border-radius: .3rem;
+    text-transform: uppercase;
+    background: #e9ecef;
+    color: #495057;
+    min-width: 2.5rem;
+    text-align: center;
+}
+.archivo-item .badge-ext.shp  { background: #dbeafe; color: #1e40af; }
+.archivo-item .badge-ext.dbf  { background: #fef3c7; color: #92400e; }
+.archivo-item .badge-ext.shx  { background: #ede9fe; color: #5b21b6; }
+.archivo-item .badge-ext.prj  { background: #d1fae5; color: #065f46; }
+.archivo-item .badge-ext.kml  { background: #fee2e2; color: #991b1b; }
+.archivo-item .badge-ext.kmz  { background: #fce7f3; color: #9d174d; }
+.archivo-item .badge-ext.zip  { background: #e0f2fe; color: #0c4a6e; }
+.archivo-error { font-size: .78rem; color: #dc2626; margin-top: .25rem; }
+</style>
 {% endblock %}
 
+
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid pb-5">
+
     {% if messages %}
-    <div class="mb-4">
+    <div class="mb-3">
         {% for message in messages %}
-        <div class="alert {{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
-            <i class="mdi 
-                {% if 'success' in message.tags %}mdi-check-circle
-                {% elif 'danger' in message.tags %}mdi-alert-circle
-                {% elif 'warning' in message.tags %}mdi-alert
-                {% else %}mdi-information{% endif %}
-                me-2"></i>
-
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center">
+            <i class="mdi {% if 'success' in message.tags %}mdi-check-circle{% else %}mdi-alert-circle{% endif %} me-2"></i>
             <div>{{ message }}</div>
-
             <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
         </div>
         {% endfor %}
     </div>
     {% endif %}
-    <div class="upload-card">
-        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
-            <div>
-                <h3 class="mb-1">
-                    <i class="mdi mdi-map-marker icon-agro"></i>
-                    {% translate "Campos" %}
-                </h3>
-                <div class="small">
-                  <h6 class="mb-1 mt-2">
-                    {% translate "Creación de nuevos campos" %}
-                  </h6>
-                </div>
-            </div>
-        </div>     
-        <div class="col-lg-12 grid-margin stretch-card">
-          <div class="card">
-            <div class="card-body">
-              <form class="form-sample" method="post" enctype="multipart/form-data">
-                {% csrf_token %}    
-                <p class="card-description">
-                  {% translate "Información general" %}
-                </p>
 
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="form-group row">
-                      <label class="col-sm-3 col-form-label">
-                        {% translate "Nombre" %}
-                      </label>
-                      <div class="col-sm-9">
-                        {{ form.nombre }}
-                        {{ form.nombre.errors }}
-                      </div>
-                    </div>
-                  </div>
-        
-                  <div class="col-md-6">
-                    <div class="form-group row">
-                      <label class="col-sm-3 col-form-label">
-                        {% translate "Ciudad" %}
-                      </label>
-                      <div class="col-sm-9">
-                        {{ form.ciudad }}
-                        {{ form.ciudad.errors }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="form-group row">
-                      <label class="col-sm-3 col-form-label">
-                        {% translate "Superficie (ha)" %}
-                      </label>
-                      <div class="col-sm-9">
-                        {{ form.superficie_ha }}
-                        {{ form.superficie_ha.errors }}
-                      </div>
-                    </div>
-                  </div>
-        
-                  <div class="col-md-6">
-                    <div class="form-group row">
-                      <label class="col-sm-3 col-form-label">
-                        {% translate "Descripción" %}
-                      </label>
-                      <div class="col-sm-9">
-                        {{ form.descripcion }}
-                        {{ form.descripcion.errors }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="col-md-6">
-                    <div class="form-group row">
-                      <label class="col-sm-3 col-form-label">
-                        {% translate "Imagen" %}
-                      </label>
-                      <div class="col-sm-9">
-                        {{ form.image }}
-                        {{ form.image.errors }}
-                      </div>
-                    </div>
-                  </div>        
-                  <div class="col-md-6">
-                    <div class="form-group row">
-                      <label class="col-sm-3 col-form-label">
-                        {% translate "Observaciones" %}
-                      </label>
-                      <div class="col-sm-9">
-                        {{ form.observaciones }}
-                        {{ form.observaciones.errors }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                  <div class="mt-3 d-flex gap-2">
-                      {% if modificacion %}
-                          <button type="submit" name="ok" class="btn btn-success">
-                              <i class="mdi mdi-check me-1"></i>{% translate "Actualizar" %}
-                          </button>
-                          <button type="submit" name="borrar" class="btn btn-danger"
-                                  onclick="return confirm('{% translate "¿Confirmar eliminación?" %}')">
-                              <i class="mdi mdi-delete me-1"></i>{% translate "Eliminar" %}
-                          </button>
-                      {% else %}
-                          <button type="submit" name="ok" class="btn btn-success">
-                              <i class="mdi mdi-plus me-1"></i>{% translate "Guardar" %}
-                          </button>
-                      {% endif %}
-                      <a href="{% url 'vista_producto' %}" class="btn btn-dark">
-                          <i class="mdi mdi-arrow-left me-1"></i>{% translate "Cancelar" %}
-                      </a>
-                  </div>
-        
-              </form>
-            </div>
-          </div>
+    <div class="d-flex align-items-center justify-content-between mb-4 pt-2">
+        <div>
+            <h4 class="mb-0 fw-bold" style="color:#111827">
+                <i class="mdi mdi-map-marker me-2 text-muted"></i>{% translate "Campos" %}
+            </h4>
+            <div class="text-muted small mt-1">{% translate "Creación y edición de campos" %}</div>
         </div>
-      <div class="col-lg-12 grid-margin stretch-card">
-        <div class="card">
-          <div class="card-body">
-            <h4 class="card-title">{% translate "Campos" %}</h4>
-            <p class="card-description">
-              {{ empresa.nombre }}
-            </p>
-            <div class="table-responsive">
-              <table class="table table-striped">
-                <thead>
-                  <tr>
-                    <th>{% translate "Imagen" %}</th>
-                    <th>{% translate "Nombre" %}</th>
-                    <th>{% translate "Superficie (ha)" %}</th>
-                    <th>{% translate "Acciones" %}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for campo in campos %}
-                  <tr>
-                    <td class="py-1">
-                      <img src="{{ campo.image.url }}" alt="{% translate 'Imagen del campo' %}" />
-                    </td>
-                    <td>
-                      <a href="/01/{{ campo.id }}">{{ campo.nombre }}</a>
-                    </td>
-                    <td>
-                      {{ campo.superficie_ha }}
-                    </td>
-                    <td>
-                  <a href="{% url 'vista_editar_campo' campo.id %}"
-                    class="btn btn-sm btn-outline-primary">
-                    {% translate "Editar" %}
-                  </a>
-                    </td>
-                  </tr>
-                  {% empty %}
-                  <tr>
-                    <td colspan="4" class="text-center text-muted">
-                      {% translate "No hay campos cargados" %}
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-        {% if implantaciones %}
-        <div class="counter">
-            <div class="counter-value">{{ implantaciones|length }} {% translate "implantaciones" %}</div>
-            <div class="counter-label">
-                <i class="fas fa-list-ol me-1"></i>{% translate "Mostrando todas las implantaciones registradas" %}
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.contorno }}
+
+        <div class="row g-4">
+
+            {# ── Datos generales ── #}
+            <div class="col-lg-4">
+                <div class="card" style="border-radius:.875rem;border:1px solid #e9ecef;box-shadow:none">
+                    <div class="card-body">
+                        <p class="fw-semibold mb-3" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af">
+                            {% translate "Información general" %}
+                        </p>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" style="font-size:.82rem">{% translate "Nombre" %} *</label>
+                            {{ form.nombre }}{{ form.nombre.errors }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" style="font-size:.82rem">{% translate "Ciudad" %} *</label>
+                            {{ form.ciudad }}{{ form.ciudad.errors }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" style="font-size:.82rem">{% translate "Superficie (ha)" %} *</label>
+                            {{ form.superficie_ha }}{{ form.superficie_ha.errors }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" style="font-size:.82rem">{% translate "Descripción" %}</label>
+                            {{ form.descripcion }}{{ form.descripcion.errors }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" style="font-size:.82rem">{% translate "Observaciones" %}</label>
+                            {{ form.observaciones }}{{ form.observaciones.errors }}
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" style="font-size:.82rem">{% translate "Imagen" %}</label>
+                            {{ form.image }}{{ form.image.errors }}
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            {% if modificacion %}
+                                <button type="submit" name="ok" class="btn btn-success btn-sm">
+                                    <i class="mdi mdi-check me-1"></i>{% translate "Actualizar" %}
+                                </button>
+                                <button type="submit" name="borrar" class="btn btn-danger btn-sm"
+                                        onclick="return confirm('{% translate "¿Eliminar campo?" %}')">
+                                    <i class="mdi mdi-delete me-1"></i>{% translate "Eliminar" %}
+                                </button>
+                            {% else %}
+                                <button type="submit" name="ok" class="btn btn-success btn-sm">
+                                    <i class="mdi mdi-content-save me-1"></i>{% translate "Guardar campo" %}
+                                </button>
+                            {% endif %}
+                            <a href="{% url 'vista_crear_campo' %}" class="btn btn-outline-secondary btn-sm">{% translate "Cancelar" %}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {# ── Mapa ── #}
+            <div class="col-lg-8">
+                <div class="card" style="border-radius:.875rem;border:1px solid #e9ecef;box-shadow:none">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <p class="fw-semibold mb-0" style="font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:#9ca3af">
+                                <i class="mdi mdi-map me-1"></i>{% translate "Contorno del campo" %}
+                            </p>
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        data-bs-toggle="modal" data-bs-target="#modalSubirContorno">
+                                    <i class="mdi mdi-upload me-1"></i>{% translate "Subir archivo" %}
+                                </button>
+                            </div>
+                        </div>
+                        <div id="contorno-archivo-info" class="mb-2" style="display:none;font-size:.78rem;color:#6b7280"></div>
+                        <div id="contorno-archivo-error" class="mb-2 text-danger" style="display:none;font-size:.78rem"></div>
+                        <div id="mapa-contorno"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {# ── Lista de campos ── #}
+        <div class="card mt-4" style="border-radius:.875rem;border:1px solid #e9ecef;box-shadow:none">
+            <div class="card-body p-0">
+                <div class="px-4 py-3 border-bottom">
+                    <span class="fw-semibold" style="font-size:.85rem">{% translate "Campos registrados" %}</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table mb-0" style="font-size:.83rem">
+                        <thead style="background:#fafafa">
+                            <tr>
+                                <th class="px-4 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Nombre" %}</th>
+                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Superficie" %}</th>
+                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Contorno" %}</th>
+                                <th class="px-3 py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for campo in campos %}
+                            <tr style="border-bottom:1px solid #f3f4f6">
+                                <td class="px-4 py-2 fw-semibold" style="color:#111827">{{ campo.nombre }}</td>
+                                <td class="px-3 py-2 text-muted">{{ campo.superficie_ha }} ha</td>
+                                <td class="px-3 py-2">
+                                    {% if campo.contorno %}
+                                    <span style="background:#f0fdf4;color:#4b7a60;border:1px solid #d1e7dd;font-size:.7rem;padding:.22rem .6rem;border-radius:2rem;font-weight:600">
+                                        <i class="mdi mdi-map-check me-1"></i>{% translate "Definido" %}
+                                    </span>
+                                    {% else %}
+                                    <span style="background:#fafafa;color:#9ca3af;border:1px solid #e9ecef;font-size:.7rem;padding:.22rem .6rem;border-radius:2rem;font-weight:600">
+                                        {% translate "Sin contorno" %}
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-end">
+                                    <a href="{% url 'vista_editar_campo' campo.id %}" class="btn btn-outline-secondary btn-sm">{% translate "Editar" %}</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center text-muted py-4">{% translate "No hay campos cargados" %}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-        {% endif %}
- 
+
+    </form>
 </div>
+
+{# ── Modal subir contorno ── #}
+<div class="modal fade" id="modalSubirContorno" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content" style="border-radius:.875rem;border:none;box-shadow:0 8px 32px rgba(0,0,0,.15)">
+            <div class="modal-header" style="border-bottom:1px solid #f3f4f6">
+                <h5 class="modal-title fw-bold" style="color:#111827">
+                    <i class="mdi mdi-upload me-2 text-muted"></i>{% translate "Cargar contorno desde archivo" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                {# Drop zone #}
+                <div class="drop-zone" id="drop-zone-contorno"
+                     ondragover="event.preventDefault();this.classList.add('over')"
+                     ondragleave="this.classList.remove('over')"
+                     ondrop="onDropContorno(event)"
+                     onclick="document.getElementById('input-multi-contorno').click()">
+                    <i class="mdi mdi-file-upload-outline" style="font-size:2.5rem;display:block;margin-bottom:.5rem"></i>
+                    <div class="fw-semibold" style="font-size:.9rem">{% translate "Arrastrá los archivos acá o hacé click" %}</div>
+                    <div class="small mt-1">{% translate "Shapefile (.shp + .dbf + .shx), KML, KMZ, ZIP" %}</div>
+                    <input type="file" id="input-multi-contorno"
+                           multiple accept=".shp,.dbf,.shx,.prj,.kml,.kmz,.zip"
+                           style="display:none" onchange="agregarArchivos(this.files)">
+                </div>
+
+                {# Lista de archivos #}
+                <div id="lista-archivos-contorno" class="mt-3" style="display:none">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span class="fw-semibold" style="font-size:.82rem;color:#374151">{% translate "Archivos cargados" %}</span>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="limpiarArchivos()" style="font-size:.72rem;padding:.2rem .6rem">
+                            {% translate "Limpiar" %}
+                        </button>
+                    </div>
+                    <div id="items-archivos"></div>
+                    <div id="errores-shp" class="mt-2"></div>
+                </div>
+
+            </div>
+            <div class="modal-footer" style="border-top:1px solid #f3f4f6">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                <button type="button" id="btn-procesar-contorno" class="btn btn-success btn-sm" disabled onclick="procesarArchivos()">
+                    <i class="mdi mdi-check me-1"></i>{% translate "Cargar en el mapa" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block custom_js %}
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const rows = document.querySelectorAll('.implantaciones-table tbody tr[onclick]');
-        rows.forEach(row => {
-            row.addEventListener('click', function(e) {
-                if (e.target.tagName === 'A' || e.target.closest('a')) return;
-                window.location.href = this.getAttribute('onclick').match(/href='([^']+)'/)[1];
-            });
-        });
+
+/* ========================= */
+/* MAPA */
+/* ========================= */
+
+const arcgisBase =
+'https://server.arcgisonline.com/ArcGIS/rest/services';
+
+var mapa = L.map('mapa-contorno', {
+    preferCanvas: true
+}).setView([-27.4, -51.22], 12);
+
+/* ========================= */
+/* SATÉLITE */
+/* ========================= */
+
+var capaSatelite = L.tileLayer(
+`${arcgisBase}/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
+{
+    attribution: '© Esri',
+    maxZoom: 19
+}
+).addTo(mapa);
+
+/* ========================= */
+/* ETIQUETAS */
+/* ========================= */
+
+var etiquetas = L.tileLayer(
+'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+{
+    attribution: '© Esri'
+}
+).addTo(mapa);
+
+/* ========================= */
+/* CAPAS */
+/* ========================= */
+
+var capaMapa = L.tileLayer(
+`${arcgisBase}/World_Street_Map/MapServer/tile/{z}/{y}/{x}`,
+{
+    attribution: '© Esri',
+    maxZoom: 19
+}
+);
+
+L.control.layers(
+{
+    '🛰 Satélite': capaSatelite,
+    '🗺 Mapa': capaMapa
+},
+{},
+{
+    position: 'topright',
+    collapsed: false
+}
+).addTo(mapa);
+
+/* ========================= */
+/* FEATURE GROUP */
+/* ========================= */
+
+var capaEditada = new L.FeatureGroup();
+
+mapa.addLayer(capaEditada);
+
+/* ========================= */
+/* DRAW CONTROL */
+/* ========================= */
+
+var drawControl = new L.Control.Draw({
+
+    edit: {
+        featureGroup: capaEditada,
+        remove: true
+    },
+
+    draw: {
+
+        polygon: {
+
+            allowIntersection: false,
+
+            showArea: true,
+
+            shapeOptions: {
+                color: '#bad45a',
+                weight: 2,
+                opacity: 1,
+                fillColor: '#bad45a',
+                fillOpacity: 0.10
+            }
+
+        },
+
+        rectangle: false,
+        circle: false,
+        marker: false,
+        polyline: false,
+        circlemarker: false
+
+    }
+
+});
+
+mapa.addControl(drawControl);
+
+/* ========================= */
+/* CREAR */
+/* ========================= */
+
+mapa.on(L.Draw.Event.CREATED, function(e) {
+
+    capaEditada.clearLayers();
+
+    var layer = e.layer;
+
+    capaEditada.addLayer(layer);
+
+    var geojson = layer.toGeoJSON();
+
+    document.getElementById('id_contorno').value =
+        JSON.stringify(geojson.geometry);
+
+});
+
+/* ========================= */
+/* EDITAR */
+/* ========================= */
+
+function actualizarContorno() {
+    var gj = capaEditada.toGeoJSON();
+    if (!gj.features.length) return;
+    document.getElementById('id_contorno').value =
+        JSON.stringify(gj.features[0].geometry);
+}
+
+mapa.on(L.Draw.Event.EDITED, actualizarContorno);
+mapa.on('draw:editvertex', actualizarContorno);
+
+/* ========================= */
+/* BORRAR */
+/* ========================= */
+
+mapa.on(L.Draw.Event.DELETED, function() {
+
+    document.getElementById('id_contorno').value = '';
+
+});
+
+/* ========================= */
+/* CARGAR EXISTENTE */
+/* ========================= */
+
+{% if form.instance.contorno %}
+
+try {
+
+    var geojson = JSON.parse(
+        document.getElementById('id_contorno').value
+    );
+
+    var layer = L.geoJSON(geojson, {
+
+        style: {
+            color: '#bad45a',
+            weight: 2,
+            fillOpacity: 0.10
+        }
+
     });
+
+    layer.eachLayer(function(l) {
+        capaEditada.addLayer(l);
+    });
+
+    mapa.fitBounds(layer.getBounds(), {
+        padding: [30, 30]
+    });
+
+    // Clic en el botón de edición del toolbar (método confiable)
+    setTimeout(function() {
+        var btn = document.querySelector('.leaflet-draw-edit-edit');
+        if (btn) btn.click();
+    }, 400);
+
+} catch(err) {
+
+    console.error(err);
+
+}
+
+{% endif %}
+
+/* ========================= */
+/* MODAL SUBIR ARCHIVO       */
+/* ========================= */
+
+var archivosSeleccionados = [];
+
+function onDropContorno(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone-contorno').classList.remove('over');
+    agregarArchivos(e.dataTransfer.files);
+}
+
+function agregarArchivos(files) {
+    for (var i = 0; i < files.length; i++) {
+        archivosSeleccionados.push(files[i]);
+    }
+    renderizarListaArchivos();
+}
+
+function limpiarArchivos() {
+    archivosSeleccionados = [];
+    renderizarListaArchivos();
+}
+
+function renderizarListaArchivos() {
+    var lista = document.getElementById('lista-archivos-contorno');
+    var items = document.getElementById('items-archivos');
+    var errores = document.getElementById('errores-shp');
+    var btnProcesar = document.getElementById('btn-procesar-contorno');
+
+    if (archivosSeleccionados.length === 0) {
+        lista.style.display = 'none';
+        btnProcesar.disabled = true;
+        return;
+    }
+
+    lista.style.display = 'block';
+
+    // Renderizar items
+    var html = '';
+    archivosSeleccionados.forEach(function(f, i) {
+        var ext = f.name.split('.').pop().toLowerCase();
+        html += '<div class="archivo-item">' +
+            '<span class="badge-ext ' + ext + '">' + ext + '</span>' +
+            '<span style="flex:1;color:#374151">' + f.name + '</span>' +
+            '<span style="color:#9ca3af;font-size:.75rem">' + (f.size / 1024).toFixed(1) + ' KB</span>' +
+            '<button type="button" onclick="quitarArchivo(' + i + ')" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:1rem;line-height:1">×</button>' +
+            '</div>';
+    });
+    items.innerHTML = html;
+
+    // Validar SHP
+    var errHtml = validarSHP();
+    errores.innerHTML = errHtml;
+    btnProcesar.disabled = errHtml !== '';
+}
+
+function quitarArchivo(idx) {
+    archivosSeleccionados.splice(idx, 1);
+    renderizarListaArchivos();
+}
+
+function validarSHP() {
+    var porNombre = {};
+    archivosSeleccionados.forEach(function(f) {
+        var partes = f.name.split('.');
+        var ext    = partes.pop().toLowerCase();
+        var base   = partes.join('.').toLowerCase();
+        if (!porNombre[base]) porNombre[base] = [];
+        porNombre[base].push(ext);
+    });
+
+    var errores = [];
+    Object.keys(porNombre).forEach(function(base) {
+        var exts = porNombre[base];
+        if (exts.indexOf('shp') !== -1) {
+            if (exts.indexOf('dbf') === -1)
+                errores.push('{% translate "Falta el archivo" %} <strong>' + base + '.dbf</strong>');
+            if (exts.indexOf('shx') === -1)
+                errores.push('{% translate "Falta el archivo" %} <strong>' + base + '.shx</strong>');
+        }
+    });
+
+    if (errores.length === 0) return '';
+    return '<div class="archivo-error"><i class="mdi mdi-alert-circle me-1"></i>' +
+        errores.join('<br>') + '</div>';
+}
+
+function procesarArchivos() {
+    if (archivosSeleccionados.length === 0) return;
+
+    var btn = document.getElementById('btn-procesar-contorno');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="mdi mdi-loading mdi-spin me-1"></i>{% translate "Procesando..." %}';
+
+    var tieneShp = archivosSeleccionados.some(function(f) {
+        return f.name.toLowerCase().endsWith('.shp');
+    });
+
+    if (tieneShp) {
+        // Empaquetar SHP en ZIP con JSZip
+        var zip = new JSZip();
+        archivosSeleccionados.forEach(function(f) { zip.file(f.name, f); });
+        zip.generateAsync({ type: 'blob' }).then(function(blob) {
+            var zipFile = new File([blob], 'contorno.zip', { type: 'application/zip' });
+            enviarAlServidor(zipFile, btn);
+        });
+    } else {
+        // KML, KMZ o ZIP
+        enviarAlServidor(archivosSeleccionados[0], btn);
+    }
+}
+
+function enviarAlServidor(archivo, btn) {
+    var fd = new FormData();
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fd.append('archivo', archivo);
+
+    $.ajax({
+        url: '{% url "ajax_contorno_parsear" %}',
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function(resp) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="mdi mdi-check me-1"></i>{% translate "Cargar en el mapa" %}';
+
+            if (!resp.ok) {
+                document.getElementById('errores-shp').innerHTML =
+                    '<div class="archivo-error"><i class="mdi mdi-alert-circle me-1"></i>' + resp.error + '</div>';
+                return;
+            }
+
+            cargarGeoJSONEnMapa(resp.geojson);
+
+            // Guardar primera geometría
+            var features = resp.geojson.features || [];
+            var geom = features.length ? features[0].geometry : resp.geojson;
+            document.getElementById('id_contorno').value = JSON.stringify(geom);
+
+            // Cerrar modal
+            bootstrap.Modal.getInstance(document.getElementById('modalSubirContorno')).hide();
+            limpiarArchivos();
+        },
+        error: function(xhr) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="mdi mdi-check me-1"></i>{% translate "Cargar en el mapa" %}';
+            var msg = '{% translate "Error de conexión." %}';
+            try {
+                var resp = JSON.parse(xhr.responseText);
+                if (resp.error) msg = resp.error;
+            } catch(e) {}
+            document.getElementById('errores-shp').innerHTML =
+                '<div class="archivo-error"><i class="mdi mdi-alert-circle me-1"></i>' + msg + '</div>';
+        }
+    });
+}
+
+function cargarGeoJSONEnMapa(geojson) {
+    capaEditada.clearLayers();
+    var layer = L.geoJSON(geojson, {
+        style: { color: '#bad45a', weight: 2, fillOpacity: 0.10 }
+    });
+    layer.eachLayer(function(l) { capaEditada.addLayer(l); });
+    if (capaEditada.getLayers().length)
+        mapa.fitBounds(capaEditada.getBounds(), { padding: [30, 30] });
+}
+
+/* ========================= */
+/* CARGAR ARCHIVO (SHP/KML/KMZ) */
+/* ========================= */
+
+function parsearArchivoContorno(archivo) {
+
+    if (!archivo) return;
+
+    var infoEl  = document.getElementById('contorno-archivo-info');
+    var errorEl = document.getElementById('contorno-archivo-error');
+
+    infoEl.textContent  = '⏳ ' + archivo.name + ' — procesando...';
+    infoEl.style.display = 'block';
+    errorEl.style.display = 'none';
+
+    var fd = new FormData();
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+    fd.append('archivo', archivo);
+
+    $.ajax({
+        url: '{% url "ajax_contorno_parsear" %}',
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function(resp) {
+            if (!resp.ok) {
+                infoEl.style.display = 'none';
+                errorEl.textContent  = resp.error;
+                errorEl.style.display = 'block';
+                return;
+            }
+
+            capaEditada.clearLayers();
+
+            var geojson = resp.geojson;
+
+            var layer = L.geoJSON(geojson, {
+                style: {
+                    color: '#bad45a',
+                    weight: 2,
+                    fillOpacity: 0.10
+                }
+            });
+
+            layer.eachLayer(function(l) { capaEditada.addLayer(l); });
+
+            mapa.fitBounds(layer.getBounds(), { padding: [30, 30] });
+
+            // Guardar primera geometría en el campo oculto
+            var features = geojson.features || [];
+            var geom = features.length
+                ? features[0].geometry
+                : geojson;
+
+            document.getElementById('id_contorno').value =
+                JSON.stringify(geom);
+
+            infoEl.textContent = '✓ ' + archivo.name + ' — contorno cargado';
+        },
+        error: function() {
+            infoEl.style.display = 'none';
+            errorEl.textContent  = '{% translate "Error al procesar el archivo." %}';
+            errorEl.style.display = 'block';
+        }
+    });
+
+    // Limpiar input para permitir cargar el mismo archivo de nuevo
+    document.getElementById('input-archivo-contorno').value = '';
+}
+
 </script>
+
 {% endblock %}
-
-
-

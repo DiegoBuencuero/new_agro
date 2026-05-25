@@ -1,0 +1,376 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block plugin_css %}
+<style>
+    .table thead th {
+        font-weight: 600;
+        font-size: 0.78rem;
+        color: #374151;
+        white-space: nowrap;
+    }
+    .factura-row td {
+        vertical-align: middle;
+        font-size: 0.82rem;
+        color: #1f2937;
+        padding: 0.35rem 0.5rem;
+    }
+    .factura-header-box {
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        background: #f8f9fa;
+        padding: 1rem;
+    }
+    @media (max-width: 1400px) {
+        .table thead th, .factura-row td { font-size: 0.72rem; }
+        .form-select-sm, .form-control-sm { font-size: 0.72rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+            <i class="mdi
+                {% if 'success' in message.tags %}mdi-check-circle
+                {% elif 'danger' in message.tags %}mdi-alert-circle
+                {% elif 'warning' in message.tags %}mdi-alert
+                {% else %}mdi-information{% endif %}
+                me-2"></i>
+            <div>{{ message }}</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-card">
+        <div class="upload-header d-flex align-items-center justify-content-between mb-4">
+            <h3 class="mb-1">
+                <i class="mdi mdi-cart-outline me-1"></i>
+                {% translate "Cargar factura de venta" %}
+            </h3>
+        </div>
+
+        <div class="col-lg-12 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <form id="form_venta" method="post" novalidate>
+                        {% csrf_token %}
+
+                        {# ── Cabecera ── #}
+                        <div class="factura-header-box mb-4">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-4">
+                                    <label class="form-label">{% translate "Cliente" %} *</label>
+                                    {{ factura_form.cliente }}
+                                    {% if factura_form.cliente.errors %}
+                                        <div class="text-danger" style="font-size:.75rem">{{ factura_form.cliente.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">{% translate "Nº Factura" %} *</label>
+                                    {{ factura_form.numero }}
+                                    {% if factura_form.numero.errors %}
+                                        <div class="text-danger" style="font-size:.75rem">{{ factura_form.numero.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">{% translate "Fecha" %} *</label>
+                                    {{ factura_form.fecha }}
+                                    {% if factura_form.fecha.errors %}
+                                        <div class="text-danger" style="font-size:.75rem">{{ factura_form.fecha.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">{% translate "Fecha vencimiento" %}</label>
+                                    {{ factura_form.fecha_vencimiento }}
+                                    {% if factura_form.fecha_vencimiento.errors %}
+                                        <div class="text-danger" style="font-size:.75rem">{{ factura_form.fecha_vencimiento.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        {{ formset.management_form }}
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle mb-0" style="width:100%; table-layout:fixed;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width:28%">{% translate "Producto" %}</th>
+                                        <th style="width:13%">{% translate "Destino" %}</th>
+                                        <th style="width:18%">{% translate "Depósito origen" %}</th>
+                                        <th style="width:13%">{% translate "Cantidad" %}</th>
+                                        <th style="width:14%">{% translate "Precio unit." %}</th>
+                                        <th style="width:14%">{% translate "Subtotal" %}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for form in formset %}
+                                    <tr class="factura-row {% cycle '' 'table-light' %}" data-idx="{{ forloop.counter0 }}">
+
+                                        {# ══ Producto ══ #}
+                                        <td>
+                                            <select id="id_items-{{ forloop.counter0 }}-producto"
+                                                    name="{{ form.producto.html_name }}"
+                                                    class="form-select form-select-sm sel-producto"
+                                                    onchange="onProductoChange(this, {{ forloop.counter0 }})">
+                                                <option value="">— {% translate "Seleccionar" %} —</option>
+                                                {% for prod in productos %}
+                                                    <option value="{{ prod.id }}"
+                                                        {% if form.producto.value == prod.id|stringformat:"s" %}selected{% endif %}>
+                                                        {{ prod.label }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                            {% if form.producto.errors %}
+                                                <div class="text-danger" style="font-size:.7rem">{{ form.producto.errors.0 }}</div>
+                                            {% endif %}
+                                        </td>
+
+                                        {# ══ Destino ══ #}
+                                        <td>
+                                            <select id="id_items-{{ forloop.counter0 }}-destino"
+                                                    name="{{ form.destino.html_name }}"
+                                                    class="form-select form-select-sm"
+                                                    onchange="onDestinoChange(this, {{ forloop.counter0 }})"
+                                                    disabled>
+                                                <option value="">— {% translate "Seleccionar producto" %} —</option>
+                                            </select>
+                                            <div id="stock_info_{{ forloop.counter0 }}" class="text-muted" style="font-size:.68rem; margin-top:2px;"></div>
+                                        </td>
+
+                                        {# ══ Depósito origen ══ #}
+                                        <td>
+                                            <select id="id_items-{{ forloop.counter0 }}-deposito_origen"
+                                                    name="{{ form.deposito_origen.html_name }}"
+                                                    class="form-select form-select-sm"
+                                                    disabled>
+                                                <option value="">— {% translate "Seleccionar destino" %} —</option>
+                                            </select>
+                                        </td>
+
+                                        {# ══ Cantidad ══ #}
+                                        <td>
+                                            <input type="number"
+                                                   id="id_items-{{ forloop.counter0 }}-cantidad"
+                                                   name="{{ form.cantidad.html_name }}"
+                                                   class="form-control form-control-sm"
+                                                   value="{{ form.cantidad.value|default:'' }}"
+                                                   step="0.001" min="0.001"
+                                                   oninput="recalcularFila({{ forloop.counter0 }})">
+                                            {% if form.cantidad.errors %}
+                                                <div class="text-danger" style="font-size:.7rem">{{ form.cantidad.errors.0 }}</div>
+                                            {% endif %}
+                                        </td>
+
+                                        {# ══ Precio ══ #}
+                                        <td>
+                                            <input type="number"
+                                                   id="id_items-{{ forloop.counter0 }}-precio_unitario"
+                                                   name="{{ form.precio_unitario.html_name }}"
+                                                   class="form-control form-control-sm"
+                                                   value="{{ form.precio_unitario.value|default:'' }}"
+                                                   step="0.01" min="0"
+                                                   oninput="recalcularFila({{ forloop.counter0 }})">
+                                            {% if form.precio_unitario.errors %}
+                                                <div class="text-danger" style="font-size:.7rem">{{ form.precio_unitario.errors.0 }}</div>
+                                            {% endif %}
+                                        </td>
+
+                                        {# ══ Subtotal ══ #}
+                                        <td>
+                                            <span id="subtotal_span_{{ forloop.counter0 }}" class="fw-semibold text-success">R$ 0.00</span>
+                                            <input type="hidden"
+                                                   id="id_items-{{ forloop.counter0 }}-subtotal"
+                                                   name="{{ form.subtotal.html_name }}"
+                                                   value="{{ form.subtotal.value|default:'0' }}">
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            {% translate "No hay ítems. Usá el botón para agregar." %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+
+                                    <tr class="table-light fw-semibold">
+                                        <td colspan="5" class="text-end small">{% translate "Total" %}</td>
+                                        <td>
+                                            <span id="span_total_general" class="fw-semibold text-success">R$ 0.00</span>
+                                            <input type="hidden" name="total" id="id_total" value="0">
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {# ── Errores del formset ── #}
+                        {% if formset.non_form_errors %}
+                        <div class="alert alert-danger mt-3 py-2" style="font-size:.82rem;">
+                            {% for error in formset.non_form_errors %}
+                                <div><i class="mdi mdi-alert-circle me-1"></i>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        {% for form in formset %}
+                            {% if form.errors %}
+                            <div class="alert alert-danger mt-2 py-2" style="font-size:.8rem;">
+                                <strong>{% translate "Ítem" %} {{ forloop.counter }}:</strong>
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <div>— {{ field }}: {{ error }}</div>
+                                    {% endfor %}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+
+                        <div class="mt-3 d-flex gap-2">
+                            <button type="submit" name="agregar_item" class="btn btn-outline-secondary btn-sm">
+                                <i class="mdi mdi-plus me-1"></i>{% translate "Agregar ítem" %}
+                            </button>
+                            <button type="submit" name="ok" class="btn btn-success">
+                                <i class="mdi mdi-check me-1"></i>{% translate "Guardar factura" %}
+                            </button>
+                            <a href="{% url 'vista_lista_ventas' %}" class="btn btn-outline-secondary">
+                                <i class="mdi mdi-arrow-left me-1"></i>{% translate "Cancelar" %}
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+var AJAX_INFO_PRODUCTO    = "{% url 'ajax_info_producto_venta' %}";
+var AJAX_DEPOSITOS_DESTINO = "{% url 'ajax_depositos_producto_destino' %}";
+
+function onProductoChange(sel, idx) {
+    var producto_id  = sel.value;
+    var selDestino   = document.getElementById("id_items-" + idx + "-destino");
+    var selDeposito  = document.getElementById("id_items-" + idx + "-deposito_origen");
+    var divStock     = document.getElementById("stock_info_" + idx);
+
+    selDestino.innerHTML  = '<option value="">— {% translate "Seleccionar producto" %} —</option>';
+    selDestino.disabled   = true;
+    selDeposito.innerHTML = '<option value="">— {% translate "Seleccionar destino" %} —</option>';
+    selDeposito.disabled  = true;
+    divStock.textContent  = "";
+
+    if (!producto_id) return;
+
+    $.ajax({
+        url: AJAX_INFO_PRODUCTO, type: "GET", data: { producto_id: producto_id },
+        success: function(resp) {
+            if (!resp || !resp.ok) return;
+            var destinos = resp.destinos;
+            if (!destinos || destinos.length === 0) {
+                selDestino.innerHTML = '<option value="">— {% translate "Sin stock" %} —</option>';
+                divStock.textContent = "{% translate 'Sin stock disponible' %}";
+                return;
+            }
+            var html = '<option value="">— {% translate "Seleccionar" %} —</option>';
+            destinos.forEach(function(d) {
+                html += '<option value="' + d.value + '">' + d.label + ' · ' + d.stock + ' ' + d.um + '</option>';
+            });
+            selDestino.innerHTML = html;
+            selDestino.disabled  = false;
+            if (destinos.length === 1) {
+                selDestino.value = destinos[0].value;
+                cargarDepositos(idx, producto_id, destinos[0].value);
+            }
+        },
+        error: function() { selDestino.innerHTML = '<option value="">— {% translate "Error" %} —</option>'; }
+    });
+}
+
+function onDestinoChange(sel, idx) {
+    var producto_id = document.getElementById("id_items-" + idx + "-producto").value;
+    var destino     = sel.value;
+    var selDeposito = document.getElementById("id_items-" + idx + "-deposito_origen");
+    var divStock    = document.getElementById("stock_info_" + idx);
+
+    selDeposito.innerHTML = '<option value="">— {% translate "Seleccionar destino" %} —</option>';
+    selDeposito.disabled  = true;
+    divStock.textContent  = "";
+
+    if (!destino || !producto_id) return;
+    cargarDepositos(idx, producto_id, destino);
+}
+
+function cargarDepositos(idx, producto_id, destino) {
+    var selDeposito = document.getElementById("id_items-" + idx + "-deposito_origen");
+    var divStock    = document.getElementById("stock_info_" + idx);
+
+    selDeposito.innerHTML = '<option value="">{% translate "Cargando..." %}</option>';
+    selDeposito.disabled  = true;
+
+    $.ajax({
+        url: AJAX_DEPOSITOS_DESTINO, type: "GET",
+        data: { producto_id: producto_id, destino: destino },
+        success: function(resp) {
+            if (!resp || !resp.ok || resp.depositos.length === 0) {
+                selDeposito.innerHTML = '<option value="">— {% translate "Sin depósitos con stock" %} —</option>';
+                divStock.textContent  = "{% translate 'Sin stock en depósitos' %}";
+                return;
+            }
+            var html = '<option value="">— {% translate "Todos" %} —</option>';
+            resp.depositos.forEach(function(d) {
+                html += '<option value="' + d.id + '">' + d.nombre + ' · ' + d.stock + ' ' + d.um + '</option>';
+            });
+            selDeposito.innerHTML = html;
+            selDeposito.disabled  = false;
+            if (resp.depositos.length === 1) {
+                selDeposito.value    = resp.depositos[0].id;
+                divStock.textContent = "{% translate 'Stock' %}: " + resp.depositos[0].stock + " " + resp.depositos[0].um;
+            }
+        },
+        error: function() { selDeposito.innerHTML = '<option value="">— {% translate "Error" %} —</option>'; }
+    });
+}
+
+function recalcularFila(idx) {
+    var cant = parseFloat(document.getElementById("id_items-" + idx + "-cantidad").value) || 0;
+    var prec = parseFloat(document.getElementById("id_items-" + idx + "-precio_unitario").value) || 0;
+    var sub  = cant * prec;
+    document.getElementById("subtotal_span_" + idx).textContent   = "R$ " + sub.toFixed(2);
+    document.getElementById("id_items-" + idx + "-subtotal").value = sub.toFixed(2);
+    calcularTotal();
+}
+
+function calcularTotal() {
+    var total = 0;
+    document.querySelectorAll(".factura-row").forEach(function(fila) {
+        var idx = fila.getAttribute("data-idx");
+        total += parseFloat(document.getElementById("id_items-" + idx + "-subtotal").value) || 0;
+    });
+    document.getElementById("span_total_general").textContent = "R$ " + total.toFixed(2);
+    document.getElementById("id_total").value = total.toFixed(2);
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".factura-row").forEach(function(fila) {
+        var idx = fila.getAttribute("data-idx");
+        var sel = document.getElementById("id_items-" + idx + "-producto");
+        // Si hay producto pre-seleccionado (re-render tras error), cargar destino
+        if (sel && sel.value) onProductoChange(sel, idx);
+        recalcularFila(idx);
+    });
+    calcularTotal();
+});
+</script>
+{% endblock %}
+
+{% block nav %}
+    {% include 'nav_home.html' %}
+{% endblock %}

@@ -9,6 +9,7 @@ pillow = "*"
 pdfplumber = "*"
 sentinelhub = "*"
 numpy = "*"
+matplotlib = "*"
 pyshp = "*"
 requests = "*"
 

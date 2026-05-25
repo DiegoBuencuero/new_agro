@@ -1,15 +1,6 @@
 from django import forms
 from decimal import Decimal
 
-class VariedadSelectWidget(forms.Select):
-    """Select que agrega data-pmg a cada opción de variedad."""
-    def create_option(self, name, value, label, selected, index, **kwargs):
-        option = super().create_option(name, value, label, selected, index, **kwargs)
-        if value and hasattr(value, 'instance'):
-            pmg = getattr(value.instance, 'pmg', None)
-            if pmg:
-                option['attrs']['data-pmg'] = str(pmg)
-        return option
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _
 from django.forms import inlineformset_factory, formset_factory, BaseFormSet, BaseInlineFormSet
@@ -17,7 +8,7 @@ from django.utils import timezone
 from django.forms import ModelForm
 from agro.models import Ciudad, Unidad
 from gestion_agro.funciones_aux import convertir_unidad
-from gestion_agro.models import (Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
+from gestion_agro.models import (AreaCampo, Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
                                 ActividadInsumo, CamposVistoria, CamposCosecha, CamposInspeccion, Producto, ProductoSemilla,
                                 CategoriaProducto, FacturaCompra, Proveedor, PresentacionProducto, Variedad, MovimientoStock, Deposito)
 
@@ -37,10 +28,11 @@ class BaseSimpleForm(forms.Form):
 class CampoForm(BaseForm):
     class Meta:
         model = Campo
-        fields = ["nombre", "ciudad", "superficie_ha", "descripcion", "image", "observaciones"]
+        fields = ["nombre", "ciudad", "superficie_ha", "descripcion", "image", "observaciones", "contorno"]
         widgets = {
             "descripcion": forms.Textarea(attrs={"rows": 2}),
             "observaciones": forms.Textarea(attrs={"rows": 2}),
+            "contorno": forms.HiddenInput(),
         }
 
 class CampanaForm(BaseForm):
@@ -187,6 +179,16 @@ class VariedadPMGForm(BaseForm):
         super().__init__(*args, **kwargs)
         self.fields["pmg"].required = False
 
+class VariedadSelectWidget(forms.Select):
+    """Select que agrega data-pmg a cada opción de variedad."""
+    def create_option(self, name, value, label, selected, index, **kwargs):
+        option = super().create_option(name, value, label, selected, index, **kwargs)
+        if value and hasattr(value, 'instance'):
+            pmg = getattr(value.instance, 'pmg', None)
+            if pmg:
+                option['attrs']['data-pmg'] = str(pmg)
+        return option
+
 class ProductoModalForm(BaseForm):
     class Meta:
         model = Producto
@@ -205,75 +207,73 @@ class PresentacionProductoForm(BaseForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["unidad_factura"].required = False
-
 class CicloForm(BaseForm):
+
+    class Meta:
+        model = CicloAgricola
+        fields = "__all__"
+        widgets = {
+            "fecha_inicio": forms.DateInput(attrs={"type": "date"}),
+            "fecha_fin": forms.DateInput(attrs={"type": "date"}),
+            "contorno": forms.HiddenInput(),
+        }
+
+    tipo_area = forms.ChoiceField(
+        label=_("Área del ciclo"),
+        choices=[
+            ("todo", _("Todo el campo")),
+            ("existente", _("Usar área existente")),
+            ("nueva", _("Dibujar nueva área"))
+        ],
+        initial="todo",
+        widget=forms.RadioSelect
+    )
+
     def __init__(self, *args, empresa=None, **kwargs):
         self.empresa = empresa
         super().__init__(*args, **kwargs)
 
-        if not self.instance.pk and "fecha_inicio" in self.fields:
+        if not self.instance.pk:
             self.fields["fecha_inicio"].initial = timezone.localdate()
 
+        self.fields["area"].queryset = AreaCampo.objects.none()
+
         if empresa:
-            self.fields["campo"].queryset = Campo.objects.filter(
-                empresa=empresa
-            ).order_by("nombre")
+            self.fields["campo"].queryset = Campo.objects.filter(empresa=empresa).order_by("nombre")
+            self.fields["campana"].queryset = Campana.objects.filter(empresa=empresa).order_by("-fecha_desde")
+            self.fields["cultivo"].queryset = Cultivo.objects.filter(empresa=empresa).order_by("nombre")
+            self.fields["campana"].initial = Campana.objects.filter(empresa=empresa, activa=True).first()
 
-            self.fields["campana"].queryset = Campana.objects.filter(
-                empresa=empresa
-            ).order_by("-fecha_desde")
-
-            self.fields["cultivo"].queryset = Cultivo.objects.filter(
-                empresa=empresa
-            ).order_by("nombre")
-
-            campana_activa = Campana.objects.filter(
-                empresa=empresa,
-                activa=True
-            ).first()
-
-            if campana_activa:
-                self.fields["campana"].initial = campana_activa
-
-        # clases bootstrap si BaseForm no las agrega
-        for nombre, field in self.fields.items():
+        for field in self.fields.values():
+            if isinstance(field.widget, forms.RadioSelect):
+                continue
             css = "form-select" if isinstance(field.widget, forms.Select) else "form-control"
-            actual = field.widget.attrs.get("class", "")
-            field.widget.attrs["class"] = f"{actual} {css}".strip()
+            field.widget.attrs["class"] = f'{field.widget.attrs.get("class","")} {css}'.strip()
+
+        self.fields["tipo_area"].widget.attrs["class"] = "form-check-input"
 
     def clean(self):
         cleaned_data = super().clean()
 
+        tipo_area = cleaned_data.get("tipo_area")
         campo = cleaned_data.get("campo")
-        campana = cleaned_data.get("campana")
-        cultivo = cleaned_data.get("cultivo")
-        fecha_inicio = cleaned_data.get("fecha_inicio")
-        fecha_fin = cleaned_data.get("fecha_fin")
+        area = cleaned_data.get("area")
+        contorno = cleaned_data.get("contorno")
 
-        if campo and campana and campo.empresa_id != campana.empresa_id:
-            self.add_error("campana", _("El campo y la campaña deben pertenecer a la misma empresa."))
+        if tipo_area == "todo" and campo:
+            cleaned_data["contorno"] = campo.contorno
 
-        if cultivo and campo and cultivo.empresa_id != campo.empresa_id:
-            self.add_error("cultivo", _("El cultivo debe pertenecer a la misma empresa que el campo."))
-
-        if fecha_inicio and fecha_fin and fecha_fin < fecha_inicio:
-            self.add_error("fecha_fin", _("La fecha de fin no puede ser anterior a la fecha de inicio."))
-
-        if cultivo:
-            if not cultivo.producto_default:
-                self.add_error("cultivo", _("El cultivo seleccionado no tiene un producto final por defecto."))
+        elif tipo_area == "existente":
+            if not area:
+                self.add_error("area", _("Debe seleccionar un área."))
             else:
-                cleaned_data["producto_final"] = cultivo.producto_default
+                cleaned_data["contorno"] = area.contorno
+
+        elif tipo_area == "nueva" and not contorno:
+            self.add_error("contorno", _("Debe dibujar un área."))
 
         return cleaned_data
 
-    class Meta:
-        model = CicloAgricola
-        fields = ["campo", "campana", "cultivo", "superficie_ha", "fecha_inicio", "fecha_fin"]
-        widgets = {
-            "fecha_inicio": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
-            "fecha_fin": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
-        }
 
 class CicloFiltroForm(BaseSimpleForm):
     campana = forms.ModelChoiceField(queryset=None, required=False, empty_label="Todas", label="Campaña")

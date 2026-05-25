@@ -108,53 +108,156 @@ def login_page(request):
 
 @login_required
 def index(request):
+    import json
+    import datetime
     from decimal import Decimal
-    from django.db.models import Sum, Count
+    from django.db.models import Sum
     from django.db.models.functions import Coalesce
+    from django.utils import timezone
     from gestion_agro.models import (
-        CicloAgricola, FaseAgricola, ActividadProductiva,
-        MovimientoStock, Producto,
+        CicloAgricola, ActividadProductiva, ActividadInsumo,
+        MovimientoStock, Producto, FacturaCompra, Campo,
     )
-    from administracion.models import FacturaVenta, AplicacionRecibo
+    from administracion.models import AplicacionPago
+    from mapas.models import IndiceVegetacion
 
     empresa = getattr(request.user.profile, "empresa", None)
     if not empresa:
         return render(request, "index.html", {})
 
-    # ── Ciclos ──────────────────────────────────────────────────────
-    ciclos_activos = CicloAgricola.objects.filter(
-        campo__empresa=empresa,
-        fases__estado="abierto",
-    ).distinct().count()
+    hoy    = timezone.now().date()
+    hace20 = hoy - datetime.timedelta(days=20)
+    en30   = hoy + datetime.timedelta(days=30)
 
-    ciclos_totales = CicloAgricola.objects.filter(campo__empresa=empresa).count()
+    # ── Ciclos ────────────────────────────────────────────────────────
+    ciclos_abiertos = list(
+        CicloAgricola.objects
+        .filter(campo__empresa=empresa, fecha_fin__isnull=True)
+        .distinct()
+        .select_related("campo", "cultivo")
+        .order_by("campo__nombre")
+    )
+    ciclos_cerrados = list(
+        CicloAgricola.objects
+        .filter(campo__empresa=empresa, fecha_fin__isnull=False)
+        .distinct()
+        .select_related("campo", "cultivo")
+        .order_by("-fecha_fin")[:5]
+    )
 
-    # ── Stock ───────────────────────────────────────────────────────
-    productos_finales = Producto.objects.filter(empresa=empresa, producto_final=True)
+    # ── Costo por ciclo abierto ───────────────────────────────────────
+    ciclos_data = []
+    for ciclo in ciclos_abiertos:
+        costo_act = ActividadProductiva.objects.filter(
+            fase__ciclo=ciclo
+        ).aggregate(t=Coalesce(Sum("total"), Decimal("0")))["t"]
 
-    kg_cosechado = MovimientoStock.objects.filter(
-        producto__in=productos_finales,
-        tipo="ENTRADA",
-        cosecha__isnull=False,
-    ).aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
+        costo_ins = ActividadInsumo.objects.filter(
+            actividad__fase__ciclo=ciclo
+        ).aggregate(t=Coalesce(Sum("costo_total"), Decimal("0")))["t"]
 
-    kg_en_stock = kg_cosechado - MovimientoStock.objects.filter(
-        producto__in=productos_finales,
-        tipo="VENTA",
-    ).aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
+        ha = ciclo.superficie_ha or Decimal("1")
+        costo_ha = round(float((costo_act + costo_ins) / ha), 2)
 
-    # ── Ventas / Cobros ─────────────────────────────────────────────
-    facturas = FacturaVenta.objects.filter(empresa=empresa).prefetch_related("items", "aplicaciones")
-    total_ventas   = Decimal("0")
-    total_cobrado  = Decimal("0")
-    for f in facturas:
-        tv = sum(i.cantidad * i.precio_unitario for i in f.items.all())
-        tc = f.aplicaciones.aggregate(t=Coalesce(Sum("monto_aplicado"), Decimal("0")))["t"]
-        total_ventas  += tv
-        total_cobrado += tc
-    por_cobrar = total_ventas - total_cobrado
+        nom = (ciclo.cultivo.nombre or "").lower()
+        if "soja" in nom:
+            commodity = "soja"
+        elif "maíz" in nom or "maiz" in nom:
+            commodity = "maiz"
+        elif "trigo" in nom:
+            commodity = "trigo"
+        else:
+            commodity = None
 
-    # ── Últimas actividades ─────────────────────────────────────────
+        ciclos_data.append({
+            "id":        ciclo.id,
+            "campo":     ciclo.campo.nombre,
+            "cultivo":   ciclo.cultivo.nombre if ciclo.cultivo else "—",
+            "ha":        float(ha),
+            "costo_ha":  costo_ha,
+            "commodity": commodity,
+        })
+
+    # ── Stock de granos por producto ──────────────────────────────────
+    granos_stock = []
+    for prod in Producto.objects.filter(empresa=empresa, producto_final=True):
+        entrada = MovimientoStock.objects.filter(
+            producto=prod, tipo="ENTRADA", cosecha__isnull=False
+        ).aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
+        salida = MovimientoStock.objects.filter(
+            producto=prod, tipo="VENTA"
+        ).aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
+        kg = float(entrada - salida)
+        if kg > 0:
+            granos_stock.append({
+                "nombre": prod.nombre,
+                "sc":     round(kg / 60, 1),
+                "kg":     round(kg, 0),
+            })
+
+    # ── Deuda proveedores ─────────────────────────────────────────────
+    deuda_total   = Decimal("0")
+    deuda_vencida = Decimal("0")
+    deuda_proxima = Decimal("0")
+    alertas_facturas = []
+
+    for f in FacturaCompra.objects.filter(empresa=empresa).prefetch_related("aplicaciones"):
+        pagado = f.aplicaciones.aggregate(t=Coalesce(Sum("monto_aplicado"), Decimal("0")))["t"]
+        saldo  = f.total - pagado
+        if saldo <= 0:
+            continue
+        deuda_total += saldo
+        if f.fecha_vencimiento:
+            if f.fecha_vencimiento < hoy:
+                deuda_vencida += saldo
+                alertas_facturas.append({
+                    "proveedor":   str(f.proveedor),
+                    "numero":      f.numero,
+                    "saldo":       float(saldo),
+                    "vencimiento": f.fecha_vencimiento.strftime("%d/%m/%Y"),
+                    "dias":        (hoy - f.fecha_vencimiento).days,
+                })
+            elif f.fecha_vencimiento <= en30:
+                deuda_proxima += saldo
+
+    # ── Alerta: ciclos sin actividad ──────────────────────────────────
+    alertas_inactivos = []
+    for ciclo in ciclos_abiertos:
+        ultima = (
+            ActividadProductiva.objects
+            .filter(fase__ciclo=ciclo)
+            .order_by("-fecha")
+            .values_list("fecha", flat=True)
+            .first()
+        )
+        if ultima is None or ultima < hace20:
+            alertas_inactivos.append({
+                "campo":   ciclo.campo.nombre,
+                "cultivo": ciclo.cultivo.nombre if ciclo.cultivo else "—",
+                "dias":    (hoy - ultima).days if ultima else None,
+                "id":      ciclo.id,
+            })
+
+    # ── Alerta: NDVI en caída ─────────────────────────────────────────
+    alertas_ndvi = []
+    for campo in Campo.objects.filter(empresa=empresa):
+        indices = list(
+            IndiceVegetacion.objects
+            .filter(captura__campo=campo, tipo="ndvi")
+            .order_by("-captura__fecha")
+            .values_list("promedio", flat=True)[:2]
+        )
+        if len(indices) == 2:
+            actual, anterior = indices[0], indices[1]
+            if anterior > 0 and (anterior - actual) / anterior > 0.15:
+                alertas_ndvi.append({
+                    "campo":    campo.nombre,
+                    "actual":   round(actual, 3),
+                    "anterior": round(anterior, 3),
+                    "caida":    round((anterior - actual) / anterior * 100, 1),
+                })
+
+    # ── Últimas actividades ───────────────────────────────────────────
     ultimas_actividades = (
         ActividadProductiva.objects
         .filter(fase__ciclo__campo__empresa=empresa)
@@ -162,14 +265,31 @@ def index(request):
         .order_by("-fecha")[:8]
     )
 
+    total_alertas = len(alertas_facturas) + len(alertas_inactivos) + len(alertas_ndvi)
+
+    # Ciclos cerrados para el panel lateral
+    ciclos_cerrados_data = [
+        {
+            "campo":    c.campo.nombre,
+            "cultivo":  c.cultivo.nombre if c.cultivo else "—",
+            "fecha_fin": c.fecha_fin.strftime("%d/%m/%Y") if c.fecha_fin else "",
+        }
+        for c in ciclos_cerrados
+    ]
+
     return render(request, "index.html", {
-        "ciclos_activos":      ciclos_activos,
-        "ciclos_totales":      ciclos_totales,
-        "kg_cosechado":        kg_cosechado,
-        "kg_en_stock":         kg_en_stock,
-        "total_ventas":        total_ventas,
-        "total_cobrado":       total_cobrado,
-        "por_cobrar":          por_cobrar,
+        "ciclos_count":        len(ciclos_abiertos),
+        "ciclos_totales":      len(ciclos_abiertos) + len(ciclos_cerrados),
+        "ciclos_data_json":    json.dumps(ciclos_data),
+        "ciclos_cerrados_json": json.dumps(ciclos_cerrados_data),
+        "granos_stock":        granos_stock,
+        "deuda_total":         deuda_total,
+        "deuda_vencida":       deuda_vencida,
+        "deuda_proxima":       deuda_proxima,
+        "alertas_facturas":    alertas_facturas,
+        "alertas_inactivos":   alertas_inactivos,
+        "alertas_ndvi":        alertas_ndvi,
+        "total_alertas":       total_alertas,
         "ultimas_actividades": ultimas_actividades,
     })
 

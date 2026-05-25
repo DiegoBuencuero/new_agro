@@ -18,7 +18,8 @@ class Campo(models.Model):
     )
     image = models.ImageField( default="default.jpg", upload_to="campos", verbose_name=_("Imagen"),)
     observaciones = models.TextField(null=True, blank=True, verbose_name=_("Observaciones"),)
-    boundary_geojson = models.TextField(null=True, blank=True, verbose_name=_("Contorno del campo (GeoJSON)"))
+    contorno      = models.TextField(null=True, blank=True, verbose_name=_("Contorno (GeoJSON)"))
+    ## CONTORNO LO TENDRIAMOS QUE PASAR POR EFICIENCIA A GEOMETRYFIELD, cuando psames  a postgres
 
     class Meta:
         verbose_name = _("Campo")
@@ -32,10 +33,10 @@ class Campo(models.Model):
         """GeoJSON FeatureCollection con todas las áreas del campo."""
         features = []
         for area in self.areas.all():
-            if area.boundary_geojson:
+            if area.contorno:
                 import json
                 try:
-                    geom = json.loads(area.boundary_geojson)
+                    geom = json.loads(area.contorno)
                     features.append({
                         "type": "Feature",
                         "properties": {"id": area.id, "nombre": area.nombre},
@@ -45,11 +46,14 @@ class Campo(models.Model):
                     pass
         return {"type": "FeatureCollection", "features": features}
 
-
 class AreaCampo(models.Model):
     campo         = models.ForeignKey(Campo, on_delete=models.CASCADE, related_name="areas", verbose_name=_("Campo"))
+    ciclo         = models.ForeignKey(
+        "CicloAgricola", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="areas", verbose_name=_("Ciclo agrícola"),
+    )
     nombre        = models.CharField(max_length=100, verbose_name=_("Nombre del área"))
-    boundary_geojson = models.TextField(null=True, blank=True, verbose_name=_("GeoJSON"))
+    contorno      = models.TextField(null=True, blank=True, verbose_name=_("Contorno (GeoJSON)"))
     superficie_ha = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name=_("Superficie (ha)"))
     descripcion   = models.CharField(max_length=255, blank=True, verbose_name=_("Descripción"))
     creado        = models.DateTimeField(auto_now_add=True)
@@ -175,21 +179,20 @@ class Deposito(models.Model):
         return f"{self.nombre} ({self.tipo})"
 
 class CicloAgricola(models.Model):
-    campo = models.ForeignKey(Campo, on_delete=models.CASCADE, related_name="ciclos")
-    campana = models.ForeignKey(Campana, on_delete=models.CASCADE, related_name="ciclos")
-    nombre_lote = models.CharField(max_length=50, blank=True, null=True)
-    cultivo = models.ForeignKey(Cultivo, on_delete=models.CASCADE, related_name="ciclos")
+    campo         = models.ForeignKey(Campo, on_delete=models.CASCADE, related_name="ciclos")
+    area          = models.ForeignKey(AreaCampo, on_delete=models.PROTECT, null=True, blank=True, related_name="ciclos")
+    campana       = models.ForeignKey(Campana, on_delete=models.CASCADE, related_name="ciclos")
+    nombre_lote   = models.CharField(max_length=50, blank=True, null=True)
+    cultivo       = models.ForeignKey(Cultivo, on_delete=models.CASCADE, related_name="ciclos")
     producto_final = models.ForeignKey(
-        "Producto",
-        on_delete=models.CASCADE,
-        null=True,
-        blank=True,
-        related_name="ciclos_producto_final",
+        "Producto", on_delete=models.CASCADE,
+        null=True, blank=True, related_name="ciclos_producto_final",
     )
+    contorno      = models.TextField(null=True, blank=True, verbose_name=_("Contorno del lote (GeoJSON)"))
     superficie_ha = models.DecimalField(max_digits=8, decimal_places=2)
-    fecha_inicio = models.DateField()
-    fecha_fin = models.DateField(null=True, blank=True)
-    activa = models.BooleanField(default=True)
+    fecha_inicio  = models.DateField()
+    fecha_fin     = models.DateField(null=True, blank=True)
+    activa        = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = _("Ciclo agrícola")
@@ -592,55 +595,6 @@ class Cliente(models.Model):
 
     def __str__(self):
         return self.razon_social
-
-# class EntregaDepositoExterno(models.Model):
-
-#     class TipoGrano(models.TextChoices):
-#         CONSUMO = "CONSUMO", _("Consumo")
-#         SEMILLA = "SEMILLA", _("Semilla")
-
-#     movimiento = models.OneToOneField(
-#         MovimientoStock,
-#         on_delete=models.CASCADE,
-#         related_name="entrega_externa",
-#         verbose_name=_("Movimiento de stock"),
-#     )
-#     ciclo = models.ForeignKey(
-#         CicloAgricola,
-#         on_delete=models.CASCADE,
-#         related_name="entregas_externas",
-#         verbose_name=_("Ciclo agrícola"),
-#     )
-#     tipo = models.CharField(max_length=10, choices=TipoGrano.choices, verbose_name=_("Tipo"))
-
-#     nfe_numero     = models.CharField(max_length=20, blank=True, verbose_name=_("NF-e número"))
-#     nfe_serie      = models.CharField(max_length=5, blank=True, default="1", verbose_name=_("Serie"))
-#     ticket_balanza = models.CharField(max_length=20, blank=True, verbose_name=_("Ticket balanza"))
-
-#     peso_bruto       = models.DecimalField(max_digits=10, decimal_places=3, verbose_name=_("Peso bruto (kg)"))
-#     tara             = models.DecimalField(max_digits=10, decimal_places=3, verbose_name=_("Tara (kg)"))
-#     pct_impureza     = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name=_("% Impureza"))
-#     kg_impureza      = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name=_("kg Impureza"))
-#     pct_umidade      = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name=_("% Umidade"))
-#     kg_umidade       = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name=_("kg Umidade"))
-#     graus_umidade    = models.DecimalField(max_digits=5, decimal_places=2, default=0, verbose_name=_("Graus umidade"))
-#     total_descuentos = models.DecimalField(max_digits=10, decimal_places=3, default=0, verbose_name=_("Total descuentos (kg)"))
-#     # peso_liquido = movimiento.cantidad
-
-#     chave_nfe   = models.CharField(max_length=60, blank=True, verbose_name=_("Chave NF-e"))
-#     archivo_pdf = models.FileField(upload_to="entregas_externas/", blank=True, null=True, verbose_name=_("PDF"))
-
-#     class Meta:
-#         verbose_name = _("Entrega depósito externo")
-#         verbose_name_plural = _("Entregas depósito externo")
-#         ordering = ["-movimiento__fecha"]
-
-#     def __str__(self):
-#         return f"{self.movimiento.deposito_destino} – {self.movimiento.fecha.date()} – {self.movimiento.cantidad} kg"
-
-#     @property
-#     def peso_liquido(self):
-#         return self.movimiento.cantidad
 
 class ProductoNormalizado(models.Model):
     """Productos extraídos y normalizados de facturas"""

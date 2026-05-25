@@ -282,7 +282,7 @@
                             <button type="submit" name="ok" class="btn btn-success">
                                 <i class="mdi mdi-check me-1"></i>{% translate "Guardar factura" %}
                             </button>
-                            <a href="{% url 'vista_lista_facturas' %}" class="btn btn-dark">
+                            <a href="{% url 'vista_lista_facturas' %}" class="btn btn-outline-secondary">
                                 <i class="mdi mdi-arrow-left me-1"></i>{% translate "Cancelar" %}
                             </a>
                         </div>
@@ -420,7 +420,7 @@
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-dark btn-sm" data-bs-dismiss="modal">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">
                     {% translate "Cancelar" %}
                 </button>
                 <button type="button" class="btn btn-success btn-sm" onclick="guardarProductoCompleto()">

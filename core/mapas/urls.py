@@ -2,25 +2,38 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path("", views.vista_mapa, name="vista_mapas"),
-
-    # Capas de análisis
-    path("ajax/capas/<int:campo_id>/",        views.ajax_listar_capas,            name="ajax_listar_capas"),
-    path("ajax/capa/subir/<int:campo_id>/",   views.ajax_subir_capa,              name="ajax_subir_capa"),
-    path("ajax/capa/eliminar/<int:capa_id>/", views.ajax_eliminar_capa,           name="ajax_eliminar_capa"),
-
-    # Áreas del campo
-    path("ajax/areas/<int:campo_id>/",             views.ajax_listar_areas,           name="ajax_listar_areas"),
-    path("ajax/areas/<int:campo_id>/crear/",       views.ajax_crear_area,             name="ajax_crear_area"),
-    path("ajax/areas/<int:campo_id>/shapefile/",   views.ajax_cargar_area_shapefile,  name="ajax_cargar_area_shapefile"),
-    path("ajax/areas/<int:campo_id>/kml/",         views.ajax_cargar_area_kml,         name="ajax_cargar_area_kml"),
-    path("ajax/area/<int:area_id>/geojson/",       views.ajax_guardar_area_geojson,   name="ajax_guardar_area_geojson"),
-    path("ajax/area/<int:area_id>/eliminar/",      views.ajax_eliminar_area,          name="ajax_eliminar_area"),
-    # Boundary legacy (usado por NDVI)
-    path("ajax/boundary/<int:campo_id>/",          views.ajax_get_boundary,           name="ajax_get_boundary"),
+    # Vistas principales
+    path("mapas/",  views.vista_mapas, name="vista_mapas"),
+    path("ndvi/",   views.vista_ndvi,  name="vista_ndvi"),
 
     # NDVI
-    path("ndvi/",                             views.vista_ndvi,            name="vista_ndvi"),
-    path("ajax/ndvi/<int:campo_id>/",         views.ajax_ndvi_data,        name="ajax_ndvi_data"),
-    path("ajax/ndvi/<int:campo_id>/fetch/",   views.ajax_fetch_ndvi_campo, name="ajax_fetch_ndvi_campo"),
+    path("ndvi/<int:campo_id>/procesar/", views.vista_ndvi_procesar, name="vista_ndvi_procesar"),
+    path("ajax/ndvi/<int:campo_id>/serie/", views.ajax_ndvi_serie,   name="ajax_ndvi_serie"),
+
+    # Áreas del campo
+    path("ajax/areas/<int:campo_id>/",               views.ajax_areas_listar,          name="ajax_areas_listar"),
+    path("ajax/area/<int:campo_id>/crear/",           views.ajax_area_crear,            name="ajax_area_crear"),
+    path("ajax/area/<int:area_id>/guardar-geojson/",  views.ajax_area_guardar_geojson,  name="ajax_area_guardar_geojson"),
+    path("ajax/area/<int:area_id>/eliminar/",         views.ajax_area_eliminar,         name="ajax_area_eliminar"),
+    path("ajax/area/<int:campo_id>/shapefile/",       views.ajax_area_cargar_shapefile, name="ajax_area_cargar_shapefile"),
+    path("ajax/area/<int:campo_id>/kml/",             views.ajax_area_cargar_kml,       name="ajax_area_cargar_kml"),
+
+    # Contorno / boundary
+    path("ajax/boundary/<int:campo_id>/",  views.ajax_boundary,         name="ajax_boundary"),
+    path("ajax/contorno/parsear/",         views.ajax_contorno_parsear, name="ajax_contorno_parsear"),
+
+    # Suelo
+    path("ajax/suelo/<int:campo_id>/listar/",                   views.ajax_suelo_listar,            name="ajax_suelo_listar"),
+    path("ajax/suelo/<int:campo_id>/cargar/",                   views.ajax_suelo_cargar,            name="ajax_suelo_cargar"),
+    path("ajax/suelo/<int:campo_id>/archivos/",                 views.ajax_suelo_archivos,          name="ajax_suelo_archivos"),
+    path("ajax/suelo/archivo/<int:archivo_id>/geojson/",        views.ajax_suelo_geojson,           name="ajax_suelo_geojson"),
+    path("ajax/suelo/archivo/<int:archivo_id>/clic/",           views.ajax_suelo_clic,              name="ajax_suelo_clic"),
+    path("ajax/suelo/medicion/<int:medicion_id>/eliminar/",     views.ajax_suelo_medicion_eliminar, name="ajax_suelo_medicion_eliminar"),
+    path("ajax/suelo/<int:campo_id>/combinar/",                 views.ajax_suelo_combinar,          name="ajax_suelo_combinar"),
+    path("ajax/suelo/archivo/<int:archivo_id>/estado/",         views.ajax_suelo_archivo_estado,    name="ajax_suelo_archivo_estado"),
+    path("ajax/suelo/archivo/<int:archivo_id>/regenerar/",      views.ajax_suelo_regenerar,         name="ajax_suelo_regenerar"),
+    path("ajax/suelo/archivo/<int:archivo_id>/eliminar/",      views.ajax_suelo_archivo_eliminar,  name="ajax_suelo_archivo_eliminar"),
+
+    # Capas analíticas
+    path("ajax/capa/procesar/", views.ajax_capa_procesar, name="ajax_capa_procesar"),
 ]

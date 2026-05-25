@@ -35,6 +35,68 @@
     <!-- endinject -->
 
     <link rel="shortcut icon" href="{% static 'images/logo_chico.png' %}" />
+<style>
+/* ── Botones globales estandarizados ── */
+.btn {
+    border-radius: 2rem !important;
+    font-weight: 600 !important;
+    font-size: .82rem !important;
+    padding: .55rem 1.1rem !important;
+    letter-spacing: .01em;
+    transition: all .15s ease !important;
+}
+.btn-sm {
+    font-size: .76rem !important;
+    padding: .42rem .85rem !important;
+}
+/* Primario — acción principal */
+.btn-success {
+    background: #198754 !important;
+    border-color: #198754 !important;
+    color: #fff !important;
+}
+.btn-success:hover, .btn-success:focus {
+    background: #146c43 !important;
+    border-color: #146c43 !important;
+    color: #fff !important;
+}
+/* Secundario — cancelar, limpiar, volver */
+.btn-outline-secondary {
+    background: #fff !important;
+    border-color: #dee2e6 !important;
+    color: #495057 !important;
+}
+.btn-outline-secondary:hover, .btn-outline-secondary:focus {
+    background: #f8f9fa !important;
+    border-color: #adb5bd !important;
+    color: #212529 !important;
+}
+/* Peligro — eliminar */
+.btn-danger {
+    background: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: #fff !important;
+}
+/* Eliminar variantes que no usamos */
+.btn-primary   { background:#198754 !important; border-color:#198754 !important; color:#fff !important; }
+.btn-primary:hover { background:#146c43 !important; border-color:#146c43 !important; }
+.btn-dark      { background:#fff !important; border-color:#dee2e6 !important; color:#495057 !important; }
+.btn-dark:hover { background:#f8f9fa !important; border-color:#adb5bd !important; color:#212529 !important; }
+.btn-secondary { background:#fff !important; border-color:#dee2e6 !important; color:#495057 !important; }
+.btn-secondary:hover { background:#f8f9fa !important; border-color:#adb5bd !important; }
+.btn-warning   { background:#198754 !important; border-color:#198754 !important; color:#fff !important; }
+.btn-warning:hover { background:#146c43 !important; border-color:#146c43 !important; }
+/* Outline success → misma forma que outline-secondary */
+.btn-outline-success {
+    background:#fff !important; border-color:#dee2e6 !important; color:#198754 !important;
+}
+.btn-outline-success:hover { background:#f0fdf4 !important; border-color:#198754 !important; }
+/* Outline primary → igual que outline-secondary */
+.btn-outline-primary {
+    background:#fff !important; border-color:#dee2e6 !important; color:#495057 !important;
+}
+.btn-outline-primary:hover { background:#f8f9fa !important; border-color:#adb5bd !important; }
+</style>
     <script>
     function cambiarIdioma(code) {
         console.log('cambiarIdioma:', code);
@@ -245,14 +307,14 @@
             <!-- Compras -->
             <li class="nav-item">
               <a class="nav-link" data-bs-toggle="collapse" href="#compras" aria-expanded="false" aria-controls="compras">
-                <i class="menu-icon mdi mdi-cart-outline"></i>
+                <i class="menu-icon mdi mdi-package-variant-closed"></i>
                 <span class="menu-title">{% translate "Compras" %}</span>
                 <i class="menu-arrow"></i>
               </a>
               <div class="collapse" id="compras">
                 <ul class="nav flex-column sub-menu">
                   <li class="nav-item"><a class="nav-link" href="{% url 'vista_lista_facturas' %}">{% translate "Facturas de compra" %}</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_gestion_facturas' %}">{% translate "Pagos a proveedores" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_cuenta_corriente_proveedor' %}">{% translate "Cuenta corriente" %}</a></li>
                 </ul>
               </div>
             </li>
@@ -260,13 +322,14 @@
             <!-- Ventas -->
             <li class="nav-item">
               <a class="nav-link" data-bs-toggle="collapse" href="#ventas" aria-expanded="false" aria-controls="ventas">
-                <i class="menu-icon mdi mdi-cash-multiple"></i>
+                <i class="menu-icon mdi mdi-cart-outline"></i>
                 <span class="menu-title">{% translate "Ventas" %}</span>
                 <i class="menu-arrow"></i>
               </a>
               <div class="collapse" id="ventas">
                 <ul class="nav flex-column sub-menu">
-                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_lista_ventas' %}">{% translate "Facturas de venta" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_cargar_factura_venta_manual' %}">{% translate "Cargar factura" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_cuenta_corriente_cliente' %}">{% translate "Cuenta corriente" %}</a></li>
                 </ul>
               </div>
             </li>
@@ -298,9 +361,9 @@
               <div class="collapse" id="analisis">
                 <ul class="nav flex-column sub-menu">
                   <li class="nav-item"><a class="nav-link" href="{% url 'vista_mapas' %}">{% translate "Mapas" %}</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_ndvi' %}">{% translate "NDVI" %}</a></li>
+                  {% comment %} <li class="nav-item"><a class="nav-link" href="{% url 'vista_ndvi' %}">{% translate "NDVI" %}</a></li>
                   <li class="nav-item"><a class="nav-link" href="#">{% translate "Ambientes" %}</a></li>
-                  <li class="nav-item"><a class="nav-link" href="#">{% translate "Comparativas" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="#">{% translate "Comparativas" %}</a></li> {% endcomment %}
                 </ul>
               </div>
             </li>

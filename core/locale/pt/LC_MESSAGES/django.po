@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-07 06:32-0300\n"
+"POT-Creation-Date: 2026-05-24 17:03-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,2208 +17,3786 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
-#: core/agro/forms.py:24 core/agro/forms.py:26 core/templates/login.html:118
-msgid "Usuario"
-msgstr "Usuário"
 
-#: core/agro/forms.py:31 core/agro/forms.py:33 core/templates/login.html:123
-msgid "Contraseña"
-msgstr "Senha"
+#: administracion/forms.py:78
+msgid "El monto debe ser mayor a 0."
+msgstr "O valor deve ser maior que 0."
 
-#: core/agro/models.py:125
-msgid "Costo MO"
-msgstr "Custo Mão de Obra"
+#: administracion/forms.py:81
+#, python-format
+msgid "El monto $%(m)s supera el saldo disponible $%(s)s."
+msgstr "O valor $%(m)s supera o saldo disponível $%(s)s."
 
-#: core/agro/models.py:126
-msgid "Costo Maquina"
-msgstr "Custo Máquina"
+#: administracion/forms.py:90 administracion/models.py:11
+#: gestion_agro/models.py:530 gestion_agro/models.py:579
+#: templates/tem_administracion/_comprobante_pago.html:5
+#: templates/tem_administracion/_tabla_facturas.html:16
+#: templates/tem_administracion/_tabla_pagos.html:12
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:81
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:148
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:276
+#: templates/tem_facturas/vista_cargar_factura_manual.html:93
+#: templates/tem_facturas/vista_lista_facturas.html:51
+msgid "Proveedor"
+msgstr "Fornecedor"
 
-#: core/agro/models.py:127
-msgid "Cálculo de costo"
-msgstr "Método de custeio"
+#: administracion/forms.py:91
+msgid "Todos los proveedores"
+msgstr "Fornecedores"
 
-#: core/agro/models.py:133 core/gestion_agro/models.py:313
-#: core/gestion_agro/models.py:327
-#: core/templates/tem_facturas/revisar_factura.html:264
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:341
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:339
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:397
-#: core/templates/temp_mapas/mapa.html:87
-#: core/templates/temp_mapas/vista_mapa_principal.html:84
-#: core/templates/vista_crear_campana.html:144
-#: core/templates/vista_crear_campo.html:54
-#: core/templates/vista_crear_campo.html:160
-#: core/templates/vista_crear_cultivo.html:121
-#: core/templates/vista_crear_deposito.html:51
-#: core/templates/vista_crear_deposito.html:144
-#: core/templates/vista_producto.html:80 core/templates/vista_producto.html:168
-msgid "Nombre"
-msgstr "Nome"
+#: administracion/forms.py:96 templates/temp_mapas/vista_mapas.html:81
+#: templates/vista_crear_campana.html:86 templates/vista_lista_stock.html:67
+#: templates/vista_movimientos_producto.html:61
+msgid "Fecha desde"
+msgstr "Data inicial"
 
-#: core/agro/models.py:134
-msgid "Abreviatura"
-msgstr "Abreviação"
+#: administracion/forms.py:101 templates/temp_mapas/vista_mapas.html:86
+#: templates/vista_crear_campana.html:98 templates/vista_lista_stock.html:73
+#: templates/vista_movimientos_producto.html:71
+msgid "Fecha hasta"
+msgstr "Data final"
 
-#: core/agro/models.py:135
-msgid "Factor a unidad base"
-msgstr "Fator para unidade base"
+#: administracion/forms.py:141
+#, python-format
+msgid "El monto debe ser mayor a 0 (factura %(num)s)"
+msgstr "O valor deve ser maior que 0 (fatura %(num)s)"
 
-#: core/agro/models.py:138 core/gestion_agro/forms.py:365
-#: core/gestion_agro/forms.py:486 core/gestion_agro/forms.py:801
-#: core/templates/tem_facturas/revisar_factura.html:172
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:231
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:405
-#: core/templates/tem_facturas/vista_revisar_factura.html:146
-#: core/templates/temp_mapas/mapa.html:108
-#: core/templates/temp_mapas/vista_mapa_principal.html:108
-#: core/templates/vista_agregar_actividad.html:225
-#: core/templates/vista_agregar_actividad.html:321
-msgid "Unidad"
-msgstr "Unidade"
+#: administracion/forms.py:145
+#, python-format
+msgid "Factura %(num)s: el monto $%(monto)s supera el saldo disponible $%(saldo)s"
+msgstr "Fatura %(num)s: o valor $%(monto)s supera o saldo disponível $%(saldo)s"
 
-#: core/agro/models.py:139
-msgid "Unidades"
-msgstr "Unidades"
+#: administracion/forms.py:182 administracion/views.py:474
+msgid "Semilla (M)"
+msgstr "Semente (M)"
 
-#: core/agro/models.py:147
-msgid "Factor de conversión"
-msgstr "Fator de conversão"
+#: administracion/forms.py:182 administracion/views.py:474
+msgid "Consumo (C)"
+msgstr "Consumido"
 
-#: core/agro/models.py:150
-msgid "Conversión de unidad"
-msgstr "Conversão de unidade"
-
-#: core/agro/models.py:151
-msgid "Conversiones de unidades"
-msgstr "Conversões de unidades"
-
-#: core/agro/views.py:27
-msgid "Usuario o contraseña incorrectos"
-msgstr "Usuário ou senha incorretos"
-
-#: core/core/settings.py:126
-msgid "Português"
-msgstr "Português"
-
-#: core/core/settings.py:127
-msgid "Español"
-msgstr "Espanhol"
-
-#: core/gestion_agro/forms.py:76 core/gestion_agro/models.py:312
-#: core/gestion_agro/models.py:326
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:321
-#: core/templates/vista_crear_cultivo.html:218
-#: core/templates/vista_movimientos_producto.html:39
-#: core/templates/vista_producto.html:72 core/templates/vista_producto.html:167
-msgid "Código"
-msgstr "Código"
-
-#: core/gestion_agro/forms.py:86 core/templates/vista_crear_cultivo.html:228
-msgid "Detalle"
-msgstr "Detalhe"
-
-#: core/gestion_agro/forms.py:96 core/gestion_agro/models.py:329
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:344
-#: core/templates/vista_crear_cultivo.html:222
-#: core/templates/vista_movimientos_producto.html:47
-#: core/templates/vista_producto.html:96 core/templates/vista_producto.html:170
-msgid "Unidad base"
-msgstr "Unidade base"
-
-#: core/gestion_agro/forms.py:232 core/gestion_agro/models.py:162
-msgid "El campo y la campaña deben pertenecer a la misma empresa."
-msgstr "O campo e a safra precisam ser da mesma empresa."
-
-#: core/gestion_agro/forms.py:235
-msgid "El cultivo debe pertenecer a la misma empresa que el campo."
-msgstr "A cultura precisa pertencer à mesma empresa do campo."
-
-#: core/gestion_agro/forms.py:238 core/gestion_agro/models.py:170
-msgid "La fecha de fin no puede ser anterior a la fecha de inicio."
-msgstr "A data de encerramento não pode ser anterior à data de início."
-
-#: core/gestion_agro/forms.py:242 core/gestion_agro/models.py:175
-msgid "El cultivo seleccionado no tiene un producto final por defecto."
-msgstr "A cultura selecionada não tem produto de colheita configurado."
-
-#: core/gestion_agro/forms.py:292 core/gestion_agro/forms.py:313
-msgid "Horas de mano de obra"
-msgstr "Horas de mão de obra"
-
-#: core/gestion_agro/forms.py:296 core/gestion_agro/forms.py:304
-#: core/gestion_agro/forms.py:314 core/gestion_agro/forms.py:316
-msgid "Costo por hora"
-msgstr "Custo por hora"
-
-#: core/gestion_agro/forms.py:300 core/gestion_agro/forms.py:315
-msgid "Horas de máquina"
-msgstr "Horas de máquina"
-
-#: core/gestion_agro/forms.py:308 core/gestion_agro/models.py:20
-#: core/gestion_agro/models.py:94
-#: core/templates/vista_agregar_actividad.html:137
-#: core/templates/vista_crear_campana.html:72
-#: core/templates/vista_crear_campo.html:116
-#: core/templates/vista_detalle_ciclo.html:322
-msgid "Observaciones"
-msgstr "Observações"
-
-#: core/gestion_agro/forms.py:349
-msgid "El subtipo no corresponde al tipo seleccionado."
-msgstr "O subtipo não corresponde ao tipo selecionado."
-
-#: core/gestion_agro/forms.py:363 core/gestion_agro/forms.py:510
-#: core/gestion_agro/forms.py:920 core/gestion_agro/models.py:338
-#: core/gestion_agro/models.py:349 core/gestion_agro/models.py:485
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:224
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:149
-#: core/templates/vista_agregar_actividad.html:223
-#: core/templates/vista_lista_stock.html:55
-#: core/templates/vista_lista_stock.html:158
-#: core/templates/vista_lista_stock.html:318
+#: administracion/forms.py:188 gestion_agro/forms.py:409
+#: gestion_agro/forms.py:612 gestion_agro/forms.py:839
+#: gestion_agro/models.py:406 gestion_agro/models.py:417
+#: gestion_agro/models.py:560
+#: templates/tem_administracion/cargar_factura_venta.html:106
+#: templates/tem_administracion/lista_ventas.html:60
+#: templates/tem_administracion/registrar_venta.html:28
+#: templates/tem_facturas/revisar_factura_mejorado.html:224
+#: templates/tem_facturas/vista_cargar_factura_manual.html:149
+#: templates/vista_agregar_actividad.html:223
+#: templates/vista_lista_stock.html:49 templates/vista_lista_stock.html:152
+#: templates/vista_lista_stock.html:312
 msgid "Producto"
 msgstr "Produto"
 
-#: core/gestion_agro/forms.py:364
-#: core/templates/vista_agregar_actividad.html:224
-msgid "Dosis"
-msgstr "Dose"
+#: administracion/forms.py:193 administracion/models.py:71
+#: gestion_agro/models.py:472
+#: templates/tem_administracion/cargar_factura_venta.html:107
+msgid "Destino"
+msgstr "Destino"
 
-#: core/gestion_agro/forms.py:401
-msgid "Debe seleccionar un producto."
-msgstr "Selecione um produto."
-
-#: core/gestion_agro/forms.py:403
-msgid "Debe ingresar la dosis."
-msgstr "Informe a dose."
-
-#: core/gestion_agro/forms.py:405
-msgid "Debe seleccionar la unidad."
-msgstr "Selecione a unidade."
-
-#: core/gestion_agro/forms.py:451
-#, python-format
-msgid "Stock insuficiente. Necesario: %(n)s, disponible: %(d)s."
-msgstr "Estoque insuficiente. Necessário: %(n)s, disponível: %(d)s."
-
-#: core/gestion_agro/forms.py:475
-msgid "Plantas por m²"
-msgstr "Plantas por m²"
-
-#: core/gestion_agro/forms.py:476
-msgid "Malezas"
-msgstr "Plantas daninhas"
-
-#: core/gestion_agro/forms.py:477
-msgid "Insectos"
-msgstr "Insetos"
-
-#: core/gestion_agro/forms.py:478
-msgid "Enfermedades"
-msgstr "Doenças"
-
-#: core/gestion_agro/forms.py:479 core/gestion_agro/models.py:19
-#: core/templates/vista_crear_campo.html:105
-#: core/templates/vista_crear_campo.html:159
-msgid "Imagen"
-msgstr "Imagem"
-
-#: core/gestion_agro/forms.py:491
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:121
-#: core/templates/tem_facturas/vista_revisar_factura.html:120
-#: core/templates/vista_agregar_actividad.html:333
-msgid "Depósito destino"
+#: administracion/forms.py:199 administracion/models.py:67
+#: templates/tem_administracion/cargar_factura_venta.html:108
+#: templates/vista_lista_stock.html:557
+msgid "Depósito origen"
 msgstr "Armazém destino"
 
-#: core/gestion_agro/forms.py:510
-msgid "Nombre o código del producto"
-msgstr "Nome ou código do produto"
-
-#: core/gestion_agro/forms.py:511 core/gestion_agro/forms.py:753
-#: core/gestion_agro/models.py:328
-#: core/templates/tem_facturas/revisar_factura.html:167
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:225
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:326
-#: core/templates/tem_facturas/vista_revisar_factura.html:141
-#: core/templates/vista_lista_stock.html:61
-#: core/templates/vista_lista_stock.html:159
-#: core/templates/vista_lista_stock.html:319
-#: core/templates/vista_movimientos_producto.html:43
-#: core/templates/vista_producto.html:88 core/templates/vista_producto.html:169
-msgid "Categoría"
-msgstr "Categoria"
-
-#: core/gestion_agro/forms.py:511 core/templates/vista_lista_stock.html:63
-msgid "Todas"
-msgstr "Todas"
-
-#: core/gestion_agro/forms.py:512
-msgid "Fecha entrada desde"
-msgstr "Entrada a partir de"
-
-#: core/gestion_agro/forms.py:513
-msgid "Fecha entrada hasta"
-msgstr "Entrada até"
-
-#: core/gestion_agro/forms.py:522
-msgid "La fecha hasta no puede ser menor que la fecha desde."
-msgstr "A data final não pode ser anterior à data inicial."
-
-#: core/gestion_agro/forms.py:738
-msgid "Producto existente"
-msgstr "Produto existente"
-
-#: core/gestion_agro/forms.py:744
-#: core/templates/tem_facturas/revisar_factura.html:244
-#: core/templates/tem_facturas/vista_revisar_factura.html:238
-msgid "Crear nuevo"
-msgstr "Criar novo"
-
-#: core/gestion_agro/forms.py:759 core/gestion_agro/models.py:350
-#: core/templates/tem_facturas/revisar_factura.html:200
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:226
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:361
-#: core/templates/tem_facturas/vista_revisar_factura.html:194
-#: core/templates/vista_agregar_actividad.html:71
-#: core/templates/vista_crear_ciclo.html:200
-#: core/templates/vista_crear_cultivo.html:212
-#: core/templates/vista_detalle_ciclo.html:45
-#: core/templates/vista_lista_ciclos.html:137
-msgid "Cultivo"
-msgstr "Cultura"
-
-#: core/gestion_agro/forms.py:765 core/gestion_agro/models.py:351
-#: core/templates/tem_facturas/revisar_factura.html:202
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:227
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:371
-#: core/templates/tem_facturas/vista_revisar_factura.html:196
-msgid "Variedad"
-msgstr "Variedade"
-
-#: core/gestion_agro/forms.py:770
-msgid "Nueva variedad"
-msgstr "Nova variedade"
-
-#: core/gestion_agro/forms.py:771
-msgid "Nombre de la variedad"
-msgstr "Nome da variedade"
-
-#: core/gestion_agro/forms.py:779 core/gestion_agro/forms.py:927
-#: core/templates/tem_facturas/revisar_factura.html:169
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:228
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:150
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:393
-#: core/templates/tem_facturas/vista_revisar_factura.html:143
-msgid "Presentación"
-msgstr "Apresentação"
-
-#: core/gestion_agro/forms.py:785 core/gestion_agro/models.py:486
-msgid "Nombre presentación"
-msgstr "Nome da apresentação"
-
-#: core/gestion_agro/forms.py:791 core/gestion_agro/forms.py:936
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:229
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:151
-#: core/templates/vista_detalle_ciclo.html:338
-#: core/templates/vista_detalle_ciclo.html:369
-#: core/templates/vista_detalle_ciclo.html:403
-#: core/templates/vista_lista_stock.html:454
+#: administracion/forms.py:203 gestion_agro/forms.py:710
+#: gestion_agro/forms.py:855
+#: templates/tem_administracion/cargar_factura_venta.html:109
+#: templates/tem_facturas/revisar_factura_mejorado.html:229
+#: templates/tem_facturas/vista_cargar_factura_manual.html:151
+#: templates/vista_detalle_ciclo.html:338
+#: templates/vista_detalle_ciclo.html:369
+#: templates/vista_detalle_ciclo.html:403 templates/vista_lista_stock.html:468
+#: templates/vista_lista_stock.html:549
 msgid "Cantidad"
 msgstr "Quantidade"
 
-#: core/gestion_agro/forms.py:796
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:344
-msgid "Contenido por envase"
-msgstr "Conteúdo por embalagem"
-
-#: core/gestion_agro/forms.py:806 core/gestion_agro/forms.py:942
-#: core/templates/tem_facturas/revisar_factura.html:174
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:233
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:152
-#: core/templates/tem_facturas/vista_revisar_factura.html:148
+#: administracion/forms.py:208 gestion_agro/forms.py:725
+#: gestion_agro/forms.py:861
+#: templates/tem_administracion/cargar_factura_venta.html:110
+#: templates/tem_facturas/revisar_factura.html:174
+#: templates/tem_facturas/revisar_factura_mejorado.html:233
+#: templates/tem_facturas/vista_cargar_factura_manual.html:152
+#: templates/tem_facturas/vista_revisar_factura.html:148
 msgid "Precio unit."
 msgstr "Preço unit."
 
-#: core/gestion_agro/forms.py:877
+#: administracion/models.py:10 administracion/models.py:42
+#: administracion/models.py:87 gestion_agro/models.py:12
+#: gestion_agro/models.py:135 gestion_agro/models.py:529
+#: gestion_agro/models.py:574 gestion_agro/models.py:587
+#: gestion_agro/models.py:612 templates/vista_crear_ciclo.html:143
+msgid "Empresa"
+msgstr "Empresa"
+
+#: administracion/models.py:12 administracion/models.py:45
+#: administracion/models.py:89 gestion_agro/models.py:532 mapas/forms.py:32
+#: mapas/models.py:204 mapas/models.py:252 templates/index.html:156
+#: templates/tem_administracion/_comprobante_pago.html:9
+#: templates/tem_administracion/_tabla_facturas.html:17
+#: templates/tem_administracion/_tabla_facturas.html:84
+#: templates/tem_administracion/_tabla_pagos.html:11
+#: templates/tem_administracion/cargar_factura_venta.html:84
+#: templates/tem_administracion/cuenta_corriente_cliente.html:141
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:150
+#: templates/tem_administracion/lista_ventas.html:59
+#: templates/tem_facturas/revisar_factura.html:153
+#: templates/tem_facturas/revisar_factura_mejorado.html:210
+#: templates/tem_facturas/vista_cargar_factura_manual.html:114
+#: templates/tem_facturas/vista_lista_facturas.html:52
+#: templates/tem_facturas/vista_revisar_factura.html:114
+#: templates/temp_mapas/ndvi_campo.html:115
+#: templates/temp_mapas/vista_mapas.html:229
+#: templates/temp_mapas/vista_mapas.html:325
+#: templates/vista_agregar_actividad.html:119
+#: templates/vista_lista_stock.html:477 templates/vista_lista_stock.html:545
+#: templates/vista_movimientos_producto.html:186
+msgid "Fecha"
+msgstr "Data"
+
+#: administracion/models.py:13 administracion/models.py:90
+#: gestion_agro/forms.py:330 gestion_agro/models.py:20
+#: gestion_agro/models.py:140 gestion_agro/models.py:372
+#: templates/tem_administracion/cuenta_corriente_cliente.html:275
+#: templates/tem_administracion/lista_ventas.html:148
+#: templates/vista_agregar_actividad.html:137
+#: templates/vista_crear_campana.html:72 templates/vista_crear_campo.html:129
+#: templates/vista_detalle_ciclo.html:322
+msgid "Observaciones"
+msgstr "Observações"
+
+#: administracion/models.py:16 administracion/models.py:29
+msgid "Pago"
+msgstr "Pagamento"
+
+#: administracion/models.py:17
+msgid "Pagos"
+msgstr "Pagamentos"
+
+#: administracion/models.py:30 administracion/models.py:107
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:280
+#: templates/vista_movimientos_producto.html:98
+msgid "Factura"
+msgstr "Nota fiscal"
+
+#: administracion/models.py:31 administracion/models.py:108
+#: templates/tem_administracion/_tabla_facturas.html:85
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:212
+msgid "Monto aplicado"
+msgstr "Insumos aplicados"
+
+#: administracion/models.py:34
+msgid "Aplicación de pago"
+msgstr "Aplicação de pagamento"
+
+#: administracion/models.py:35
+msgid "Aplicaciones de pago"
+msgstr "Aplicações de pagamento"
+
+#: administracion/models.py:43 administracion/models.py:88
+#: gestion_agro/models.py:592
+#: templates/tem_administracion/cargar_factura_venta.html:70
+#: templates/tem_administracion/cuenta_corriente_cliente.html:72
+#: templates/tem_administracion/cuenta_corriente_cliente.html:139
+#: templates/tem_administracion/cuenta_corriente_cliente.html:258
+#: templates/tem_administracion/lista_ventas.html:25
+#: templates/tem_administracion/lista_ventas.html:58
+#: templates/tem_administracion/lista_ventas.html:138
+#: templates/vista_lista_stock.html:532
+msgid "Cliente"
+msgstr "Ambientes"
+
+#: administracion/models.py:44
+msgid "NF-e número"
+msgstr "Número"
+
+#: administracion/models.py:46 gestion_agro/models.py:534
+#: templates/tem_administracion/cargar_factura_venta.html:91
+msgid "Fecha vencimiento"
+msgstr "Data de início"
+
+#: administracion/models.py:47
+#: templates/tem_facturas/vista_lista_facturas.html:56
+msgid "PDF"
+msgstr "PDF"
+
+#: administracion/models.py:49
+msgid "Usuario que creó"
+msgstr "Usuário que criou"
+
+#: administracion/models.py:52
+msgid "Factura de venta"
+msgstr "Nota fiscal de compra"
+
+#: administracion/models.py:53
+msgid "Facturas de venta"
+msgstr "Notas fiscais de compra"
+
+#: administracion/models.py:75
+msgid "Unidad de medida"
+msgstr "Unidade de estoque"
+
+#: administracion/models.py:79
+msgid "Ítem de factura de venta"
+msgstr "Item da nota"
+
+#: administracion/models.py:80
+msgid "Ítems de factura de venta"
+msgstr "Itens da nota"
+
+#: administracion/models.py:93 administracion/models.py:106
+msgid "Recibo"
+msgstr "Recibo"
+
+#: administracion/models.py:94
+msgid "Recibos"
+msgstr "Recibos"
+
+#: administracion/models.py:111
+msgid "Aplicación de recibo"
+msgstr "Editar cultura"
+
+#: administracion/models.py:112
+msgid "Aplicaciones de recibo"
+msgstr "Aplicações de recibo"
+
+#: administracion/views.py:31 gestion_agro/views.py:392
+msgid "Producto no encontrado."
+msgstr "Produto não encontrado."
+
+#: administracion/views.py:37
+msgid "Método no permitido."
+msgstr "Método não permitido."
+
+#: administracion/views.py:73
+msgid "Stock insuficiente. Disponible: %(s)s %(u)s."
+msgstr "Estoque insuficiente. Disponível: %(s)s %(u)s."
+
+#: administracion/views.py:365
+msgid "Seleccione al menos una factura"
+msgstr "Selecione um campo"
+
+#: administracion/views.py:370
+msgid "Proveedor inválido"
+msgstr "Fornecedor"
+
+#: administracion/views.py:388
+msgid "No hay pagos válidos para registrar"
+msgstr "Nenhum item para revisar."
+
+#: administracion/views.py:400
+msgid "Pago registrado correctamente"
+msgstr "Campo criado com sucesso"
+
+#: administracion/views.py:630
+#, python-format
+msgid "Ítem %(n)s (%(p)s): stock insuficiente. Disponible: %(s)s %(u)s."
+msgstr "Item %(n)s (%(p)s): estoque insuficiente. Disponível: %(s)s %(u)s."
+
+#: administracion/views.py:675
+msgid "Factura de venta cargada correctamente."
+msgstr "Nota fiscal carregada com sucesso."
+
+#: administracion/views.py:678 gestion_agro/views.py:1503
+msgid "Revisá los errores del formulario."
+msgstr "Verifique os erros do formulário."
+
+#: agro/forms.py:24
+msgid "Nombre de la empresa"
+msgstr "Nome da variedade"
+
+#: agro/forms.py:24
+msgid "Ej: Estancia San Juan"
+msgstr "Ex: Fazenda São João"
+
+#: agro/forms.py:25 gestion_agro/models.py:575 gestion_agro/models.py:588
+msgid "Razón social"
+msgstr "Razão social"
+
+#: agro/forms.py:26 gestion_agro/models.py:576 gestion_agro/models.py:589
+msgid "CUIT / CNPJ"
+msgstr "CNPJ / CPF"
+
+#: agro/forms.py:28 agro/forms.py:87 agro/forms.py:89 templates/login.html:118
+msgid "Usuario"
+msgstr "Usuário"
+
+#: agro/forms.py:28
+msgid "Sin espacios"
+msgstr "Sem espaços"
+
+#: agro/forms.py:29
+msgid "Email"
+msgstr "E-mail"
+
+#: agro/forms.py:30 agro/forms.py:94 agro/forms.py:96 templates/login.html:123
+msgid "Contraseña"
+msgstr "Senha"
+
+#: agro/forms.py:31
+msgid "Confirmar contraseña"
+msgstr "Confirmar senha"
+
+#: agro/forms.py:36
+msgid "Ese nombre de usuario ya está en uso."
+msgstr "Esse nome de usuário já está em uso."
+
+#: agro/forms.py:42
+msgid "Ya existe una cuenta con ese email."
+msgstr "Já existe uma conta com esse e-mail."
+
+#: agro/forms.py:48
+msgid "Las contraseñas no coinciden."
+msgstr "As senhas não coincidem."
+
+#: agro/models.py:125
+msgid "Costo MO"
+msgstr "Custo Mão de Obra"
+
+#: agro/models.py:126
+msgid "Costo Maquina"
+msgstr "Custo Máquina"
+
+#: agro/models.py:127
+msgid "Cálculo de costo"
+msgstr "Método de custeio"
+
+#: agro/models.py:130
+msgid "% Prima semilla"
+msgstr "Produto semente"
+
+#: agro/models.py:130
+msgid "Porcentaje adicional sobre precio de consumo para grano certificado como semilla"
+msgstr "Percentual adicional sobre o preço de consumo para grão certificado como semente"
+
+#: agro/models.py:131 templates/configuracion.html:116
+msgid "Unidad inspección semilla"
+msgstr "Unidade de inspeção de semente"
+
+#: agro/models.py:132
+msgid "Unidad por defecto para cantidad aprobada en inspección (ej: semillas)"
+msgstr "Unidade padrão para quantidade aprovada na inspeção (ex: sementes)"
+
+#: agro/models.py:136 gestion_agro/models.py:381 gestion_agro/models.py:395
+#: mapas/forms.py:28 mapas/models.py:8 mapas/models.py:251
+#: templates/tem_facturas/revisar_factura.html:264
+#: templates/tem_facturas/revisar_factura_mejorado.html:341
+#: templates/tem_facturas/vista_cargar_factura_manual.html:339
+#: templates/tem_facturas/vista_cargar_factura_manual.html:404
+#: templates/temp_mapas/mapa.html:87
+#: templates/temp_mapas/vista_mapa_principal.html:116
+#: templates/vista_crear_campana.html:144 templates/vista_crear_campo.html:113
+#: templates/vista_crear_campo.html:191 templates/vista_crear_cultivo.html:121
+#: templates/vista_crear_deposito.html:51
+#: templates/vista_crear_deposito.html:144 templates/vista_producto.html:80
+#: templates/vista_producto.html:177
+msgid "Nombre"
+msgstr "Nome"
+
+#: agro/models.py:137
+msgid "Abreviatura"
+msgstr "Abreviação"
+
+#: agro/models.py:138
+msgid "Factor a unidad base"
+msgstr "Fator para unidade base"
+
+#: agro/models.py:139
+msgid "Requiere PMG"
+msgstr "Requer PMG"
+
+#: agro/models.py:140
+msgid "Si es verdadero, la conversión a kg usa el PMG de la variedad en lugar de un factor fijo."
+msgstr "Se verdadeiro, a conversão para kg usa o PMG da variedade em vez de um fator fixo."
+
+#: agro/models.py:144 gestion_agro/forms.py:411 gestion_agro/forms.py:538
+#: gestion_agro/forms.py:595 gestion_agro/forms.py:720
+#: gestion_agro/models.py:343 mapas/models.py:9
+#: templates/tem_facturas/revisar_factura.html:172
+#: templates/tem_facturas/revisar_factura_mejorado.html:231
+#: templates/tem_facturas/vista_cargar_factura_manual.html:412
+#: templates/tem_facturas/vista_revisar_factura.html:146
+#: templates/temp_mapas/mapa.html:108
+#: templates/temp_mapas/vista_mapa_principal.html:140
+#: templates/vista_agregar_actividad.html:225
+#: templates/vista_agregar_actividad.html:361
+msgid "Unidad"
+msgstr "Unidade"
+
+#: agro/models.py:145
+msgid "Unidades"
+msgstr "Unidades"
+
+#: agro/models.py:153
+msgid "Factor de conversión"
+msgstr "Fator de conversão"
+
+#: agro/models.py:156
+msgid "Conversión de unidad"
+msgstr "Conversão de unidade"
+
+#: agro/models.py:157
+msgid "Conversiones de unidades"
+msgstr "Conversões de unidades"
+
+#: agro/views.py:104
+msgid "Usuario o contraseña incorrectos"
+msgstr "Usuário ou senha incorretos"
+
+#: agro/views.py:189
+msgid "El sistema no tiene monedas configuradas. Contacte al administrador."
+msgstr "O sistema não tem moedas configuradas. Contate o administrador."
+
+#: agro/views.py:212
+msgid "Cuenta creada correctamente. Podés ingresar ahora."
+msgstr "Conta criada com sucesso. Você já pode entrar."
+
+#: agro/views.py:215
+msgid "Error al crear la cuenta. Intentá nuevamente."
+msgstr "Erro ao criar a conta. Tente novamente."
+
+#: agro/views.py:234
+msgid "Configuración guardada correctamente"
+msgstr "Produto salvo com sucesso."
+
+#: agro/views.py:237
+msgid "Corrija los errores del formulario"
+msgstr "Verifique os erros do formulário."
+
+#: core/settings.py:130
+msgid "Português"
+msgstr "Português"
+
+#: core/settings.py:131
+msgid "Español"
+msgstr "Espanhol"
+
+#: gestion_agro/forms.py:77 gestion_agro/models.py:380
+#: gestion_agro/models.py:394
+#: templates/tem_facturas/vista_cargar_factura_manual.html:321
+#: templates/vista_crear_cultivo.html:218
+#: templates/vista_movimientos_producto.html:39
+#: templates/vista_producto.html:72 templates/vista_producto.html:176
+msgid "Código"
+msgstr "Código"
+
+#: gestion_agro/forms.py:87 templates/vista_crear_cultivo.html:228
+msgid "Detalle"
+msgstr "Detalhe"
+
+#: gestion_agro/forms.py:97 gestion_agro/models.py:397
+#: templates/tem_facturas/vista_cargar_factura_manual.html:344
+#: templates/vista_crear_cultivo.html:222
+#: templates/vista_movimientos_producto.html:47
+#: templates/vista_producto.html:96 templates/vista_producto.html:179
+msgid "Unidad base"
+msgstr "Unidade base"
+
+#: gestion_agro/forms.py:176
+msgid "PMG (g) — Peso de mil granos"
+msgstr "PMG (g) — Peso de mil grãos"
+
+#: gestion_agro/forms.py:222 templates/vista_crear_ciclo.html:188
+msgid "Área del ciclo"
+msgstr "Nome do campo"
+
+#: gestion_agro/forms.py:224 templates/temp_mapas/vista_mapas.html:534
+msgid "Todo el campo"
+msgstr "Nome do campo"
+
+#: gestion_agro/forms.py:225
+msgid "Usar área existente"
+msgstr "Usar produto existente"
+
+#: gestion_agro/forms.py:226
+msgid "Dibujar nueva área"
+msgstr "Desenhar área"
+
+#: gestion_agro/forms.py:268
+msgid "Debe seleccionar un área."
+msgstr "Selecione um produto."
+
+#: gestion_agro/forms.py:273
+msgid "Debe dibujar un área."
+msgstr "Desenhar área"
+
+#: gestion_agro/forms.py:314 gestion_agro/forms.py:335
+msgid "Horas de mano de obra"
+msgstr "Horas de mão de obra"
+
+#: gestion_agro/forms.py:318 gestion_agro/forms.py:326
+#: gestion_agro/forms.py:336 gestion_agro/forms.py:338
+msgid "Costo por hora"
+msgstr "Custo por hora"
+
+#: gestion_agro/forms.py:322 gestion_agro/forms.py:337
+msgid "Horas de máquina"
+msgstr "Horas de máquina"
+
+#: gestion_agro/forms.py:395
+msgid "El subtipo no corresponde al tipo seleccionado."
+msgstr "O subtipo não corresponde ao tipo selecionado."
+
+#: gestion_agro/forms.py:410 templates/vista_agregar_actividad.html:224
+msgid "Dosis"
+msgstr "Dose"
+
+#: gestion_agro/forms.py:447
+msgid "Debe seleccionar un producto."
+msgstr "Selecione um produto."
+
+#: gestion_agro/forms.py:449
+msgid "Debe ingresar la dosis."
+msgstr "Informe a dose."
+
+#: gestion_agro/forms.py:451
+msgid "Debe seleccionar la unidad."
+msgstr "Selecione a unidade."
+
+#: gestion_agro/forms.py:503
+msgid "Stock insuficiente. Necesario: %(n)s %(u)s, disponible: %(d)s %(u)s."
+msgstr "Estoque insuficiente. Necessário: %(n)s %(u)s, disponível: %(d)s %(u)s."
+
+#: gestion_agro/forms.py:527
+msgid "Plantas por m²"
+msgstr "Plantas por m²"
+
+#: gestion_agro/forms.py:528
+msgid "Malezas"
+msgstr "Plantas daninhas"
+
+#: gestion_agro/forms.py:529
+msgid "Insectos"
+msgstr "Insetos"
+
+#: gestion_agro/forms.py:530
+msgid "Enfermedades"
+msgstr "Doenças"
+
+#: gestion_agro/forms.py:531 gestion_agro/models.py:19
+#: templates/vista_crear_campo.html:133
+msgid "Imagen"
+msgstr "Imagem"
+
+#: gestion_agro/forms.py:544 templates/vista_agregar_actividad.html:369
+#: templates/vista_agregar_actividad.html:421
+msgid "Depósito consumo"
+msgstr "Armazéns"
+
+#: gestion_agro/forms.py:550
+msgid "Depósito semilla"
+msgstr "Armazéns"
+
+#: gestion_agro/forms.py:565 gestion_agro/funciones_aux.py:208
+msgid "El rendimiento es obligatorio y debe ser mayor a 0."
+msgstr "O rendimento é obrigatório e deve ser maior que 0."
+
+#: gestion_agro/forms.py:571 gestion_agro/funciones_aux.py:212
+msgid "Debe seleccionar la unidad de medida del rendimiento."
+msgstr "Selecione a unidade."
+
+#: gestion_agro/forms.py:594
+msgid "Semillas aprobadas (por ha)"
+msgstr "Sementes aprovadas (por ha)"
+
+#: gestion_agro/forms.py:596 gestion_agro/models.py:344
+#: templates/vista_detalle_ciclo.html:495
+msgid "Resultado"
+msgstr "Resultados"
+
+#: gestion_agro/forms.py:597 gestion_agro/models.py:345
+#: templates/vista_detalle_ciclo.html:512
+msgid "Responsable"
+msgstr "Disponível"
+
+#: gestion_agro/forms.py:612
+msgid "Nombre o código del producto"
+msgstr "Nome ou código do produto"
+
+#: gestion_agro/forms.py:613 gestion_agro/forms.py:663
+#: gestion_agro/models.py:396 templates/tem_facturas/revisar_factura.html:167
+#: templates/tem_facturas/revisar_factura_mejorado.html:225
+#: templates/tem_facturas/vista_cargar_factura_manual.html:326
+#: templates/tem_facturas/vista_revisar_factura.html:141
+#: templates/vista_lista_stock.html:55 templates/vista_lista_stock.html:153
+#: templates/vista_movimientos_producto.html:43
+#: templates/vista_producto.html:88 templates/vista_producto.html:178
+msgid "Categoría"
+msgstr "Categoria"
+
+#: gestion_agro/forms.py:613 templates/temp_mapas/vista_mapas.html:72
+#: templates/vista_lista_stock.html:57
+msgid "Todas"
+msgstr "Todas"
+
+#: gestion_agro/forms.py:614
+msgid "Fecha entrada desde"
+msgstr "Entrada a partir de"
+
+#: gestion_agro/forms.py:615
+msgid "Fecha entrada hasta"
+msgstr "Entrada até"
+
+#: gestion_agro/forms.py:624
+msgid "La fecha hasta no puede ser menor que la fecha desde."
+msgstr "A data final não pode ser anterior à data inicial."
+
+#: gestion_agro/forms.py:648
+msgid "Producto existente"
+msgstr "Produto existente"
+
+#: gestion_agro/forms.py:654 templates/tem_facturas/revisar_factura.html:244
+#: templates/tem_facturas/vista_revisar_factura.html:242
+msgid "Crear nuevo"
+msgstr "Criar novo"
+
+#: gestion_agro/forms.py:669 gestion_agro/models.py:418
+#: templates/index.html:159 templates/tem_facturas/revisar_factura.html:200
+#: templates/tem_facturas/revisar_factura_mejorado.html:226
+#: templates/tem_facturas/vista_cargar_factura_manual.html:361
+#: templates/tem_facturas/vista_revisar_factura.html:194
+#: templates/vista_agregar_actividad.html:71
+#: templates/vista_crear_ciclo.html:213 templates/vista_crear_cultivo.html:212
+#: templates/vista_detalle_ciclo.html:45 templates/vista_lista_ciclos.html:137
+msgid "Cultivo"
+msgstr "Cultura"
+
+#: gestion_agro/forms.py:675 gestion_agro/models.py:419
+#: templates/tem_facturas/revisar_factura.html:202
+#: templates/tem_facturas/revisar_factura_mejorado.html:227
+#: templates/tem_facturas/vista_cargar_factura_manual.html:371
+#: templates/tem_facturas/vista_revisar_factura.html:196
+msgid "Variedad"
+msgstr "Variedade"
+
+#: gestion_agro/forms.py:681
+msgid "Nueva variedad"
+msgstr "Nova variedade"
+
+#: gestion_agro/forms.py:682
+msgid "Nombre de la variedad"
+msgstr "Nome da variedade"
+
+#: gestion_agro/forms.py:689
+msgid "PMG (g/1000 sem)"
+msgstr "PMG (g/1000 sem)"
+
+#: gestion_agro/forms.py:698 gestion_agro/forms.py:846
+#: templates/tem_facturas/revisar_factura.html:169
+#: templates/tem_facturas/revisar_factura_mejorado.html:228
+#: templates/tem_facturas/vista_cargar_factura_manual.html:150
+#: templates/tem_facturas/vista_cargar_factura_manual.html:400
+#: templates/tem_facturas/vista_revisar_factura.html:143
+msgid "Presentación"
+msgstr "Apresentação"
+
+#: gestion_agro/forms.py:704 gestion_agro/models.py:561
+msgid "Nombre presentación"
+msgstr "Nome da apresentação"
+
+#: gestion_agro/forms.py:715
+#: templates/tem_facturas/revisar_factura_mejorado.html:344
+msgid "Contenido por envase"
+msgstr "Conteúdo por embalagem"
+
+#: gestion_agro/forms.py:796
 #, python-format
 msgid "Unidad '%(u)s' no encontrada."
 msgstr "Unidade '%(u)s' não encontrada."
 
-#: core/gestion_agro/forms.py:902
+#: gestion_agro/forms.py:821
 msgid "Debe seleccionar cultivo."
 msgstr "Selecione a cultura."
 
-#: core/gestion_agro/forms.py:904
+#: gestion_agro/forms.py:823
 msgid "Debe seleccionar variedad o escribir una nueva."
 msgstr "Selecione ou informe uma variedade."
 
-#: core/gestion_agro/forms.py:908
+#: gestion_agro/forms.py:827
 msgid "Indicá el contenido del envase."
 msgstr "Informe o conteúdo da embalagem."
 
-#: core/gestion_agro/forms.py:910
+#: gestion_agro/forms.py:829
 msgid "Seleccioná la unidad de stock."
 msgstr "Selecione a unidade de estoque."
 
-#: core/gestion_agro/funciones_aux.py:128
+#: gestion_agro/funciones_aux.py:128
 msgid "La fecha es anterior al inicio del ciclo."
 msgstr "A data é anterior ao início do ciclo."
 
-#: core/gestion_agro/funciones_aux.py:131
+#: gestion_agro/funciones_aux.py:131
 msgid "Debe seleccionar un subtipo."
 msgstr "Selecione um subtipo."
 
-#: core/gestion_agro/funciones_aux.py:134
+#: gestion_agro/funciones_aux.py:134
 msgid "No hay fase abierta y esta actividad no puede abrir una."
 msgstr "Não há fase aberta e esta atividade não pode iniciar uma."
 
-#: core/gestion_agro/funciones_aux.py:137
+#: gestion_agro/funciones_aux.py:137
 msgid "La fecha es menor al inicio de la fase."
 msgstr "A data é anterior ao início da fase."
 
-#: core/gestion_agro/funciones_aux.py:140
+#: gestion_agro/funciones_aux.py:140
 msgid "La fase está cerrada y esta actividad no puede abrir una nueva."
 msgstr "A fase está encerrada e esta atividade não pode abrir uma nova."
 
-#: core/gestion_agro/funciones_aux.py:150
+#: gestion_agro/funciones_aux.py:149
 msgid "Hay errores en los insumos."
 msgstr "Existem erros nos insumos."
 
-#: core/gestion_agro/funciones_aux.py:161
+#: gestion_agro/funciones_aux.py:166
 msgid "Debe cargar al menos un insumo."
 msgstr "Adicione pelo menos um insumo."
 
-#: core/gestion_agro/funciones_aux.py:171
+#: gestion_agro/funciones_aux.py:169
+msgid "Solo se permite una semilla por siembra."
+msgstr "Apenas uma semente é permitida por plantio."
+
+#: gestion_agro/funciones_aux.py:178
+msgid "Hay errores en los datos de inspección."
+msgstr "Existem erros nos dados de colheita."
+
+#: gestion_agro/funciones_aux.py:189
 msgid "Hay errores en los datos de monitoreo."
 msgstr "Existem erros no monitoramento."
 
-#: core/gestion_agro/funciones_aux.py:181
+#: gestion_agro/funciones_aux.py:203
 msgid "Hay errores en los datos de cosecha."
 msgstr "Existem erros nos dados de colheita."
 
-#: core/gestion_agro/funciones_aux.py:190
+#: gestion_agro/funciones_aux.py:221
 msgid "No se puede registrar cosecha sin una siembra previa."
 msgstr "Não é possível registrar colheita sem semeadura anterior."
 
-#: core/gestion_agro/funciones_aux.py:220
+#: gestion_agro/funciones_aux.py:231
+msgid "La siembra requiere seleccionar un subtipo (Cultivo principal, Cobertura, etc.)."
+msgstr "O plantio requer a seleção de um subtipo (Cultura principal, Cobertura, etc.)."
+
+#: gestion_agro/funciones_aux.py:254
 msgid "Ya existe una siembra de este subtipo en la fase actual."
 msgstr "Já existe uma semeadura deste subtipo na fase atual."
 
-#: core/gestion_agro/funciones_aux.py:223
+#: gestion_agro/funciones_aux.py:257
 msgid "No se permite cultivo principal y cobertura en la misma fase."
 msgstr "Não é permitido cultura principal e cobertura na mesma fase."
 
-#: core/gestion_agro/funciones_aux.py:226
+#: gestion_agro/funciones_aux.py:260
 msgid "No se permite cobertura y cultivo principal en la misma fase."
 msgstr "Não é permitido cobertura e cultura principal na mesma fase."
 
-#: core/gestion_agro/funciones_aux.py:229
+#: gestion_agro/funciones_aux.py:263
 msgid "La resiembra solo se permite si ya existe cultivo principal en la fase."
 msgstr "Ressemeadura só é permitida se já houver cultura principal na fase."
 
-#: core/gestion_agro/funciones_aux.py:246
+#: gestion_agro/funciones_aux.py:280
 msgid "Ya existe una aplicación de este tipo en la misma fecha y fase."
 msgstr "Já existe uma aplicação deste tipo na mesma data e fase."
 
-#: core/gestion_agro/funciones_aux.py:901
+#: gestion_agro/funciones_aux.py:1028
 #, python-format
-msgid ""
-"Falta conversión de unidad: %(origen)s → %(destino)s. Configurala en el "
-"sistema antes de continuar."
+msgid "Falta conversión de unidad: %(origen)s → %(destino)s. Configurala en el sistema antes de continuar."
 msgstr "Conversão de unidade ausente: %(origen)s → %(destino)s. Configure no sistema antes de continuar."
 
-#: core/gestion_agro/models.py:12 core/gestion_agro/models.py:89
-#: core/gestion_agro/models.py:455 core/gestion_agro/models.py:499
-#: core/gestion_agro/models.py:525 core/templates/vista_crear_ciclo.html:141
-msgid "Empresa"
-msgstr "Empresa"
-
-#: core/gestion_agro/models.py:13
+#: gestion_agro/models.py:13
 msgid "Nombre del campo"
 msgstr "Nome do campo"
 
-#: core/gestion_agro/models.py:14
+#: gestion_agro/models.py:14
 msgid "Ciudad / Localidad"
 msgstr "Cidade / Município"
 
-#: core/gestion_agro/models.py:15
-#: core/templates/tem_facturas/vista_revisar_factura.html:140
-#: core/templates/vista_crear_campo.html:92
-#: core/templates/vista_crear_deposito.html:102
+#: gestion_agro/models.py:15 gestion_agro/models.py:58
+#: templates/tem_facturas/vista_revisar_factura.html:140
+#: templates/vista_crear_campo.html:125 templates/vista_crear_deposito.html:102
 msgid "Descripción"
 msgstr "Descrição"
 
-#: core/gestion_agro/models.py:16
+#: gestion_agro/models.py:16
 msgid "Superficie total"
 msgstr "Área total"
 
-#: core/gestion_agro/models.py:17
+#: gestion_agro/models.py:17
 msgid "Superficie total del campo expresada en hectáreas"
 msgstr "Área total do campo em hectares"
 
-#: core/gestion_agro/models.py:23 core/templates/temp_mapas/mapa.html:22
-#: core/templates/temp_mapas/vista_mapa_principal.html:21
-#: core/templates/vista_crear_ciclo.html:176
-#: core/templates/vista_lista_ciclos.html:134
+#: gestion_agro/models.py:21 gestion_agro/models.py:56
+msgid "Contorno (GeoJSON)"
+msgstr "Contorno do campo (GeoJSON)"
+
+#: gestion_agro/models.py:25 gestion_agro/models.py:50 mapas/forms.py:29
+#: mapas/models.py:35 mapas/models.py:121 mapas/models.py:183
+#: mapas/models.py:221 templates/index.html:158
+#: templates/temp_mapas/mapa.html:22 templates/temp_mapas/ndvi_campo.html:46
+#: templates/temp_mapas/vista_mapa_principal.html:20
+#: templates/temp_mapas/vista_mapas.html:59
+#: templates/temp_mapas/vista_mapas.html:523
+#: templates/vista_crear_ciclo.html:182 templates/vista_lista_ciclos.html:134
 msgid "Campo"
 msgstr "Campo"
 
-#: core/gestion_agro/models.py:24 core/templates/base.html:200
-#: core/templates/vista_crear_campo.html:32
-#: core/templates/vista_crear_campo.html:151
+#: gestion_agro/models.py:26 templates/base.html:284
+#: templates/vista_crear_campo.html:92
 msgid "Campos"
 msgstr "Campos"
 
-#: core/gestion_agro/models.py:51 core/gestion_agro/models.py:68
-#: core/gestion_agro/models.py:76
-msgid "Cultura"
-msgstr "Cultura"
-
-#: core/gestion_agro/models.py:56 core/templates/vista_crear_cultivo.html:59
-msgid "Producto asociado"
-msgstr "Produto associado"
-
-#: core/gestion_agro/models.py:64
-msgid "Productos finales (cosecha)"
-msgstr "Produtos de colheita"
-
-#: core/gestion_agro/models.py:69
-msgid "Culturas"
-msgstr "Culturas"
-
-#: core/gestion_agro/models.py:77 core/gestion_agro/models.py:80
-msgid "Variedade"
-msgstr "Variedade"
-
-#: core/gestion_agro/models.py:81
-msgid "Variedades"
-msgstr "Variedades"
-
-#: core/gestion_agro/models.py:90 core/gestion_agro/models.py:97
-#: core/templates/vista_crear_campana.html:58
-#: core/templates/vista_crear_ciclo.html:187
-#: core/templates/vista_lista_ciclos.html:135
-msgid "Campaña"
-msgstr "Safra"
-
-#: core/gestion_agro/models.py:91 core/templates/vista_crear_ciclo.html:240
-msgid "Fecha de inicio"
-msgstr "Data de início"
-
-#: core/gestion_agro/models.py:92
-msgid "Fecha de finalización"
-msgstr "Data de encerramento"
-
-#: core/gestion_agro/models.py:93
-msgid "Campaña activa"
-msgstr "Safra ativa"
-
-#: core/gestion_agro/models.py:98 core/templates/base.html:203
-#: core/templates/vista_crear_campana.html:33
-#: core/templates/vista_crear_campana.html:137
-msgid "Campañas"
-msgstr "Safras"
-
-#: core/gestion_agro/models.py:107
-msgid "La fecha de finalización debe ser mayor a la fecha de inicio"
-msgstr "A data de encerramento deve ser posterior à data de início"
-
-#: core/gestion_agro/models.py:153
+#: gestion_agro/models.py:53 gestion_agro/models.py:198 mapas/models.py:40
+#: mapas/models.py:126 mapas/models.py:188 mapas/models.py:226
 msgid "Ciclo agrícola"
 msgstr "Ciclo agrícola"
 
-#: core/gestion_agro/models.py:154
+#: gestion_agro/models.py:55 templates/temp_mapas/vista_mapa_principal.html:65
+#: templates/temp_mapas/vista_mapa_principal.html:201
+msgid "Nombre del área"
+msgstr "Nome do talhão"
+
+#: gestion_agro/models.py:57 templates/vista_crear_campo.html:121
+#: templates/vista_crear_ciclo.html:224 templates/vista_lista_ciclos.html:138
+msgid "Superficie (ha)"
+msgstr "Área (ha)"
+
+#: gestion_agro/models.py:62 mapas/models.py:45 mapas/models.py:131
+#: mapas/models.py:193 mapas/models.py:231 templates/vista_crear_ciclo.html:287
+msgid "Área del campo"
+msgstr "Nome do campo"
+
+#: gestion_agro/models.py:63 templates/temp_mapas/vista_mapa_principal.html:45
+msgid "Áreas del campo"
+msgstr "Nome do campo"
+
+#: gestion_agro/models.py:91 gestion_agro/models.py:108
+#: gestion_agro/models.py:116
+msgid "Cultura"
+msgstr "Cultura"
+
+#: gestion_agro/models.py:96 templates/vista_crear_cultivo.html:59
+msgid "Producto asociado"
+msgstr "Produto associado"
+
+#: gestion_agro/models.py:104
+msgid "Productos finales (cosecha)"
+msgstr "Produtos de colheita"
+
+#: gestion_agro/models.py:109
+msgid "Culturas"
+msgstr "Culturas"
+
+#: gestion_agro/models.py:117 gestion_agro/models.py:126
+msgid "Variedade"
+msgstr "Variedade"
+
+#: gestion_agro/models.py:121
+msgid "PMG (g)"
+msgstr "PMG (g)"
+
+#: gestion_agro/models.py:122
+msgid "Peso de mil granos en gramos"
+msgstr "Peso de mil grãos em gramas"
+
+#: gestion_agro/models.py:127
+msgid "Variedades"
+msgstr "Variedades"
+
+#: gestion_agro/models.py:136 gestion_agro/models.py:143
+#: templates/vista_crear_campana.html:58 templates/vista_crear_ciclo.html:207
+#: templates/vista_lista_ciclos.html:135
+msgid "Campaña"
+msgstr "Safra"
+
+#: gestion_agro/models.py:137 templates/vista_crear_ciclo.html:237
+msgid "Fecha de inicio"
+msgstr "Data de início"
+
+#: gestion_agro/models.py:138
+msgid "Fecha de finalización"
+msgstr "Data de encerramento"
+
+#: gestion_agro/models.py:139
+msgid "Campaña activa"
+msgstr "Safra ativa"
+
+#: gestion_agro/models.py:144 templates/base.html:285
+#: templates/vista_crear_campana.html:33 templates/vista_crear_campana.html:137
+msgid "Campañas"
+msgstr "Safras"
+
+#: gestion_agro/models.py:153
+msgid "La fecha de finalización debe ser mayor a la fecha de inicio"
+msgstr "A data de encerramento deve ser posterior à data de início"
+
+#: gestion_agro/models.py:191
+msgid "Contorno del lote (GeoJSON)"
+msgstr "Contorno do campo (GeoJSON)"
+
+#: gestion_agro/models.py:199
 msgid "Ciclos agrícolas"
 msgstr "Ciclos agrícolas"
 
-#: core/gestion_agro/models.py:166
+#: gestion_agro/models.py:207
+msgid "El campo y la campaña deben pertenecer a la misma empresa."
+msgstr "O campo e a safra precisam ser da mesma empresa."
+
+#: gestion_agro/models.py:211
 msgid "El cultivo y el campo deben pertenecer a la misma empresa."
 msgstr "A cultura e o campo precisam ser da mesma empresa."
 
-#: core/gestion_agro/models.py:178
+#: gestion_agro/models.py:215
+msgid "La fecha de fin no puede ser anterior a la fecha de inicio."
+msgstr "A data de encerramento não pode ser anterior à data de início."
+
+#: gestion_agro/models.py:220
+msgid "El cultivo seleccionado no tiene un producto final por defecto."
+msgstr "A cultura selecionada não tem produto de colheita configurado."
+
+#: gestion_agro/models.py:223
 msgid "El producto final no corresponde al cultivo seleccionado."
 msgstr "O produto de colheita não corresponde à cultura selecionada."
 
-#: core/gestion_agro/models.py:237 core/gestion_agro/models.py:250
+#: gestion_agro/models.py:282
+msgid "Requiere inspección semilla"
+msgstr "Requer inspeção de semente"
+
+#: gestion_agro/models.py:283 gestion_agro/models.py:296
 msgid "Horas de mano de obra por ha"
 msgstr "Horas de mão de obra por ha"
 
-#: core/gestion_agro/models.py:238 core/gestion_agro/models.py:251
+#: gestion_agro/models.py:284 gestion_agro/models.py:297
 msgid "Horas de máquina por ha"
 msgstr "Horas de máquina por ha"
 
-#: core/gestion_agro/models.py:239 core/gestion_agro/models.py:252
+#: gestion_agro/models.py:285 gestion_agro/models.py:298
 msgid "Costo por hora de mano de obra"
 msgstr "Custo por hora de mão de obra"
 
-#: core/gestion_agro/models.py:240 core/gestion_agro/models.py:253
+#: gestion_agro/models.py:286 gestion_agro/models.py:299
 msgid "Costo por hora de máquina"
 msgstr "Custo por hora de máquina"
 
-#: core/gestion_agro/models.py:298
+#: gestion_agro/models.py:338 templates/vista_detalle_ciclo.html:497
+msgid "Aprobado"
+msgstr "Aprovado"
+
+#: gestion_agro/models.py:339 templates/vista_detalle_ciclo.html:499
+msgid "Rechazado"
+msgstr "Colhido"
+
+#: gestion_agro/models.py:342
+msgid "Cantidad aprobada (por ha)"
+msgstr "Quantidade por embalagem"
+
+#: gestion_agro/models.py:348 templates/vista_agregar_actividad.html:316
+#: templates/vista_detalle_ciclo.html:491
+msgid "Inspección de semilla"
+msgstr "Dados da semente"
+
+#: gestion_agro/models.py:349
+msgid "Inspecciones de semilla"
+msgstr "Dados da semente"
+
+#: gestion_agro/models.py:361
+msgid "Rendimiento (por ha)"
+msgstr "Produtividade esperada"
+
+#: gestion_agro/models.py:362
 msgid "Rendimiento obtenido (kg/ha, qq/ha, t/ha, según estándar)"
 msgstr "Produtividade obtida (kg/ha, sc/ha, t/ha conforme padrão)"
 
-#: core/gestion_agro/models.py:303
-msgid "Observaciones específicas de la cosecha"
-msgstr "Observações sobre a colheita"
+#: gestion_agro/models.py:367
+msgid "Comentarios de cosecha"
+msgstr "Dados de colheita"
 
-#: core/gestion_agro/models.py:308
-msgid "Observaciones generales de la actividad"
-msgstr "Observações gerais da atividade"
+#: gestion_agro/models.py:376 gestion_agro/models.py:471
+#: templates/temp_mapas/vista_mapas.html:33
+#: templates/vista_detalle_ciclo.html:458
+msgid "Cosecha"
+msgstr "Colhido"
 
-#: core/gestion_agro/models.py:314
+#: gestion_agro/models.py:377
+msgid "Cosechas"
+msgstr "Colhido"
+
+#: gestion_agro/models.py:382
 msgid "Es semilla"
 msgstr "É semente"
 
-#: core/gestion_agro/models.py:317
+#: gestion_agro/models.py:385
 msgid "Categoría de producto"
 msgstr "Categoria de produto"
 
-#: core/gestion_agro/models.py:318
+#: gestion_agro/models.py:386
 msgid "Categorías de producto"
 msgstr "Categorias de produto"
 
-#: core/gestion_agro/models.py:330
+#: gestion_agro/models.py:398
 msgid "Presentación default"
 msgstr "Apresentação padrão"
 
-#: core/gestion_agro/models.py:331 core/templates/vista_producto.html:104
+#: gestion_agro/models.py:399 templates/vista_producto.html:104
 msgid "Precio"
 msgstr "Preço"
 
-#: core/gestion_agro/models.py:332 core/templates/vista_producto.html:115
+#: gestion_agro/models.py:400 templates/vista_producto.html:115
 msgid "Maneja stock"
 msgstr "Controla estoque"
 
-#: core/gestion_agro/models.py:333
-#: core/templates/vista_agregar_actividad.html:94
-#: core/templates/vista_crear_ciclo.html:152
-#: core/templates/vista_crear_ciclo.html:284
-#: core/templates/vista_lista_ciclos.html:162
-#: core/templates/vista_producto.html:121
-#: core/templates/vista_producto.html:191
+#: gestion_agro/models.py:401 templates/vista_agregar_actividad.html:94
+#: templates/vista_crear_ciclo.html:154 templates/vista_crear_ciclo.html:258
+#: templates/vista_lista_ciclos.html:162 templates/vista_producto.html:121
+#: templates/vista_producto.html:200
 msgid "Activo"
 msgstr "Ativo"
 
-#: core/gestion_agro/models.py:334
+#: gestion_agro/models.py:402
 msgid "Producto final (cosecha)"
 msgstr "Produto de colheita"
 
-#: core/gestion_agro/models.py:339 core/templates/base.html:224
-#: core/templates/vista_lista_stock.html:110
-#: core/templates/vista_producto.html:159
+#: gestion_agro/models.py:407 templates/base.html:301
+#: templates/vista_lista_stock.html:104 templates/vista_producto.html:168
 msgid "Productos"
 msgstr "Produtos"
 
-#: core/gestion_agro/models.py:354
+#: gestion_agro/models.py:422
 msgid "Producto semilla"
 msgstr "Produto semente"
 
-#: core/gestion_agro/models.py:355
+#: gestion_agro/models.py:423
 msgid "Productos semilla"
 msgstr "Produtos semente"
 
-#: core/gestion_agro/models.py:363
+#: gestion_agro/models.py:431
 msgid "La variedad no pertenece al cultivo seleccionado."
 msgstr "A variedade não pertence à cultura selecionada."
 
-#: core/gestion_agro/models.py:371
+#: gestion_agro/models.py:439
 msgid "Solo los productos de categoría semilla pueden tener datos de semilla."
 msgstr "Somente produtos da categoria semente podem ter dados de semente."
 
-#: core/gestion_agro/models.py:389
-#: core/templates/vista_movimientos_producto.html:85
-#: core/templates/vista_movimientos_producto.html:190
-#: core/templates/vista_movimientos_producto.html:202
+#: gestion_agro/models.py:451
+msgid "Densidad de siembra (semillas/ha)"
+msgstr "Densidade de plantio (sementes/ha)"
+
+#: gestion_agro/models.py:458 templates/vista_movimientos_producto.html:85
+#: templates/vista_movimientos_producto.html:190
+#: templates/vista_movimientos_producto.html:202
 msgid "Entrada"
 msgstr "Entrada"
 
-#: core/gestion_agro/models.py:390
-#: core/templates/vista_movimientos_producto.html:88
-#: core/templates/vista_movimientos_producto.html:191
-#: core/templates/vista_movimientos_producto.html:204
+#: gestion_agro/models.py:459 templates/vista_movimientos_producto.html:88
+#: templates/vista_movimientos_producto.html:191
+#: templates/vista_movimientos_producto.html:204
 msgid "Salida"
 msgstr "Saída"
 
-#: core/gestion_agro/models.py:400
+#: gestion_agro/models.py:460
+msgid "Venta"
+msgstr "Venda"
+
+#: gestion_agro/models.py:470
+msgid "Ítem venta"
+msgstr "Item da nota"
+
+#: gestion_agro/models.py:473
+msgid "Es porción semilla de cosecha"
+msgstr "Observações sobre a colheita"
+
+#: gestion_agro/models.py:474
 msgid "Precio promedio aplicado al momento del consumo"
 msgstr "Preço médio aplicado no momento do consumo"
 
-#: core/gestion_agro/models.py:404
+#: gestion_agro/models.py:478
 msgid "Movimiento de stock"
 msgstr "Movimentação de estoque"
 
-#: core/gestion_agro/models.py:405
+#: gestion_agro/models.py:479
 msgid "Movimientos de stock"
 msgstr "Movimentações de estoque"
 
-#: core/gestion_agro/models.py:456 core/gestion_agro/models.py:504
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:93
-#: core/templates/tem_facturas/vista_lista_facturas.html:47
-msgid "Proveedor"
-msgstr "Fornecedor"
-
-#: core/gestion_agro/models.py:457
-#: core/templates/tem_facturas/revisar_factura.html:148
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:204
+#: gestion_agro/models.py:531 templates/tem_facturas/revisar_factura.html:148
+#: templates/tem_facturas/revisar_factura_mejorado.html:204
 msgid "Número factura"
 msgstr "Número da nota"
 
-#: core/gestion_agro/models.py:458
-#: core/templates/tem_facturas/revisar_factura.html:153
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:210
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:114
-#: core/templates/tem_facturas/vista_lista_facturas.html:48
-#: core/templates/tem_facturas/vista_revisar_factura.html:114
-#: core/templates/vista_agregar_actividad.html:119
-#: core/templates/vista_lista_stock.html:463
-#: core/templates/vista_movimientos_producto.html:186
-msgid "Fecha"
-msgstr "Data"
-
-#: core/gestion_agro/models.py:459
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:247
-#: core/templates/tem_facturas/vista_lista_facturas.html:49
-#: core/templates/tem_facturas/vista_revisar_factura.html:88
+#: gestion_agro/models.py:533
+#: templates/tem_administracion/_tabla_facturas.html:19
+#: templates/tem_administracion/cargar_factura_venta.html:205
+#: templates/tem_administracion/cuenta_corriente_cliente.html:143
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:152
+#: templates/tem_administracion/gestion_facturas.html:241
+#: templates/tem_administracion/lista_ventas.html:61
+#: templates/tem_facturas/vista_cargar_factura_manual.html:247
+#: templates/tem_facturas/vista_lista_facturas.html:53
+#: templates/tem_facturas/vista_revisar_factura.html:88
 msgid "Total"
 msgstr "Total"
 
-#: core/gestion_agro/models.py:464
+#: gestion_agro/models.py:539
 msgid "Factura de compra"
 msgstr "Nota fiscal de compra"
 
-#: core/gestion_agro/models.py:465
+#: gestion_agro/models.py:540 templates/base.html:316 templates/index.html:199
 msgid "Facturas de compra"
 msgstr "Notas fiscais de compra"
 
-#: core/gestion_agro/models.py:481
+#: gestion_agro/models.py:556
 msgid "Ítem de factura"
 msgstr "Item da nota"
 
-#: core/gestion_agro/models.py:482
+#: gestion_agro/models.py:557
 msgid "Ítems de factura"
 msgstr "Itens da nota"
 
-#: core/gestion_agro/models.py:487
+#: gestion_agro/models.py:562
 msgid "Unidad factura"
 msgstr "Unidade na nota"
 
-#: core/gestion_agro/models.py:488
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:401
+#: gestion_agro/models.py:563
+#: templates/tem_facturas/vista_cargar_factura_manual.html:408
 msgid "Contenido"
 msgstr "Conteúdo"
 
-#: core/gestion_agro/models.py:489 core/gestion_agro/models.py:536
+#: gestion_agro/models.py:564 gestion_agro/models.py:623
 msgid "Unidad contenido"
 msgstr "Unidade do conteúdo"
 
-#: core/gestion_agro/models.py:492
+#: gestion_agro/models.py:567
 msgid "Presentación de producto"
 msgstr "Apresentação de produto"
 
-#: core/gestion_agro/models.py:493
+#: gestion_agro/models.py:568
 msgid "Presentaciones de producto"
 msgstr "Apresentações de produto"
 
-#: core/gestion_agro/models.py:500
-msgid "Razón social"
-msgstr "Razão social"
-
-#: core/gestion_agro/models.py:501
-msgid "CUIT / CNPJ"
-msgstr "CNPJ / CPF"
-
-#: core/gestion_agro/models.py:505
+#: gestion_agro/models.py:580
 msgid "Proveedores"
 msgstr "Fornecedores"
 
-#: core/gestion_agro/models.py:526
+#: gestion_agro/models.py:593
+msgid "Clientes"
+msgstr "Ambientes"
+
+#: gestion_agro/models.py:613
 msgid "Descripción original"
 msgstr "Descrição original"
 
-#: core/gestion_agro/models.py:527
+#: gestion_agro/models.py:614
 msgid "Código original"
 msgstr "Código original"
 
-#: core/gestion_agro/models.py:530
+#: gestion_agro/models.py:617
 msgid "Nombre del producto"
 msgstr "Nome do produto"
 
-#: core/gestion_agro/models.py:531
+#: gestion_agro/models.py:618
 msgid "Tipo de envase"
 msgstr "Tipo de embalagem"
 
-#: core/gestion_agro/models.py:532
+#: gestion_agro/models.py:619
 msgid "Descripción envase"
 msgstr "Descrição da embalagem"
 
-#: core/gestion_agro/models.py:535
+#: gestion_agro/models.py:622
 msgid "Cantidad por envase"
 msgstr "Quantidade por embalagem"
 
-#: core/gestion_agro/models.py:537
+#: gestion_agro/models.py:624
 msgid "Cantidad estándar"
 msgstr "Quantidade padrão"
 
-#: core/gestion_agro/models.py:538
+#: gestion_agro/models.py:625
 msgid "Unidad estándar"
 msgstr "Unidade padrão"
 
-#: core/gestion_agro/models.py:542
+#: gestion_agro/models.py:629
 msgid "Dosis (por ha)"
 msgstr "Dose (por ha)"
 
-#: core/gestion_agro/models.py:544
+#: gestion_agro/models.py:631
 msgid "Unidad dosis"
 msgstr "Unidade da dose"
 
-#: core/gestion_agro/models.py:547
+#: gestion_agro/models.py:634
 msgid "Precio por envase"
 msgstr "Preço por embalagem"
 
-#: core/gestion_agro/models.py:549
+#: gestion_agro/models.py:636
 msgid "Costo por unidad estándar"
 msgstr "Custo por unidade padrão"
 
-#: core/gestion_agro/models.py:551
+#: gestion_agro/models.py:638
 msgid "Costo por hectárea"
 msgstr "Custo por hectare"
 
-#: core/gestion_agro/models.py:553
+#: gestion_agro/models.py:640
 msgid "Fecha importación"
 msgstr "Data de importação"
 
-#: core/gestion_agro/models.py:556
+#: gestion_agro/models.py:643
 msgid "Producto normalizado"
 msgstr "Produto normalizado"
 
-#: core/gestion_agro/models.py:557
+#: gestion_agro/models.py:644
 msgid "Productos normalizados"
 msgstr "Produtos normalizados"
 
-#: core/gestion_agro/views.py:48
+#: gestion_agro/views.py:48
 msgid "Campo creado correctamente"
 msgstr "Campo criado com sucesso"
 
-#: core/gestion_agro/views.py:106
+#: gestion_agro/views.py:102
 msgid "Ya existe una campaña para ese período"
 msgstr "Já existe uma safra para esse período"
 
-#: core/gestion_agro/views.py:110
+#: gestion_agro/views.py:106
 msgid "Campaña creada correctamente"
 msgstr "Safra criada com sucesso"
 
-#: core/gestion_agro/views.py:141
+#: gestion_agro/views.py:137
 msgid "Depósito creado correctamente"
 msgstr "Armazém criado com sucesso"
 
-#: core/gestion_agro/views.py:176
+#: gestion_agro/views.py:172
 msgid "Depósito eliminado correctamente"
 msgstr "Armazém excluído com sucesso"
 
-#: core/gestion_agro/views.py:185
+#: gestion_agro/views.py:181
 msgid "Depósito actualizado correctamente"
 msgstr "Armazém atualizado com sucesso"
 
-#: core/gestion_agro/views.py:244
+#: gestion_agro/views.py:240
 msgid "Cultivo creado correctamente"
 msgstr "Cultura criada com sucesso"
 
-#: core/gestion_agro/views.py:248 core/gestion_agro/views.py:299
+#: gestion_agro/views.py:244 gestion_agro/views.py:295
 msgid "Revisá los datos del formulario."
 msgstr "Verifique os dados do formulário."
 
-#: core/gestion_agro/views.py:288
+#: gestion_agro/views.py:284
 msgid "Cultivo eliminado correctamente."
 msgstr "Cultura excluída com sucesso."
 
-#: core/gestion_agro/views.py:294
+#: gestion_agro/views.py:290
 msgid "Cultivo actualizado correctamente."
 msgstr "Cultura atualizada com sucesso."
 
-#: core/gestion_agro/views.py:383
+#: gestion_agro/views.py:379
 msgid "Producto guardado correctamente."
 msgstr "Produto salvo com sucesso."
 
-#: core/gestion_agro/views.py:396
-msgid "Producto no encontrado."
-msgstr "Produto não encontrado."
-
-#: core/gestion_agro/views.py:403
+#: gestion_agro/views.py:405
 msgid "Producto eliminado."
 msgstr "Produto excluído."
 
-#: core/gestion_agro/views.py:406
+#: gestion_agro/views.py:411
 msgid "Producto actualizado."
 msgstr "Produto atualizado."
 
-#: core/gestion_agro/views.py:494
+#: gestion_agro/views.py:506
 msgid "El usuario no tiene una empresa asociada."
 msgstr "Usuário sem empresa vinculada."
 
-#: core/gestion_agro/views.py:513
+#: gestion_agro/views.py:525
 #, python-format
 msgid "Lote-%(numero)s"
 msgstr "Talhão-%(numero)s"
 
-#: core/gestion_agro/views.py:522
+#: gestion_agro/views.py:534
 msgid "Ciclo creado correctamente. Ahora podés registrar actividades."
 msgstr "Ciclo criado com sucesso. Agora você pode registrar atividades."
 
-#: core/gestion_agro/views.py:541
+#: gestion_agro/views.py:590
 msgid "Usuario sin empresa asociada."
 msgstr "Usuário sem empresa vinculada."
 
-#: core/gestion_agro/views.py:544
+#: gestion_agro/views.py:593
 msgid "Cultivo no informado."
 msgstr "Cultura não informada."
 
-#: core/gestion_agro/views.py:552
+#: gestion_agro/views.py:601
 msgid "Cultivo no encontrado."
 msgstr "Cultura não encontrada."
 
-#: core/gestion_agro/views.py:670
+#: gestion_agro/views.py:720
 msgid "El ciclo no existe."
 msgstr "Ciclo não encontrado."
 
-#: core/gestion_agro/views.py:735
+#: gestion_agro/views.py:837
 msgid "Actividad registrada e inicio de fase generado."
 msgstr "Atividade registrada e início de fase gerado."
 
-#: core/gestion_agro/views.py:737
+#: gestion_agro/views.py:837
 msgid "Actividad registrada correctamente."
 msgstr "Atividade registrada com sucesso."
 
-#: core/gestion_agro/views.py:744
+#: gestion_agro/views.py:842
 msgid "Hay errores en el formulario."
 msgstr "Verifique os erros no formulário."
 
-#: core/gestion_agro/views.py:1337
+#: gestion_agro/views.py:1296 templates/configuracion.html:112
+#: templates/tem_administracion/lista_ventas.html:78
+#: templates/vista_agregar_actividad.html:348
+#: templates/vista_detalle_ciclo.html:468 templates/vista_lista_stock.html:331
+msgid "Semilla"
+msgstr "É semente"
+
+#: gestion_agro/views.py:1296 templates/tem_administracion/lista_ventas.html:80
+#: templates/tem_administracion/registrar_venta.html:43
+#: templates/vista_agregar_actividad.html:416
+#: templates/vista_detalle_ciclo.html:473 templates/vista_lista_stock.html:335
+msgid "Consumo"
+msgstr "Consumido"
+
+#: gestion_agro/views.py:1500
 msgid "Factura cargada correctamente."
 msgstr "Nota fiscal carregada com sucesso."
 
-#: core/gestion_agro/views.py:1340
-msgid "Revisá los errores del formulario."
-msgstr "Verifique os erros do formulário."
-
-#: core/gestion_agro/views.py:1642
+#: gestion_agro/views.py:1813
 msgid "No se ha seleccionado ningún archivo PDF."
 msgstr "Nenhum arquivo PDF selecionado."
 
-#: core/gestion_agro/views.py:1655
+#: gestion_agro/views.py:1826
 msgid "No se encontraron productos en la factura."
 msgstr "Nenhum produto encontrado na nota fiscal."
 
-#: core/gestion_agro/views.py:1687
+#: gestion_agro/views.py:1858
 #, python-format
 msgid "Error procesando factura: %(error)s"
 msgstr "Erro ao processar a nota fiscal: %(error)s"
 
-#: core/gestion_agro/views.py:1707
+#: gestion_agro/views.py:1878
 msgid "No hay factura cargada."
 msgstr "Nenhuma nota fiscal carregada."
 
-#: core/gestion_agro/views.py:1712
+#: gestion_agro/views.py:1883
 msgid "No tiene empresa asignada."
 msgstr "Usuário sem empresa vinculada."
 
-#: core/gestion_agro/views.py:1846
+#: gestion_agro/views.py:2032
 msgid "Sesión expirada."
 msgstr "Sessão expirada."
 
-#: core/gestion_agro/views.py:1858
+#: gestion_agro/views.py:2044
 msgid "Proveedor no encontrado."
 msgstr "Fornecedor não encontrado."
 
-#: core/gestion_agro/views.py:1883
+#: gestion_agro/views.py:2069
 msgid "Hay errores en la factura. Revisá los campos marcados."
 msgstr "Existem erros na nota fiscal. Verifique os campos marcados."
 
-#: core/gestion_agro/views.py:1907
+#: gestion_agro/views.py:2093
 #, python-brace-format
 msgid "La factura {numero_factura} ya fue ingresada para este proveedor."
 msgstr "A nota {numero_factura} já foi registrada para este fornecedor."
 
-#: core/gestion_agro/views.py:2065
+#: gestion_agro/views.py:2257
 #, python-brace-format
 msgid "Factura {factura.numero} guardada correctamente."
 msgstr "Nota fiscal {factura.numero} salva com sucesso."
 
-#: core/mapas/models.py:16
-msgid "Mapa de prescripción"
-msgstr "Mapa de prescrição"
-
-#: core/mapas/models.py:17 core/templates/temp_mapas/mapa.html:95
-#: core/templates/temp_mapas/vista_mapa_principal.html:93
-msgid "Análisis de suelo"
-msgstr "Análise de solo"
-
-#: core/mapas/models.py:18
-msgid "Mapa de rendimiento"
-msgstr "Mapa de produtividade"
-
-#: core/mapas/models.py:19
-msgid "NDVI / vegetación"
-msgstr "NDVI / vegetação"
-
-#: core/mapas/models.py:20 core/templates/temp_mapas/mapa.html:98
-#: core/templates/temp_mapas/vista_mapa_principal.html:96
-msgid "Otro"
-msgstr "Outro"
-
-#: core/mapas/models.py:36
-msgid "Nombre del campo numérico en el shapefile (ej: rate, ph, k)"
-msgstr "Nome do campo numérico no shapefile (ex: rate, ph, k)"
-
-#: core/mapas/models.py:62
-msgid "Capa de análisis"
-msgstr "Camada de análise"
-
-#: core/mapas/models.py:63
-msgid "Capas de análisis"
-msgstr "Camadas de análise"
-
-#: core/templates/base.html:100
-msgid "Buen día,"
-msgstr "Bom dia,"
-
-#: core/templates/base.html:103
-msgid "Resumen del sistema"
-msgstr "Resumo do sistema"
-
-#: core/templates/base.html:122
-msgid "Idioma"
-msgstr "Idioma"
-
-#: core/templates/base.html:166
-msgid "Cerrar sesión"
-msgstr "Sair"
-
-#: core/templates/base.html:187
-msgid "Dashboard"
-msgstr "Painel"
-
-#: core/templates/base.html:194
-msgid "Gestión Productiva"
-msgstr "Gestão Produtiva"
-
-#: core/templates/base.html:206
-msgid "Ciclos Productivos"
-msgstr "Ciclos Produtivos"
-
-#: core/templates/base.html:209 core/templates/vista_crear_cultivo.html:36
-#: core/templates/vista_crear_cultivo.html:114
-#: core/templates/vista_lista_stock.html:265
-msgid "Cultivos"
-msgstr "Culturas"
-
-#: core/templates/base.html:218
-msgid "Compras y Stock"
-msgstr "Compras e Estoque"
-
-#: core/templates/base.html:223
-msgid "Lista Facturas"
-msgstr "Notas Fiscais"
-
-#: core/templates/base.html:225 core/templates/vista_producto.html:171
-msgid "Stock"
-msgstr "Estoque"
-
-#: core/templates/base.html:226 core/templates/vista_crear_deposito.html:30
-#: core/templates/vista_crear_deposito.html:138
-msgid "Depósitos"
-msgstr "Armazéns"
-
-#: core/templates/base.html:234
-msgid "Resultados"
-msgstr "Resultados"
-
-#: core/templates/base.html:239
-msgid "Gastos"
-msgstr "Gastos"
-
-#: core/templates/base.html:240
-msgid "Inversiones"
-msgstr "Investimentos"
-
-#: core/templates/base.html:241
-msgid "Costos por Ciclo"
-msgstr "Custos por Ciclo"
-
-#: core/templates/base.html:242
-msgid "Resumen Económico"
-msgstr "Resumo Econômico"
-
-#: core/templates/base.html:250
-msgid "Análisis"
-msgstr "Análises"
-
-#: core/templates/base.html:255
-msgid "Mapas"
-msgstr "Mapas"
-
-#: core/templates/base.html:256
-msgid "NDVI"
-msgstr "NDVI"
-
-#: core/templates/base.html:257
-msgid "Ambientes"
-msgstr "Ambientes"
-
-#: core/templates/base.html:258
-msgid "Comparativas"
-msgstr "Comparativos"
-
-#: core/templates/base.html:266
-msgid "Configuración"
-msgstr "Configurações"
-
-#: core/templates/base.html:271
-msgid "Usuarios"
-msgstr "Usuários"
-
-#: core/templates/base.html:272
-msgid "Parámetros del sistema"
-msgstr "Parâmetros do sistema"
-
-#: core/templates/login.html:111
-msgid "¡Bienvenido de nuevo!"
-msgstr "Bem-vindo de volta!"
-
-#: core/templates/login.html:112
-msgid "Ingresá tus credenciales para acceder al sistema"
-msgstr "Entre com suas credenciais para acessar o sistema"
-
-#: core/templates/login.html:127
-msgid "Iniciar sesión"
-msgstr "Entrar"
-
-#: core/templates/tem_facturas/revisar_factura.html:127
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:172
-#: core/templates/tem_facturas/vista_revisar_factura.html:79
-msgid "Revisar factura"
-msgstr "Revisar nota fiscal"
-
-#: core/templates/tem_facturas/revisar_factura.html:129
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:181
-msgid "ítems"
-msgstr "itens"
-
-#: core/templates/tem_facturas/revisar_factura.html:143
-msgid "Doc."
-msgstr "Doc."
-
-#: core/templates/tem_facturas/revisar_factura.html:166
-msgid "Descripción factura"
-msgstr "Descrição na nota"
-
-#: core/templates/tem_facturas/revisar_factura.html:168
-#: core/templates/tem_facturas/vista_revisar_factura.html:142
-msgid "Producto en sistema"
-msgstr "Produto no sistema"
-
-#: core/templates/tem_facturas/revisar_factura.html:170
-#: core/templates/tem_facturas/vista_revisar_factura.html:144
-msgid "Cant."
-msgstr "Qtd."
-
-#: core/templates/tem_facturas/revisar_factura.html:171
-#: core/templates/tem_facturas/vista_revisar_factura.html:145
-msgid "Cont./env."
-msgstr "Cont./emb."
-
-#: core/templates/tem_facturas/revisar_factura.html:173
-#: core/templates/tem_facturas/vista_revisar_factura.html:147
-msgid "Stock total"
-msgstr "Estoque total"
-
-#: core/templates/tem_facturas/revisar_factura.html:175
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:234
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:153
-#: core/templates/tem_facturas/vista_revisar_factura.html:149
-#: core/templates/vista_detalle_ciclo.html:340
-#: core/templates/vista_detalle_ciclo.html:371
-#: core/templates/vista_detalle_ciclo.html:405
-msgid "Subtotal"
-msgstr "Subtotal"
-
-#: core/templates/tem_facturas/revisar_factura.html:206
-msgid "nueva variedad"
-msgstr "nova variedade"
-
-#: core/templates/tem_facturas/revisar_factura.html:210
-msgid "cancelar"
-msgstr "cancelar"
-
-#: core/templates/tem_facturas/revisar_factura.html:225
-msgid "sin coincidencia"
-msgstr "sem correspondência"
-
-#: core/templates/tem_facturas/revisar_factura.html:230
-msgid "Crear producto nuevo"
-msgstr "Criar novo produto"
-
-#: core/templates/tem_facturas/revisar_factura.html:255
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:311
-msgid "Nueva"
-msgstr "Nova"
-
-#: core/templates/tem_facturas/revisar_factura.html:261
-msgid "nueva"
-msgstr "nova"
-
-#: core/templates/tem_facturas/revisar_factura.html:266
-msgid "Unidad contenido BD"
-msgstr "Unidade conteúdo BD"
-
-#: core/templates/tem_facturas/revisar_factura.html:327
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:408
-#: core/templates/tem_facturas/vista_revisar_factura.html:352
-msgid "No hay ítems para revisar."
-msgstr "Nenhum item para revisar."
-
-#: core/templates/tem_facturas/revisar_factura.html:336
-#: core/templates/tem_facturas/vista_revisar_factura.html:358
-msgid "Total factura"
-msgstr "Total da nota"
-
-#: core/templates/tem_facturas/revisar_factura.html:353
-#: core/templates/tem_facturas/vista_revisar_factura.html:372
-msgid "Confirmar y generar stock"
-msgstr "Confirmar e gerar estoque"
-
-#: core/templates/tem_facturas/revisar_factura.html:357
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:422
-#: core/templates/tem_facturas/vista_cargar_factura.html:79
-#: core/templates/tem_facturas/vista_revisar_factura.html:376
-#: core/templates/vista_agregar_actividad.html:51
-#: core/templates/vista_crear_ciclo.html:120
-#: core/templates/vista_detalle_ciclo.html:194
-msgid "Volver"
-msgstr "Voltar"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:196
-msgid "Documento"
-msgstr "Documento"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:230
-msgid "Cont./Envase"
-msgstr "Cont./Embalagem"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:232
-msgid "Total stock"
-msgstr "Total estoque"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:263
-msgid "Coincidencia"
-msgstr "Correspondência"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:274
-msgid "Usar producto existente"
-msgstr "Usar produto existente"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:317
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:286
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:417
-#: core/templates/temp_mapas/mapa.html:131
-#: core/templates/temp_mapas/vista_mapa_principal.html:145
-#: core/templates/vista_agregar_actividad.html:360
-#: core/templates/vista_crear_campana.html:123
-#: core/templates/vista_crear_campo.html:140
-#: core/templates/vista_crear_ciclo.html:317
-#: core/templates/vista_crear_cultivo.html:103
-#: core/templates/vista_crear_cultivo.html:252
-#: core/templates/vista_crear_deposito.html:126
-#: core/templates/vista_lista_stock.html:476
-#: core/templates/vista_producto.html:144
-msgid "Cancelar"
-msgstr "Cancelar"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:336
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:536
-msgid "Nueva presentación"
-msgstr "Nova apresentação"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:347
-msgid "Unidad de stock"
-msgstr "Unidade de estoque"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:350
-msgid "Unidad contenido (BD)"
-msgstr "Unidade conteúdo (BD)"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:418
-msgid "Confirmar factura y generar stock"
-msgstr "Confirmar nota e gerar estoque"
-
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:534
-#: core/templates/tem_facturas/revisar_factura_mejorado.html:550
-msgid "Cancelar nueva presentación"
-msgstr "Cancelar nova apresentação"
-
-#: core/templates/tem_facturas/vista_cargar_factura.html:29
-msgid "Cargar Factura"
-msgstr "Importar Nota Fiscal"
-
-#: core/templates/tem_facturas/vista_cargar_factura.html:33
-msgid "Subí una factura en PDF para procesarla automáticamente"
-msgstr "Envie uma nota fiscal em PDF para processamento automático"
-
-#: core/templates/tem_facturas/vista_cargar_factura.html:50
-msgid "Formato compatible: archivo PDF de factura."
-msgstr "Formato aceito: PDF de nota fiscal."
-
-#: core/templates/tem_facturas/vista_cargar_factura.html:58
-msgid "Seleccioná un archivo PDF"
-msgstr "Selecione um arquivo PDF"
-
-#: core/templates/tem_facturas/vista_cargar_factura.html:60
-msgid "Elegí una factura desde tu computadora"
-msgstr "Escolha uma nota fiscal do seu computador"
-
-#: core/templates/tem_facturas/vista_cargar_factura.html:73
-msgid "Tamaño máximo: 10MB"
-msgstr "Tamanho máximo: 10MB"
-
-#: core/templates/tem_facturas/vista_cargar_factura.html:84
-msgid "Cargar manual"
-msgstr "Entrada manual"
-
-#: core/templates/tem_facturas/vista_cargar_factura.html:88
-msgid "Procesar Factura"
-msgstr "Processar Nota Fiscal"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:79
-msgid "Cargar factura manual"
-msgstr "Entrada manual de nota fiscal"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:95
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:166
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:443
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:451
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:539
-msgid "Seleccionar"
-msgstr "Selecionar"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:103
-msgid "Seleccioná un proveedor."
-msgstr "Selecione um fornecedor."
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:107
-#: core/templates/tem_facturas/vista_revisar_factura.html:108
-msgid "Nº Factura"
-msgstr "Nº Nota Fiscal"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:123
-#: core/templates/tem_facturas/vista_revisar_factura.html:122
-msgid "Sin asignar"
-msgstr "Não atribuído"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:180
-msgid "nuevo producto"
-msgstr "novo produto"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:189
-msgid "Seleccionar producto"
-msgstr "Selecionar produto"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:197
-msgid "nueva presentación"
-msgstr "nova apresentação"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:241
-msgid "No hay ítems. Usá el botón para agregar."
-msgstr "Nenhum item. Use o botão para adicionar."
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:268
-msgid "Ítem"
-msgstr "Item"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:280
-msgid "Agregar ítem"
-msgstr "Adicionar item"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:283
-msgid "Guardar factura"
-msgstr "Salvar nota fiscal"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:305
-#: core/templates/vista_producto.html:61
-msgid "Nuevo producto"
-msgstr "Novo produto"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:315
-#: core/templates/vista_crear_ciclo.html:210
-#: core/templates/vista_lista_stock.html:336
-msgid "Producto final"
-msgstr "Produto de colheita"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:356
-msgid "Datos de semilla"
-msgstr "Dados da semente"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:373
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:512
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:535
-msgid "Seleccionar cultivo"
-msgstr "Selecionar cultura"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:383
-msgid "O escribí una variedad nueva"
-msgstr "Ou escreva uma variedade nova"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:387
-msgid "variedad nueva"
-msgstr "nova variedade"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:420
-#: core/templates/vista_agregar_actividad.html:356
-#: core/templates/vista_crear_campana.html:119
-#: core/templates/vista_crear_campo.html:136
-#: core/templates/vista_crear_cultivo.html:98
-#: core/templates/vista_crear_cultivo.html:255
-#: core/templates/vista_crear_deposito.html:122
-#: core/templates/vista_producto.html:140
-msgid "Guardar"
-msgstr "Salvar"
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:534
-msgid "Cargando..."
-msgstr "Carregando..."
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:596
-msgid "Completá código, nombre, categoría y unidad base."
-msgstr "Preencha código, nome, categoria e unidade base."
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:601
-msgid "Completá los datos de la presentación."
-msgstr "Preencha os dados da apresentação."
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:606
-msgid "Seleccioná el cultivo."
-msgstr "Selecione a cultura."
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:611
-msgid "Seleccioná o escribí la variedad."
-msgstr "Selecione ou escreva a variedade."
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:660
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:703
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:705
-msgid "Error al guardar."
-msgstr "Erro ao salvar."
-
-#: core/templates/tem_facturas/vista_cargar_factura_manual.html:698
-msgid "Producto creado correctamente."
-msgstr "Produto criado com sucesso."
-
-#: core/templates/tem_facturas/vista_lista_facturas.html:30
-msgid "Facturas de Compra"
-msgstr "Notas Fiscais de Compra"
-
-#: core/templates/tem_facturas/vista_lista_facturas.html:33
-msgid "Listado de facturas ingresadas"
-msgstr "Notas fiscais registradas"
-
-#: core/templates/tem_facturas/vista_lista_facturas.html:38
-msgid "Nueva Factura"
-msgstr "Nova Nota Fiscal"
-
-#: core/templates/tem_facturas/vista_lista_facturas.html:46
-msgid "Número"
-msgstr "Número"
-
-#: core/templates/tem_facturas/vista_lista_facturas.html:50
-msgid "Ítems"
-msgstr "Itens"
-
-#: core/templates/tem_facturas/vista_lista_facturas.html:51
-msgid "Creada"
-msgstr "Registrada"
-
-#: core/templates/tem_facturas/vista_lista_facturas.html:52
-msgid "PDF"
-msgstr "PDF"
-
-#: core/templates/tem_facturas/vista_lista_facturas.html:77
-msgid "No hay facturas cargadas"
-msgstr "Nenhuma nota fiscal registrada"
-
-#: core/templates/temp_mapas/mapa.html:19
-#: core/templates/temp_mapas/vista_mapa_principal.html:18
-msgid "Selección"
-msgstr "Seleção"
-
-#: core/templates/temp_mapas/mapa.html:24
-#: core/templates/temp_mapas/vista_mapa_principal.html:23
-msgid "Seleccione campo"
-msgstr "Selecione o campo"
-
-#: core/templates/temp_mapas/mapa.html:33
-#: core/templates/temp_mapas/vista_mapa_principal.html:32
-msgid "Capas disponibles"
-msgstr "Camadas disponíveis"
-
-#: core/templates/temp_mapas/mapa.html:35
-#: core/templates/temp_mapas/vista_mapa_principal.html:34
-msgid "Seleccione un campo"
-msgstr "Selecione um campo"
-
-#: core/templates/temp_mapas/mapa.html:41
-#: core/templates/temp_mapas/mapa.html:80
-#: core/templates/temp_mapas/vista_mapa_principal.html:40
-#: core/templates/temp_mapas/vista_mapa_principal.html:74
-msgid "Subir nueva capa"
-msgstr "Carregar nova camada"
-
-#: core/templates/temp_mapas/mapa.html:46
-msgid "Información del punto"
-msgstr "Informações do ponto"
-
-#: core/templates/temp_mapas/mapa.html:51
-#: core/templates/temp_mapas/vista_mapa_principal.html:45
-msgid "Leyenda"
-msgstr "Legenda"
-
-#: core/templates/temp_mapas/mapa.html:61
-#: core/templates/temp_mapas/vista_mapa_principal.html:54
-msgid "Mapa"
-msgstr "Mapa"
-
-#: core/templates/temp_mapas/mapa.html:64
-#: core/templates/temp_mapas/vista_mapa_principal.html:57
-msgid "Satélite"
-msgstr "Satélite"
-
-#: core/templates/temp_mapas/mapa.html:67
-#: core/templates/temp_mapas/vista_mapa_principal.html:60
-msgid "Centrar"
-msgstr "Centralizar"
-
-#: core/templates/temp_mapas/mapa.html:92
-#: core/templates/temp_mapas/vista_mapa_principal.html:90
-#: core/templates/vista_agregar_actividad.html:124
-#: core/templates/vista_crear_deposito.html:60
-#: core/templates/vista_crear_deposito.html:145
-#: core/templates/vista_movimientos_producto.html:81
-#: core/templates/vista_movimientos_producto.html:187
+#: mapas/forms.py:30 templates/temp_mapas/vista_mapas.html:224
+msgid "Ciclo"
+msgstr "Criar ciclo"
+
+#: mapas/forms.py:31 templates/temp_mapas/vista_mapas.html:70
+#: templates/temp_mapas/vista_mapas.html:230
+#: templates/temp_mapas/vista_mapas.html:461
+msgid "Área"
+msgstr "Área:"
+
+#: mapas/forms.py:34 mapas/models.py:142
+msgid "Archivo"
+msgstr "Arquivo"
+
+#: mapas/models.py:18 templates/temp_mapas/mapa.html:92
+#: templates/temp_mapas/vista_mapa_principal.html:122
+#: templates/vista_agregar_actividad.html:124
+#: templates/vista_crear_deposito.html:60
+#: templates/vista_crear_deposito.html:145 templates/vista_lista_stock.html:313
+#: templates/vista_movimientos_producto.html:81
+#: templates/vista_movimientos_producto.html:187
 msgid "Tipo"
 msgstr "Tipo"
 
-#: core/templates/temp_mapas/mapa.html:94
-#: core/templates/temp_mapas/vista_mapa_principal.html:92
-msgid "Prescripción"
-msgstr "Prescrição"
+#: mapas/models.py:20
+msgid "Rango mínimo esperado"
+msgstr "Produtividade esperada"
 
-#: core/templates/temp_mapas/mapa.html:96
-#: core/templates/temp_mapas/vista_mapa_principal.html:94
-msgid "Rendimiento"
-msgstr "Produtividade"
+#: mapas/models.py:21
+msgid "Rango máximo esperado"
+msgstr "Produtividade esperada"
 
-#: core/templates/temp_mapas/mapa.html:102
-#: core/templates/temp_mapas/vista_mapa_principal.html:101
-msgid "Variable"
-msgstr "Variável"
+#: mapas/models.py:24 mapas/models.py:136
+msgid "Variable analítica"
+msgstr "Variável analítica"
 
-#: core/templates/temp_mapas/mapa.html:112
-#: core/templates/temp_mapas/vista_mapa_principal.html:116
-msgid "Suba los 3 archivos del shapefile:"
-msgstr "Envie os 3 arquivos do shapefile:"
+#: mapas/models.py:25
+msgid "Variables analíticas"
+msgstr "Variáveis analíticas"
 
-#: core/templates/temp_mapas/mapa.html:134
-#: core/templates/temp_mapas/vista_mapa_principal.html:148
-msgid "Subir y procesar"
-msgstr "Enviar e processar"
+#: mapas/models.py:47
+msgid "Fecha de imagen"
+msgstr "Data de encerramento"
 
-#: core/templates/vista_agregar_actividad.html:42
-msgid "Agregar Actividad Agrícola"
-msgstr "Registrar Atividade Agrícola"
+#: mapas/models.py:56
+msgid "Fuente"
+msgstr "Ambientes"
 
-#: core/templates/vista_agregar_actividad.html:61
-#: core/templates/vista_detalle_ciclo.html:135
-msgid "Superficie"
-msgstr "Área"
+#: mapas/models.py:58
+msgid "% Nubosidad"
+msgstr "% Nebulosidade"
 
-#: core/templates/vista_agregar_actividad.html:81
-#: core/templates/vista_crear_campana.html:145
-#: core/templates/vista_detalle_ciclo.html:149
-#: core/templates/vista_lista_ciclos.html:139
-msgid "Inicio"
-msgstr "Início"
-
-#: core/templates/vista_agregar_actividad.html:91
-#: core/templates/vista_crear_ciclo.html:280
-#: core/templates/vista_lista_ciclos.html:140
-#: core/templates/vista_producto.html:172
+#: mapas/models.py:67 mapas/models.py:161
+#: templates/tem_administracion/_tabla_facturas.html:22
+#: templates/tem_administracion/cuenta_corriente_cliente.html:89
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:98
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:155
+#: templates/tem_administracion/lista_ventas.html:64
+#: templates/temp_mapas/ndvi_campo.html:103
+#: templates/vista_agregar_actividad.html:91
+#: templates/vista_crear_ciclo.html:256 templates/vista_lista_ciclos.html:140
+#: templates/vista_producto.html:181
 msgid "Estado"
 msgstr "Status"
 
-#: core/templates/vista_agregar_actividad.html:96
-#: core/templates/vista_lista_ciclos.html:157
-msgid "Cerrado"
-msgstr "Encerrado"
-
-#: core/templates/vista_agregar_actividad.html:115
-msgid "Datos de la actividad"
-msgstr "Dados da atividade"
-
-#: core/templates/vista_agregar_actividad.html:129
-msgid "Subtipo"
-msgstr "Subtipo"
-
-#: core/templates/vista_agregar_actividad.html:148
-#: core/templates/vista_detalle_ciclo.html:331
-msgid "Mano de obra"
-msgstr "Mão de obra"
-
-#: core/templates/vista_agregar_actividad.html:163
-#: core/templates/vista_agregar_actividad.html:192
-msgid "Total horas"
-msgstr "Total de horas"
-
-#: core/templates/vista_agregar_actividad.html:167
-#: core/templates/vista_agregar_actividad.html:196
-#: core/templates/vista_detalle_ciclo.html:74
-msgid "Costo total"
-msgstr "Custo total"
-
-#: core/templates/vista_agregar_actividad.html:177
-#: core/templates/vista_detalle_ciclo.html:362
-msgid "Maquinaria"
-msgstr "Maquinário"
-
-#: core/templates/vista_agregar_actividad.html:206
-msgid "Insumos utilizados"
-msgstr "Insumos utilizados"
-
-#: core/templates/vista_agregar_actividad.html:209
-msgid "Agregar insumo"
-msgstr "Adicionar insumo"
-
-#: core/templates/vista_agregar_actividad.html:226
-msgid "Total a usar"
-msgstr "Total a utilizar"
-
-#: core/templates/vista_agregar_actividad.html:227
-msgid "Acción"
-msgstr "Ação"
-
-#: core/templates/vista_agregar_actividad.html:275
-msgid "Datos de monitoreo"
-msgstr "Monitoramento"
-
-#: core/templates/vista_agregar_actividad.html:309
-msgid "Datos de cosecha"
-msgstr "Dados de colheita"
-
-#: core/templates/vista_agregar_actividad.html:348
-#: core/templates/vista_crear_campana.html:111
-#: core/templates/vista_crear_campo.html:128
-#: core/templates/vista_crear_ciclo.html:301
-#: core/templates/vista_crear_cultivo.html:90
-#: core/templates/vista_crear_deposito.html:114
-#: core/templates/vista_producto.html:132
-msgid "Actualizar"
-msgstr "Atualizar"
-
-#: core/templates/vista_agregar_actividad.html:351
-#: core/templates/vista_crear_campana.html:114
-#: core/templates/vista_crear_campo.html:131
-#: core/templates/vista_crear_cultivo.html:93
-#: core/templates/vista_crear_deposito.html:117
-#: core/templates/vista_producto.html:135
-msgid "¿Confirmar eliminación?"
-msgstr "Confirmar exclusão?"
-
-#: core/templates/vista_agregar_actividad.html:352
-#: core/templates/vista_crear_campana.html:115
-#: core/templates/vista_crear_campo.html:132
-#: core/templates/vista_crear_cultivo.html:94
-#: core/templates/vista_crear_deposito.html:118
-#: core/templates/vista_producto.html:136
-msgid "Eliminar"
-msgstr "Excluir"
-
-#: core/templates/vista_crear_campana.html:37
-msgid "Creación de nueva campaña"
-msgstr "Nova safra"
-
-#: core/templates/vista_crear_campana.html:51
-#: core/templates/vista_crear_campo.html:47
-#: core/templates/vista_crear_ciclo.html:171
-#: core/templates/vista_crear_cultivo.html:53
-#: core/templates/vista_crear_deposito.html:45
-msgid "Información general"
-msgstr "Informações gerais"
-
-#: core/templates/vista_crear_campana.html:63
-msgid "Se generará automáticamente"
-msgstr "Gerado automaticamente"
-
-#: core/templates/vista_crear_campana.html:86
-#: core/templates/vista_lista_stock.html:73
-#: core/templates/vista_movimientos_producto.html:61
-msgid "Fecha desde"
+#: mapas/models.py:69
+msgid "Fecha procesado"
 msgstr "Data inicial"
 
-#: core/templates/vista_crear_campana.html:98
-#: core/templates/vista_lista_stock.html:79
-#: core/templates/vista_movimientos_producto.html:71
-msgid "Fecha hasta"
-msgstr "Data final"
+#: mapas/models.py:72
+msgid "Captura satelital"
+msgstr "Culturas"
 
-#: core/templates/vista_crear_campana.html:146
-#: core/templates/vista_detalle_ciclo.html:163
-msgid "Fin"
-msgstr "Fim"
+#: mapas/models.py:73
+msgid "Capturas satelitales"
+msgstr "Capturas de satélite"
 
-#: core/templates/vista_crear_campana.html:147
-#: core/templates/vista_crear_campo.html:162
-#: core/templates/vista_crear_cultivo.html:124
-#: core/templates/vista_crear_deposito.html:149
-#: core/templates/vista_lista_ciclos.html:141
-#: core/templates/vista_lista_stock.html:163
-#: core/templates/vista_lista_stock.html:323
-msgid "Acciones"
-msgstr "Ações"
+#: mapas/models.py:84
+msgid "Captura"
+msgstr "Culturas"
 
-#: core/templates/vista_crear_campana.html:159
-#: core/templates/vista_crear_campo.html:180
-#: core/templates/vista_crear_cultivo.html:164
-#: core/templates/vista_crear_deposito.html:163
-msgid "Editar"
-msgstr "Editar"
+#: mapas/models.py:94
+msgid "Tipo de índice"
+msgstr "Tipo de embalagem"
 
-#: core/templates/vista_crear_campana.html:166
-msgid "No hay campañas cargadas"
-msgstr "Nenhuma safra registrada"
+#: mapas/models.py:96 mapas/models.py:205
+#: templates/temp_mapas/vista_mapas.html:226
+msgid "Promedio"
+msgstr "NDVI médio"
 
-#: core/templates/vista_crear_campo.html:36
-msgid "Creación de nuevos campos"
-msgstr "Cadastro de campos"
+#: mapas/models.py:97 mapas/models.py:206
+#: templates/temp_mapas/vista_mapas.html:207
+msgid "Mínimo"
+msgstr "NDVI mínimo"
 
-#: core/templates/vista_crear_campo.html:66
-#: core/templates/vista_crear_deposito.html:72
-#: core/templates/vista_crear_deposito.html:146
-msgid "Ciudad"
-msgstr "Cidade"
+#: mapas/models.py:98 mapas/models.py:207
+#: templates/temp_mapas/vista_mapas.html:198
+msgid "Máximo"
+msgstr "NDVI máximo"
 
-#: core/templates/vista_crear_campo.html:80
-#: core/templates/vista_crear_campo.html:161
-#: core/templates/vista_crear_ciclo.html:222
-#: core/templates/vista_lista_ciclos.html:138
-msgid "Superficie (ha)"
-msgstr "Área (ha)"
+#: mapas/models.py:99
+msgid "Grilla de datos (píxeles)"
+msgstr "Grade de dados (pixels)"
 
-#: core/templates/vista_crear_campo.html:169
-msgid "Imagen del campo"
-msgstr "Imagem do campo"
+#: mapas/models.py:102
+msgid "Imagen PNG"
+msgstr "Imagem"
 
-#: core/templates/vista_crear_campo.html:187
-msgid "No hay campos cargados"
-msgstr "Nenhum campo cadastrado"
+#: mapas/models.py:106
+msgid "GeoJSON"
+msgstr "GeoJSON"
 
-#: core/templates/vista_crear_campo.html:200
-msgid "implantaciones"
-msgstr "implantações"
+#: mapas/models.py:110 mapas/models.py:240
+msgid "Índice de vegetación"
+msgstr "NDVI / vegetação"
 
-#: core/templates/vista_crear_campo.html:202
-msgid "Mostrando todas las implantaciones registradas"
-msgstr "Exibindo todas as implantações registradas"
+#: mapas/models.py:111
+msgid "Índices de vegetación"
+msgstr "NDVI / vegetação"
 
-#: core/templates/vista_crear_ciclo.html:102
-msgid "Editar ciclo productivo"
-msgstr "Editar ciclo produtivo"
+#: mapas/models.py:140
+msgid "Cargado por"
+msgstr "Carregando..."
 
-#: core/templates/vista_crear_ciclo.html:104
-msgid "Nuevo ciclo productivo"
-msgstr "Novo ciclo produtivo"
+#: mapas/models.py:151
+msgid "Tipo de archivo"
+msgstr "Tipo de embalagem"
 
-#: core/templates/vista_crear_ciclo.html:110
-msgid ""
-"Actualizá la información general del lote y su planificación productiva."
-msgstr "Atualize as informações do talhão e seu planejamento produtivo."
-
-#: core/templates/vista_crear_ciclo.html:112
-msgid ""
-"Registrá un nuevo ciclo agrícola para comenzar a cargar actividades, insumos "
-"y producción."
-msgstr "Registre um novo ciclo agrícola para começar a lançar atividades, insumos e produção."
-
-#: core/templates/vista_crear_ciclo.html:128
-#: core/templates/vista_lista_ciclos.html:136
-msgid "Lote"
-msgstr "Talhão"
-
-#: core/templates/vista_crear_ciclo.html:133
-msgid "Se genera automáticamente al guardar"
-msgstr "Gerado automaticamente ao salvar"
-
-#: core/templates/vista_crear_ciclo.html:148
-msgid "Estado inicial"
-msgstr "Status inicial"
-
-#: core/templates/vista_crear_ciclo.html:154
-#: core/templates/vista_crear_ciclo.html:284
-#: core/templates/vista_producto.html:193
-msgid "Inactivo"
-msgstr "Inativo"
-
-#: core/templates/vista_crear_ciclo.html:157
-msgid "Activo al crear"
-msgstr "Ativo ao criar"
-
-#: core/templates/vista_crear_ciclo.html:182
-msgid "Seleccioná el campo donde se desarrollará el ciclo."
-msgstr "Selecione o campo onde o ciclo será desenvolvido."
-
-#: core/templates/vista_crear_ciclo.html:193
-msgid "Se propone automáticamente la campaña activa de la empresa."
-msgstr "A safra ativa da empresa é sugerida automaticamente."
-
-#: core/templates/vista_crear_ciclo.html:206
-msgid ""
-"Seleccioná el cultivo. El producto final se completa automáticamente desde "
-"su configuración."
-msgstr "Selecione a cultura. O produto de colheita é preenchido automaticamente."
-
-#: core/templates/vista_crear_ciclo.html:228
-msgid "Indicá la superficie estimada o comprometida para este lote."
-msgstr "Informe a área estimada ou comprometida para este talhão."
-
-#: core/templates/vista_crear_ciclo.html:235
-msgid "Fechas del ciclo"
-msgstr "Datas do ciclo"
-
-#: core/templates/vista_crear_ciclo.html:248
-msgid "Fecha de fin"
+#: mapas/models.py:163
+msgid "Fecha de carga"
 msgstr "Data de encerramento"
 
-#: core/templates/vista_crear_ciclo.html:254
-msgid "Podés dejarla vacía al inicio y completarla cuando el ciclo termine."
-msgstr "Pode deixar em branco e preencher quando o ciclo for encerrado."
+#: mapas/models.py:172
+msgid "Archivo analítico"
+msgstr "Arquivo analítico"
 
-#: core/templates/vista_crear_ciclo.html:262
-msgid "Datos del lote"
-msgstr "Dados do talhão"
+#: mapas/models.py:173
+msgid "Archivos analíticos"
+msgstr "Arquivos analíticos"
 
-#: core/templates/vista_crear_ciclo.html:267
-msgid "Nombre del lote"
-msgstr "Nome do talhão"
+#: mapas/models.py:197 mapas/models.py:235 templates/temp_mapas/mapa.html:102
+#: templates/temp_mapas/vista_mapa_principal.html:133
+#: templates/temp_mapas/vista_mapas.html:225
+#: templates/temp_mapas/vista_mapas.html:460
+msgid "Variable"
+msgstr "Variável"
 
-#: core/templates/vista_crear_ciclo.html:275
-msgid "Este valor se genera automáticamente al crear el ciclo."
-msgstr "Este valor é gerado automaticamente ao criar o ciclo."
+#: mapas/models.py:202
+msgid "Archivo origen"
+msgstr "Armazém destino"
 
-#: core/templates/vista_crear_ciclo.html:306
-msgid "Borrar"
-msgstr "Excluir"
-
-#: core/templates/vista_crear_ciclo.html:311
-msgid "Crear ciclo"
-msgstr "Criar ciclo"
-
-#: core/templates/vista_crear_cultivo.html:40
-msgid "Edición de cultivo"
+#: mapas/models.py:210
+msgid "Medición de campo"
 msgstr "Editar cultura"
 
-#: core/templates/vista_crear_cultivo.html:42
-msgid "Creación de nuevos cultivos"
-msgstr "Cadastro de culturas"
+#: mapas/models.py:211
+msgid "Mediciones de campo"
+msgstr "Selecione o campo"
 
-#: core/templates/vista_crear_cultivo.html:122
-msgid "Producto default"
-msgstr "Produto padrão"
+#: mapas/models.py:245
+msgid "Medición"
+msgstr "Descrição"
 
-#: core/templates/vista_crear_cultivo.html:123
-msgid "Productos finales"
-msgstr "Produtos de colheita"
+#: mapas/models.py:249
+msgid "Creada por"
+msgstr "Registrada"
 
-#: core/templates/vista_crear_cultivo.html:144
-msgid "Sin productos finales"
-msgstr "Sem produtos de colheita"
-
-#: core/templates/vista_crear_cultivo.html:155
-msgid "Sin productos finales adicionales"
-msgstr "Sem produtos adicionais de colheita"
-
-#: core/templates/vista_crear_cultivo.html:181
-msgid "No hay cultivos cargados"
-msgstr "Nenhuma cultura cadastrada"
-
-#: core/templates/vista_crear_cultivo.html:203
-msgid "Nuevo producto final"
-msgstr "Novo produto de colheita"
-
-#: core/templates/vista_crear_cultivo.html:205
-msgid "Cerrar"
-msgstr "Fechar"
-
-#: core/templates/vista_crear_cultivo.html:243
-msgid "Dejar como producto default"
-msgstr "Definir como produto padrão"
-
-#: core/templates/vista_crear_deposito.html:34
-msgid "Creación de nuevos depósitos"
-msgstr "Cadastro de armazéns"
-
-#: core/templates/vista_crear_deposito.html:81
-#: core/templates/vista_crear_deposito.html:147
-msgid "Dirección"
-msgstr "Endereço"
-
-#: core/templates/vista_crear_deposito.html:93
-#: core/templates/vista_crear_deposito.html:148
-msgid "Teléfono"
-msgstr "Telefone"
-
-#: core/templates/vista_crear_deposito.html:170
-msgid "No hay depósitos cargados"
-msgstr "Nenhum armazém cadastrado"
-
-#: core/templates/vista_detalle_ciclo.html:56
-msgid "Requerimiento hídrico"
-msgstr "Necessidade hídrica"
-
-#: core/templates/vista_detalle_ciclo.html:70
-msgid "Economía"
-msgstr "Economia"
-
-#: core/templates/vista_detalle_ciclo.html:82
-msgid "Costo/ha"
-msgstr "Custo/ha"
-
-#: core/templates/vista_detalle_ciclo.html:90
-msgid "Precio mercado"
-msgstr "Preço de mercado"
-
-#: core/templates/vista_detalle_ciclo.html:104
-msgid "Objetivos"
-msgstr "Metas"
-
-#: core/templates/vista_detalle_ciclo.html:108
-msgid "Equilibrio"
-msgstr "Ponto de equilíbrio"
-
-#: core/templates/vista_detalle_ciclo.html:117
-msgid "Rendimiento esperado"
-msgstr "Produtividade esperada"
-
-#: core/templates/vista_detalle_ciclo.html:169
-msgid "En curso"
-msgstr "Em andamento"
-
-#: core/templates/vista_detalle_ciclo.html:181
-msgid "Actividades"
-msgstr "Atividades"
-
-#: core/templates/vista_detalle_ciclo.html:200
-msgid "Agregar actividad"
-msgstr "Registrar atividade"
-
-#: core/templates/vista_detalle_ciclo.html:215
-msgid "Línea de tiempo de actividades"
-msgstr "Histórico de atividades"
-
-#: core/templates/vista_detalle_ciclo.html:218
-msgid "Historial cronológico con separación por fases"
-msgstr "Histórico cronológico separado por fases"
-
-#: core/templates/vista_detalle_ciclo.html:240
-msgid "Inicio de fase"
-msgstr "Início de fase"
-
-#: core/templates/vista_detalle_ciclo.html:297
-msgid "insumos"
-msgstr "insumos"
-
-#: core/templates/vista_detalle_ciclo.html:337
-#: core/templates/vista_detalle_ciclo.html:368
-#: core/templates/vista_detalle_ciclo.html:402
-#: core/templates/vista_movimientos_producto.html:104
-msgid "Actividad"
-msgstr "Atividade"
-
-#: core/templates/vista_detalle_ciclo.html:339
-#: core/templates/vista_detalle_ciclo.html:370
-#: core/templates/vista_detalle_ciclo.html:404
-msgid "Costo unitario"
-msgstr "Custo unitário"
-
-#: core/templates/vista_detalle_ciclo.html:393
-msgid "Insumos aplicados"
-msgstr "Insumos aplicados"
-
-#: core/templates/vista_detalle_ciclo.html:447
-msgid "Total actividad"
-msgstr "Total da atividade"
-
-#: core/templates/vista_detalle_ciclo.html:467
-msgid "Fin de fase"
-msgstr "Encerramento de fase"
-
-#: core/templates/vista_detalle_ciclo.html:484
-msgid "Fase en curso"
-msgstr "Fase em andamento"
-
-#: core/templates/vista_detalle_ciclo.html:491
-msgid "actividad"
-msgstr "atividade"
-
-#: core/templates/vista_detalle_ciclo.html:493
-msgid "actividades"
-msgstr "atividades"
-
-#: core/templates/vista_detalle_ciclo.html:506
-msgid "No hay actividades registradas"
-msgstr "Nenhuma atividade registrada"
-
-#: core/templates/vista_detalle_ciclo.html:508
-msgid "Comienza agregando la primera actividad para este ciclo productivo"
-msgstr "Comece registrando a primeira atividade deste ciclo produtivo"
-
-#: core/templates/vista_detalle_ciclo.html:513
-msgid "Agregar primera actividad"
-msgstr "Registrar primeira atividade"
-
-#: core/templates/vista_lista_ciclos.html:71
-msgid "Lotes Productivos"
-msgstr "Talhões Produtivos"
-
-#: core/templates/vista_lista_ciclos.html:75
-msgid "Gestión de lotes productivos"
-msgstr "Gestão de talhões produtivos"
-
-#: core/templates/vista_lista_ciclos.html:83
-msgid "Nuevo ciclo"
-msgstr "Novo ciclo"
-
-#: core/templates/vista_lista_ciclos.html:124
-msgid "Limpiar filtros"
-msgstr "Limpar filtros"
-
-#: core/templates/vista_lista_ciclos.html:169
-msgid "Ver"
-msgstr "Ver"
-
-#: core/templates/vista_lista_ciclos.html:176
-msgid "No hay ciclos agrícolas creados"
-msgstr "Nenhum ciclo agrícola registrado"
-
-#: core/templates/vista_lista_stock.html:28
-msgid "Stock de insumos"
-msgstr "Estoque de insumos"
-
-#: core/templates/vista_lista_stock.html:33
-msgid "Stock de cosecha"
-msgstr "Estoque de colheita"
-
-#: core/templates/vista_lista_stock.html:39
-msgid "Compartir"
-msgstr "Compartilhar"
-
-#: core/templates/vista_lista_stock.html:42
-msgid "Imprimir"
-msgstr "Imprimir"
-
-#: core/templates/vista_lista_stock.html:45
-msgid "Exportar"
-msgstr "Exportar"
-
-#: core/templates/vista_lista_stock.html:57
-msgid "Nombre o código"
-msgstr "Nome ou código"
-
-#: core/templates/vista_lista_stock.html:86
-#: core/templates/vista_movimientos_producto.html:122
-msgid "Filtrar"
-msgstr "Filtrar"
-
-#: core/templates/vista_lista_stock.html:89
-#: core/templates/vista_movimientos_producto.html:125
-msgid "Limpiar"
-msgstr "Limpar"
-
-#: core/templates/vista_lista_stock.html:119
-#: core/templates/vista_movimientos_producto.html:139
-msgid "Total ingresado"
-msgstr "Total recebido"
-
-#: core/templates/vista_lista_stock.html:128
-#: core/templates/vista_movimientos_producto.html:149
-msgid "Total consumido"
-msgstr "Total consumido"
-
-#: core/templates/vista_lista_stock.html:137
-#: core/templates/vista_lista_stock.html:162
-msgid "Disponible"
+#: mapas/models.py:253
+msgid "Visible"
 msgstr "Disponível"
 
-#: core/templates/vista_lista_stock.html:148
-msgid "Insumos"
-msgstr "Insumos"
+#: mapas/models.py:254
+msgid "Datos GeoJSON"
+msgstr "GeoJSON"
 
-#: core/templates/vista_lista_stock.html:150
-#: core/templates/vista_lista_stock.html:310
-#: core/templates/vista_movimientos_producto.html:176
-msgid "registros"
-msgstr "registros"
+#: mapas/models.py:258
+msgid "Capa de mapa"
+msgstr "Camada de análise"
 
-#: core/templates/vista_lista_stock.html:160
-msgid "Ingresado"
-msgstr "Recebido"
+#: mapas/models.py:259
+msgid "Capas de mapa"
+msgstr "Camadas de análise"
 
-#: core/templates/vista_lista_stock.html:161
-msgid "Consumido"
-msgstr "Consumido"
+#: mapas/models.py:269
+msgid "Capa"
+msgstr "Camada"
 
-#: core/templates/vista_lista_stock.html:192
-#: core/templates/vista_lista_stock.html:354
-msgid "Ver historial de movimientos"
-msgstr "Ver histórico de movimentações"
+#: mapas/models.py:274
+msgid "Paleta de colores"
+msgstr "Paleta de cores"
 
-#: core/templates/vista_lista_stock.html:199
-#: core/templates/vista_lista_stock.html:361
-msgid "Transferir stock entre depósitos"
-msgstr "Transferir estoque entre armazéns"
+#: mapas/models.py:276 templates/temp_mapas/vista_mapas.html:398
+msgid "Opacidad"
+msgstr "Opacidade NDVI"
 
-#: core/templates/vista_lista_stock.html:205
-#: core/templates/vista_lista_stock.html:367
-msgid "Sin depósito asignado — cargá una factura para asignar depósito"
-msgstr "Sem armazém atribuído — carregue uma nota fiscal para atribuir"
+#: mapas/models.py:277
+msgid "Valor mínimo escala"
+msgstr "Valor mínimo da escala"
 
-#: core/templates/vista_lista_stock.html:213
-#: core/templates/vista_lista_stock.html:375
-msgid "Ver stock por depósito"
-msgstr "Ver estoque por armazém"
+#: mapas/models.py:278
+msgid "Valor máximo escala"
+msgstr "Valor máximo da escala"
 
-#: core/templates/vista_lista_stock.html:219
-#: core/templates/vista_lista_stock.html:381
-msgid "Sin datos por depósito"
-msgstr "Sem dados por armazém"
+#: mapas/models.py:281
+msgid "Estilo de capa"
+msgstr "Estilo de camada"
 
-#: core/templates/vista_lista_stock.html:247
-msgid "No hay insumos con movimientos"
-msgstr "Nenhum insumo com movimentações"
+#: mapas/models.py:282
+msgid "Estilos de capa"
+msgstr "Estilos de camada"
 
-#: core/templates/vista_lista_stock.html:274
+#: templates/base.html:193
+msgid "Buen día,"
+msgstr "Bom dia,"
+
+#: templates/base.html:196
+msgid "Resumen del sistema"
+msgstr "Resumo do sistema"
+
+#: templates/base.html:214
+msgid "Idioma"
+msgstr "Idioma"
+
+#: templates/base.html:247 templates/cuenta_suspendida.html:52
+msgid "Cerrar sesión"
+msgstr "Sair"
+
+#: templates/base.html:270 templates/index.html:10
+msgid "Dashboard"
+msgstr "Painel"
+
+#: templates/base.html:278
+msgid "Producción"
+msgstr "Produção colhida"
+
+#: templates/base.html:283
+msgid "Ciclos Productivos"
+msgstr "Ciclos Produtivos"
+
+#: templates/base.html:286 templates/vista_crear_cultivo.html:36
+#: templates/vista_crear_cultivo.html:114 templates/vista_lista_stock.html:259
+msgid "Cultivos"
+msgstr "Culturas"
+
+#: templates/base.html:295
+msgid "Inventario"
+msgstr "Investimentos"
+
+#: templates/base.html:300
+#: templates/tem_administracion/cargar_factura_venta.html:335
+#: templates/vista_producto.html:180
+msgid "Stock"
+msgstr "Estoque"
+
+#: templates/base.html:302 templates/vista_crear_deposito.html:30
+#: templates/vista_crear_deposito.html:138
+msgid "Depósitos"
+msgstr "Armazéns"
+
+#: templates/base.html:311
+msgid "Compras"
+msgstr "Comparativos"
+
+#: templates/base.html:317 templates/base.html:332
+msgid "Cuenta corriente"
+msgstr "Conta corrente"
+
+#: templates/base.html:326 templates/index.html:196
+#: templates/tem_administracion/lista_ventas.html:8
+#: templates/vista_lista_stock.html:315
+msgid "Ventas"
+msgstr "Vendas"
+
+#: templates/base.html:331 templates/vista_lista_stock.html:39
+msgid "Cargar factura"
+msgstr "Importar Nota Fiscal"
+
+#: templates/base.html:341
+msgid "Resultados"
+msgstr "Resultados"
+
+#: templates/base.html:346
+msgid "Gastos"
+msgstr "Gastos"
+
+#: templates/base.html:347
+msgid "Inversiones"
+msgstr "Investimentos"
+
+#: templates/base.html:348
+msgid "Costos por Ciclo"
+msgstr "Custos por Ciclo"
+
+#: templates/base.html:349
+msgid "Resumen Económico"
+msgstr "Resumo Econômico"
+
+#: templates/base.html:358
+msgid "Análisis"
+msgstr "Análises"
+
+#: templates/base.html:363
+msgid "Mapas"
+msgstr "Mapas"
+
+#: templates/base.html:376
+msgid "Configuración"
+msgstr "Configurações"
+
+#: templates/base.html:381
+msgid "Usuarios"
+msgstr "Usuários"
+
+#: templates/base.html:382 templates/configuracion.html:28
+msgid "Parámetros del sistema"
+msgstr "Parâmetros do sistema"
+
+#: templates/configuracion.html:41
+msgid "Costos operativos"
+msgstr "Custos por Ciclo"
+
+#: templates/configuracion.html:46
+msgid "Valor hora MO"
+msgstr "Valor hora MO"
+
+#: templates/configuracion.html:60
+msgid "Valor hora máquina"
+msgstr "Custo por hora de máquina"
+
+#: templates/configuracion.html:76
+msgid "Stock e inventario"
+msgstr "Estoque de insumos"
+
+#: templates/configuracion.html:80
+msgid "Cálculo costo"
+msgstr "Método de custeio"
+
+#: templates/configuracion.html:89
+msgid "Depósito insumos"
+msgstr "Armazém destino"
+
+#: templates/configuracion.html:92
+msgid "Default al cargar facturas de compra"
+msgstr "Notas fiscais de compra"
+
+#: templates/configuracion.html:99
+msgid "Depósito cosecha"
+msgstr "Armazéns"
+
+#: templates/configuracion.html:102
+msgid "Default al registrar cosecha propia"
+msgstr "Padrão ao registrar colheita própria"
+
+#: templates/configuracion.html:119
+msgid "Unidad por defecto al registrar inspección"
+msgstr "Unidade padrão ao registrar inspeção"
+
+#: templates/configuracion.html:128
+#: templates/tem_facturas/vista_cargar_factura_manual.html:427
+#: templates/temp_mapas/vista_mapa_principal.html:68
+#: templates/vista_agregar_actividad.html:450
+#: templates/vista_crear_campana.html:119 templates/vista_crear_cultivo.html:98
+#: templates/vista_crear_cultivo.html:255
+#: templates/vista_crear_deposito.html:122 templates/vista_producto.html:149
+msgid "Guardar"
+msgstr "Salvar"
+
+#: templates/cuenta_suspendida.html:7 templates/cuenta_suspendida.html:47
+msgid "Cuenta suspendida"
+msgstr "Conta suspensa"
+
+#: templates/cuenta_suspendida.html:48
+msgid "Tu cuenta ha sido suspendida. Contactá al administrador del sistema para más información."
+msgstr "Sua conta foi suspensa. Contate o administrador do sistema para mais informações."
+
+#: templates/index.html:11
+msgid "Resumen de tu operación"
+msgstr "Referência ou observação"
+
+#: templates/index.html:14 templates/index.html:149
+msgid "Ver ciclos"
+msgstr "Criar ciclo"
+
+#: templates/index.html:78
+msgid "Ciclos activos"
+msgstr "Ciclos Produtivos"
+
+#: templates/index.html:80
+msgid "de"
+msgstr "de"
+
+#: templates/index.html:80
+msgid "totales"
+msgstr "Subtotal"
+
+#: templates/index.html:89 templates/vista_lista_stock.html:268
 msgid "Total cosechado"
 msgstr "Total colhido"
 
-#: core/templates/vista_lista_stock.html:283
-msgid "Total vendido"
-msgstr "Total vendido"
-
-#: core/templates/vista_lista_stock.html:292
-#: core/templates/vista_lista_stock.html:322
+#: templates/index.html:100 templates/vista_lista_stock.html:286
+#: templates/vista_lista_stock.html:316
 msgid "En stock"
 msgstr "Em estoque"
 
-#: core/templates/vista_lista_stock.html:308
-msgid "Producción cosechada"
-msgstr "Produção colhida"
+#: templates/index.html:111 templates/vista_lista_stock.html:277
+msgid "Total ventas"
+msgstr "Total vendido"
 
-#: core/templates/vista_lista_stock.html:320
-msgid "Cosechado"
-msgstr "Colhido"
-
-#: core/templates/vista_lista_stock.html:321
-msgid "Vendido"
-msgstr "Vendido"
-
-#: core/templates/vista_lista_stock.html:409
-msgid "No hay producción cosechada registrada"
-msgstr "Nenhuma produção de colheita registrada"
-
-#: core/templates/vista_lista_stock.html:430
-msgid "Transferir stock"
-msgstr "Transferir estoque"
-
-#: core/templates/vista_lista_stock.html:439
-msgid "Desde depósito"
-msgstr "Armazém de origem"
-
-#: core/templates/vista_lista_stock.html:444
-msgid "Hacia depósito"
-msgstr "Armazém de destino"
-
-#: core/templates/vista_lista_stock.html:468
-#: core/templates/vista_movimientos_producto.html:189
-msgid "Observación"
-msgstr "Observação"
-
-#: core/templates/vista_lista_stock.html:468
-msgid "opcional"
-msgstr "opcional"
-
-#: core/templates/vista_lista_stock.html:478
-msgid "Confirmar"
-msgstr "Confirmar"
-
-#: core/templates/vista_movimientos_producto.html:14
-msgid "Volver a stock"
-msgstr "Voltar ao estoque"
-
-#: core/templates/vista_movimientos_producto.html:23
-msgid "Movimientos de producto"
-msgstr "Movimentações do produto"
-
-#: core/templates/vista_movimientos_producto.html:26
-msgid "Detalle completo de entradas y salidas"
-msgstr "Histórico completo de entradas e saídas"
-
-#: core/templates/vista_movimientos_producto.html:56
-msgid "Filtros"
-msgstr "Filtros"
-
-#: core/templates/vista_movimientos_producto.html:83
-#: core/templates/vista_movimientos_producto.html:96
-msgid "Todos"
-msgstr "Todos"
-
-#: core/templates/vista_movimientos_producto.html:94
-#: core/templates/vista_movimientos_producto.html:188
-msgid "Origen"
-msgstr "Origem"
-
-#: core/templates/vista_movimientos_producto.html:98
-msgid "Factura"
+#: templates/index.html:113
+msgid "facturado"
 msgstr "Nota fiscal"
 
-#: core/templates/vista_movimientos_producto.html:101
-#: core/templates/vista_movimientos_producto.html:211
-msgid "Factura manual"
-msgstr "Nota fiscal manual"
+#: templates/index.html:122
+#: templates/tem_administracion/cuenta_corriente_cliente.html:144
+#: templates/tem_administracion/lista_ventas.html:62
+msgid "Cobrado"
+msgstr "Encerrado"
 
-#: core/templates/vista_movimientos_producto.html:110
-msgid "Buscar"
-msgstr "Buscar"
+#: templates/index.html:124
+msgid "recibido"
+msgstr "Preço"
 
-#: core/templates/vista_movimientos_producto.html:115
-msgid "Referencia u observación"
-msgstr "Referência ou observação"
+#: templates/index.html:133
+msgid "Por cobrar"
+msgstr "A receber"
 
-#: core/templates/vista_movimientos_producto.html:159
-msgid "Stock actual"
-msgstr "Estoque atual"
+#: templates/index.html:135
+msgid "pendiente"
+msgstr "Produtividade"
 
-#: core/templates/vista_movimientos_producto.html:173
-msgid "Movimientos"
-msgstr "Movimentações"
+#: templates/index.html:148
+msgid "Últimas actividades"
+msgstr "atividades"
 
-#: core/templates/vista_movimientos_producto.html:192
+#: templates/index.html:157 templates/vista_detalle_ciclo.html:337
+#: templates/vista_detalle_ciclo.html:368
+#: templates/vista_detalle_ciclo.html:402
+#: templates/vista_movimientos_producto.html:104
+msgid "Actividad"
+msgstr "Atividade"
+
+#: templates/index.html:176
+msgid "No hay actividades registradas aún."
+msgstr "Nenhuma atividade registrada"
+
+#: templates/index.html:186
+msgid "Accesos rápidos"
+msgstr "Acesso rápido"
+
+#: templates/index.html:190
+msgid "Ciclos productivos"
+msgstr "Ciclos Produtivos"
+
+#: templates/index.html:193 templates/tem_administracion/lista_ventas.html:10
+msgid "Ver stock"
+msgstr "Voltar ao estoque"
+
+#: templates/login.html:111
+msgid "¡Bienvenido de nuevo!"
+msgstr "Bem-vindo de volta!"
+
+#: templates/login.html:112
+msgid "Ingresá tus credenciales para acceder al sistema"
+msgstr "Entre com suas credenciais para acessar o sistema"
+
+#: templates/login.html:127
+msgid "Iniciar sesión"
+msgstr "Entrar"
+
+#: templates/login.html:131
+msgid "¿No tenés cuenta?"
+msgstr "Não tem conta?"
+
+#: templates/login.html:133 templates/registro.html:7
+#: templates/registro.html:90 templates/registro.html:145
+msgid "Crear cuenta"
+msgstr "Criar novo"
+
+#: templates/registro.html:91
+msgid "Completá los datos de tu empresa y usuario para comenzar"
+msgstr "Preencha os dados da apresentação."
+
+#: templates/registro.html:104
+msgid "Datos de la empresa"
+msgstr "Dados da semente"
+
+#: templates/registro.html:122
+msgid "Datos del usuario"
+msgstr "Dados do talhão"
+
+#: templates/registro.html:149
+msgid "¿Ya tenés cuenta?"
+msgstr "Já tem conta?"
+
+#: templates/registro.html:149
+msgid "Ingresá aquí"
+msgstr "Recebido"
+
+#: templates/tem_administracion/_comprobante_pago.html:13
+msgid "Hora"
+msgstr "Hora"
+
+#: templates/tem_administracion/_comprobante_pago.html:21
+msgid "Factura N°"
+msgstr "Nota fiscal"
+
+#: templates/tem_administracion/_comprobante_pago.html:22
+msgid "Fecha Factura"
+msgstr "Nova Nota Fiscal"
+
+#: templates/tem_administracion/_comprobante_pago.html:23
+msgid "Total Factura"
+msgstr "Total da nota"
+
+#: templates/tem_administracion/_comprobante_pago.html:24
+msgid "Monto Aplicado"
+msgstr "Insumos aplicados"
+
+#: templates/tem_administracion/_comprobante_pago.html:39
+#: templates/tem_administracion/_tabla_pagos.html:14
+msgid "Total Pagado"
+msgstr "Total recebido"
+
+#: templates/tem_administracion/_tabla_facturas.html:4
+msgid "No se encontraron facturas con los filtros seleccionados."
+msgstr "Nenhum produto encontrado na nota fiscal."
+
+#: templates/tem_administracion/_tabla_facturas.html:15
+#: templates/tem_facturas/vista_lista_facturas.html:50
+msgid "Número"
+msgstr "Número"
+
+#: templates/tem_administracion/_tabla_facturas.html:18
+#: templates/tem_administracion/cuenta_corriente_cliente.html:142
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:151
+#: templates/vista_lista_stock.html:566
+msgid "Vencimiento"
+msgstr "Produtividade"
+
+#: templates/tem_administracion/_tabla_facturas.html:20
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:153
+msgid "Pagado"
+msgstr "Pago"
+
+#: templates/tem_administracion/_tabla_facturas.html:21
+#: templates/tem_administracion/cuenta_corriente_cliente.html:145
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:154
+#: templates/tem_administracion/lista_ventas.html:63
+#: templates/vista_movimientos_producto.html:192
 msgid "Saldo"
 msgstr "Saldo"
 
-#: core/templates/vista_movimientos_producto.html:244
+#: templates/tem_administracion/_tabla_facturas.html:23
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:291
+msgid "Monto a pagar"
+msgstr "Valor a pagar"
+
+#: templates/tem_administracion/_tabla_facturas.html:38
+msgid "Ver pagos"
+msgstr "Ver pagamentos"
+
+#: templates/tem_administracion/_tabla_facturas.html:58
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:103
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:185
+msgid "Pagada"
+msgstr "Paga"
+
+#: templates/tem_administracion/_tabla_facturas.html:60
+#: templates/tem_administracion/cuenta_corriente_cliente.html:93
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:102
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:187
+msgid "Vencida"
+msgstr "Vencida"
+
+#: templates/tem_administracion/_tabla_facturas.html:62
+#: templates/tem_administracion/cuenta_corriente_cliente.html:92
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:101
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:189
+msgid "Pendiente"
+msgstr "Produtividade"
+
+#: templates/tem_administracion/_tabla_facturas.html:79
+msgid "Pagos realizados sobre esta factura"
+msgstr "Pagamentos realizados sobre esta fatura"
+
+#: templates/tem_administracion/_tabla_facturas.html:83
+msgid "Pago #"
+msgstr "Pagamento #"
+
+#: templates/tem_administracion/_tabla_pagos.html:4
+msgid "No se encontraron pagos con los filtros seleccionados."
+msgstr "Nenhum produto encontrado na nota fiscal."
+
+#: templates/tem_administracion/_tabla_pagos.html:13
+#: templates/tem_administracion/gestion_facturas.html:63
+msgid "Facturas"
+msgstr "Nota fiscal"
+
+#: templates/tem_administracion/_tabla_pagos.html:29
+msgid "Comprobante"
+msgstr "Comparativos"
+
+#: templates/tem_administracion/cargar_factura_venta.html:56
+msgid "Cargar factura de venta"
+msgstr "Entrada manual de nota fiscal"
+
+#: templates/tem_administracion/cargar_factura_venta.html:77
+#: templates/tem_facturas/vista_cargar_factura_manual.html:107
+#: templates/tem_facturas/vista_revisar_factura.html:108
+msgid "Nº Factura"
+msgstr "Nº Nota Fiscal"
+
+#: templates/tem_administracion/cargar_factura_venta.html:111
+#: templates/tem_facturas/revisar_factura.html:175
+#: templates/tem_facturas/revisar_factura_mejorado.html:234
+#: templates/tem_facturas/vista_cargar_factura_manual.html:153
+#: templates/tem_facturas/vista_revisar_factura.html:149
+#: templates/vista_detalle_ciclo.html:340
+#: templates/vista_detalle_ciclo.html:371
+#: templates/vista_detalle_ciclo.html:405
+msgid "Subtotal"
+msgstr "Subtotal"
+
+#: templates/tem_administracion/cargar_factura_venta.html:124
+#: templates/tem_administracion/cargar_factura_venta.html:282
+#: templates/tem_facturas/vista_cargar_factura_manual.html:95
+#: templates/tem_facturas/vista_cargar_factura_manual.html:166
+#: templates/tem_facturas/vista_cargar_factura_manual.html:450
+#: templates/tem_facturas/vista_cargar_factura_manual.html:458
+#: templates/tem_facturas/vista_cargar_factura_manual.html:547
+msgid "Seleccionar"
+msgstr "Selecionar"
+
+#: templates/tem_administracion/cargar_factura_venta.html:144
+#: templates/tem_administracion/cargar_factura_venta.html:264
+#: templates/tem_facturas/vista_cargar_factura_manual.html:189
+msgid "Seleccionar producto"
+msgstr "Selecionar produto"
+
+#: templates/tem_administracion/cargar_factura_venta.html:155
+#: templates/tem_administracion/cargar_factura_venta.html:266
+#: templates/tem_administracion/cargar_factura_venta.html:303
+msgid "Seleccionar destino"
+msgstr "Selecionar cultura"
+
+#: templates/tem_administracion/cargar_factura_venta.html:199
+#: templates/tem_facturas/vista_cargar_factura_manual.html:241
+msgid "No hay ítems. Usá el botón para agregar."
+msgstr "Nenhum item. Use o botão para adicionar."
+
+#: templates/tem_administracion/cargar_factura_venta.html:226
+#: templates/tem_facturas/vista_cargar_factura_manual.html:268
+msgid "Ítem"
+msgstr "Item"
+
+#: templates/tem_administracion/cargar_factura_venta.html:238
+#: templates/tem_facturas/vista_cargar_factura_manual.html:280
+msgid "Agregar ítem"
+msgstr "Adicionar item"
+
+#: templates/tem_administracion/cargar_factura_venta.html:241
+#: templates/tem_facturas/vista_cargar_factura_manual.html:283
+msgid "Guardar factura"
+msgstr "Salvar nota fiscal"
+
+#: templates/tem_administracion/cargar_factura_venta.html:244
+#: templates/tem_administracion/cuenta_corriente_cliente.html:280
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:300
+#: templates/tem_administracion/gestion_facturas.html:92
+#: templates/tem_administracion/lista_ventas.html:153
+#: templates/tem_administracion/registrar_venta.html:118
+#: templates/tem_facturas/revisar_factura_mejorado.html:317
+#: templates/tem_facturas/vista_cargar_factura_manual.html:286
+#: templates/tem_facturas/vista_cargar_factura_manual.html:424
+#: templates/temp_mapas/mapa.html:131
+#: templates/temp_mapas/vista_mapa_principal.html:71
+#: templates/temp_mapas/vista_mapa_principal.html:177
+#: templates/temp_mapas/vista_mapa_principal.html:222
+#: templates/temp_mapas/vista_mapas.html:572
+#: templates/vista_agregar_actividad.html:454
+#: templates/vista_crear_campana.html:123 templates/vista_crear_campo.html:151
+#: templates/vista_crear_campo.html:269 templates/vista_crear_ciclo.html:274
+#: templates/vista_crear_cultivo.html:103
+#: templates/vista_crear_cultivo.html:252
+#: templates/vista_crear_deposito.html:126 templates/vista_lista_stock.html:490
+#: templates/vista_lista_stock.html:572 templates/vista_producto.html:153
+msgid "Cancelar"
+msgstr "Cancelar"
+
+#: templates/tem_administracion/cargar_factura_venta.html:278
+msgid "Sin stock"
+msgstr "Em estoque"
+
+#: templates/tem_administracion/cargar_factura_venta.html:279
+msgid "Sin stock disponible"
+msgstr "Camadas disponíveis"
+
+#: templates/tem_administracion/cargar_factura_venta.html:293
+#: templates/tem_administracion/cargar_factura_venta.html:338
+#: templates/temp_mapas/vista_mapas.html:1381
+msgid "Error"
+msgstr "Erro"
+
+#: templates/tem_administracion/cargar_factura_venta.html:315
+#: templates/tem_facturas/vista_cargar_factura_manual.html:542
+#: templates/temp_mapas/vista_mapas.html:142
+#: templates/temp_mapas/vista_mapas.html:365
+msgid "Cargando..."
+msgstr "Carregando..."
+
+#: templates/tem_administracion/cargar_factura_venta.html:323
+msgid "Sin depósitos con stock"
+msgstr "Nenhum armazém cadastrado"
+
+#: templates/tem_administracion/cargar_factura_venta.html:324
+msgid "Sin stock en depósitos"
+msgstr "Transferir estoque entre armazéns"
+
+#: templates/tem_administracion/cargar_factura_venta.html:327
+#: templates/tem_administracion/cuenta_corriente_cliente.html:74
+#: templates/tem_administracion/cuenta_corriente_cliente.html:91
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:83
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:100
+#: templates/tem_administracion/lista_ventas.html:27
+#: templates/temp_mapas/vista_mapas.html:61
+#: templates/vista_movimientos_producto.html:83
+#: templates/vista_movimientos_producto.html:96
+msgid "Todos"
+msgstr "Todos"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:57
+msgid "Cuenta corriente — Clientes"
+msgstr "Conta corrente — Clientes"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:59
+msgid "Seguimiento de facturas y cobros por cliente"
+msgstr "Acompanhamento de faturas e cobranças por cliente"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:62
+msgid "Nueva factura"
+msgstr "Nova Nota Fiscal"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:81
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:90
+#: templates/tem_administracion/lista_ventas.html:34
+msgid "Desde"
+msgstr "De"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:85
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:94
+#: templates/tem_administracion/lista_ventas.html:38
+msgid "Hasta"
+msgstr "Até"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:94
+#: templates/tem_administracion/cuenta_corriente_cliente.html:175
+#: templates/tem_administracion/lista_ventas.html:93
+msgid "Cobrada"
+msgstr "Cobrada"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:99
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:108
+#: templates/tem_administracion/lista_ventas.html:42
+#: templates/temp_mapas/vista_mapas.html:92 templates/vista_lista_stock.html:80
+#: templates/vista_movimientos_producto.html:122
+msgid "Filtrar"
+msgstr "Filtrar"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:101
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:110
+#: templates/tem_administracion/lista_ventas.html:43
+#: templates/temp_mapas/vista_mapas.html:95
+#: templates/vista_crear_campo.html:260 templates/vista_lista_stock.html:83
+#: templates/vista_movimientos_producto.html:125
+msgid "Limpiar"
+msgstr "Limpar"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:112
+msgid "Total por cobrar"
+msgstr "Total de horas"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:118
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:127
+msgid "Facturas vencidas"
+msgstr "Notas fiscais de compra"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:124
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:133
+msgid "Próximo vencimiento"
+msgstr "Próximo vencimento"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:140
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:149
+#: templates/tem_administracion/lista_ventas.html:57
+msgid "N° Factura"
+msgstr "Nº Nota Fiscal"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:146
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:156
+#: templates/vista_agregar_actividad.html:228
+msgid "Acción"
+msgstr "Ação"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:179
+#: templates/tem_administracion/lista_ventas.html:97
+msgid "Cobrar"
+msgstr "Cobrar"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:193
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:210
+msgid "Comprobante #"
+msgstr "Comprovante #"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:194
+msgid "Fecha de cobro"
+msgstr "Data de início"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:195
+msgid "Monto cobrado"
+msgstr "Mão de obra"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:210
+msgid "Sin cobros registrados aún."
+msgstr "Sem cobranças registradas ainda."
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:224
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:241
+msgid "Sin resultados"
+msgstr "Resultados"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:225
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:242
+msgid "No hay facturas con los filtros aplicados."
+msgstr "Nenhuma nota fiscal registrada"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:248
+#: templates/tem_administracion/lista_ventas.html:131
+msgid "Registrar cobro"
+msgstr "Registrar cobrança"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:262
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:284
+#: templates/tem_administracion/gestion_facturas.html:45
+#: templates/tem_administracion/lista_ventas.html:140
+msgid "Saldo pendiente"
+msgstr "Saldo pendente"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:268
+#: templates/tem_administracion/lista_ventas.html:144
+msgid "Monto a cobrar"
+msgstr "Mão de obra"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:282
+#: templates/tem_administracion/lista_ventas.html:155
+msgid "Confirmar cobro"
+msgstr "Confirmar"
+
+#: templates/tem_administracion/cuenta_corriente_cliente.html:326
+#: templates/tem_administracion/lista_ventas.html:201
+msgid "Cobro registrado correctamente."
+msgstr "Campo criado com sucesso"
+
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:69
+msgid "Cuenta corriente — Proveedores"
+msgstr "Conta corrente — Fornecedores"
+
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:71
+msgid "Seguimiento de facturas y pagos por proveedor"
+msgstr "Acompanhamento de faturas e pagamentos por fornecedor"
+
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:121
+msgid "Deuda total pendiente"
+msgstr "Dívida total pendente"
+
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:196
+msgid "Pagar"
+msgstr "Pagar"
+
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:211
+msgid "Fecha de pago"
+msgstr "Data de encerramento"
+
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:227
+msgid "Sin pagos registrados aún."
+msgstr "Sem pagamentos registrados ainda."
+
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:265
+msgid "Registrar pago"
+msgstr "registros"
+
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:302
+msgid "Confirmar pago"
+msgstr "Confirmar"
+
+#: templates/tem_administracion/cuenta_corriente_proveedor.html:348
+msgid "Pago registrado correctamente."
+msgstr "Atividade registrada com sucesso."
+
+#: templates/tem_administracion/gestion_facturas.html:12
+msgid "Gestión de Facturas"
+msgstr "Gestão Produtiva"
+
+#: templates/tem_administracion/gestion_facturas.html:14
+msgid "Consulte facturas y pagos por proveedor y rango de fechas."
+msgstr "Consulte faturas e pagamentos por fornecedor e intervalo de datas."
+
+#: templates/tem_administracion/gestion_facturas.html:33
+#: templates/vista_movimientos_producto.html:110
+msgid "Buscar"
+msgstr "Buscar"
+
+#: templates/tem_administracion/gestion_facturas.html:41
+msgid "Total facturas"
+msgstr "Total da nota"
+
+#: templates/tem_administracion/gestion_facturas.html:49
+msgid "Vencidas"
+msgstr "Vencidas"
+
+#: templates/tem_administracion/gestion_facturas.html:53
+msgid "Próx. vencimiento"
+msgstr "Produtividade"
+
+#: templates/tem_administracion/gestion_facturas.html:69
+msgid "Pagos Realizados"
+msgstr "Produtos normalizados"
+
+#: templates/tem_administracion/gestion_facturas.html:84
+msgid "Registrar Pago"
+msgstr "registros"
+
+#: templates/tem_administracion/gestion_facturas.html:89
+msgid "Confirmar Pago"
+msgstr "Confirmar"
+
+#: templates/tem_administracion/gestion_facturas.html:115
+msgid "Comprobante de Pago"
+msgstr "Comprovante de Pagamento"
+
+#: templates/tem_administracion/gestion_facturas.html:127
+#: templates/vista_crear_cultivo.html:205
+msgid "Cerrar"
+msgstr "Fechar"
+
+#: templates/tem_administracion/gestion_facturas.html:268
+msgid "Ingrese un monto válido para cada factura seleccionada."
+msgstr "Informe um valor válido para cada fatura selecionada."
+
+#: templates/tem_administracion/gestion_facturas.html:294
+msgid "Error al conectar con el servidor."
+msgstr "Erro ao conectar com o servidor."
+
+#: templates/tem_administracion/lista_ventas.html:109
+msgid "No hay ventas registradas"
+msgstr "Nenhuma movimentação registrada"
+
+#: templates/tem_administracion/lista_ventas.html:211
+#: templates/vista_crear_campo.html:630 templates/vista_lista_stock.html:670
+msgid "Error de conexión."
+msgstr "Fator de conversão"
+
+#: templates/tem_administracion/registrar_venta.html:9
+#: templates/tem_facturas/revisar_factura.html:357
+#: templates/tem_facturas/revisar_factura_mejorado.html:422
+#: templates/tem_facturas/vista_cargar_factura.html:79
+#: templates/tem_facturas/vista_revisar_factura.html:380
+#: templates/vista_agregar_actividad.html:51
+#: templates/vista_crear_ciclo.html:122 templates/vista_detalle_ciclo.html:194
+msgid "Volver"
+msgstr "Voltar"
+
+#: templates/tem_administracion/registrar_venta.html:11
+#: templates/vista_lista_stock.html:367 templates/vista_lista_stock.html:514
+msgid "Registrar venta"
+msgstr "Registrar venda"
+
+#: templates/tem_administracion/registrar_venta.html:39
+#: templates/vista_agregar_actividad.html:405
+msgid "Semilla (Multiplicación)"
+msgstr "Semente (Multiplicação)"
+
+#: templates/tem_administracion/registrar_venta.html:54
+msgid "Datos de la venta"
+msgstr "Dados da atividade"
+
+#: templates/tem_administracion/registrar_venta.html:85
+msgid "Detalle de venta"
+msgstr "Detalhe"
+
+#: templates/tem_administracion/registrar_venta.html:115
+#: templates/vista_lista_stock.html:574
+msgid "Confirmar venta"
+msgstr "Confirmar"
+
+#: templates/tem_facturas/revisar_factura.html:127
+#: templates/tem_facturas/revisar_factura_mejorado.html:172
+#: templates/tem_facturas/vista_revisar_factura.html:79
+msgid "Revisar factura"
+msgstr "Revisar nota fiscal"
+
+#: templates/tem_facturas/revisar_factura.html:129
+#: templates/tem_facturas/revisar_factura_mejorado.html:181
+msgid "ítems"
+msgstr "itens"
+
+#: templates/tem_facturas/revisar_factura.html:143
+msgid "Doc."
+msgstr "Doc."
+
+#: templates/tem_facturas/revisar_factura.html:166
+msgid "Descripción factura"
+msgstr "Descrição na nota"
+
+#: templates/tem_facturas/revisar_factura.html:168
+#: templates/tem_facturas/vista_revisar_factura.html:142
+msgid "Producto en sistema"
+msgstr "Produto no sistema"
+
+#: templates/tem_facturas/revisar_factura.html:170
+#: templates/tem_facturas/vista_revisar_factura.html:144
+msgid "Cant."
+msgstr "Qtd."
+
+#: templates/tem_facturas/revisar_factura.html:171
+#: templates/tem_facturas/vista_revisar_factura.html:145
+msgid "Cont./env."
+msgstr "Cont./emb."
+
+#: templates/tem_facturas/revisar_factura.html:173
+#: templates/tem_facturas/vista_revisar_factura.html:147
+msgid "Stock total"
+msgstr "Estoque total"
+
+#: templates/tem_facturas/revisar_factura.html:206
+msgid "nueva variedad"
+msgstr "nova variedade"
+
+#: templates/tem_facturas/revisar_factura.html:210
+msgid "cancelar"
+msgstr "cancelar"
+
+#: templates/tem_facturas/revisar_factura.html:225
+msgid "sin coincidencia"
+msgstr "sem correspondência"
+
+#: templates/tem_facturas/revisar_factura.html:230
+msgid "Crear producto nuevo"
+msgstr "Criar novo produto"
+
+#: templates/tem_facturas/revisar_factura.html:255
+#: templates/tem_facturas/revisar_factura_mejorado.html:311
+msgid "Nueva"
+msgstr "Nova"
+
+#: templates/tem_facturas/revisar_factura.html:261
+msgid "nueva"
+msgstr "nova"
+
+#: templates/tem_facturas/revisar_factura.html:266
+msgid "Unidad contenido BD"
+msgstr "Unidade conteúdo BD"
+
+#: templates/tem_facturas/revisar_factura.html:327
+#: templates/tem_facturas/revisar_factura_mejorado.html:408
+#: templates/tem_facturas/vista_revisar_factura.html:356
+msgid "No hay ítems para revisar."
+msgstr "Nenhum item para revisar."
+
+#: templates/tem_facturas/revisar_factura.html:336
+#: templates/tem_facturas/vista_revisar_factura.html:362
+msgid "Total factura"
+msgstr "Total da nota"
+
+#: templates/tem_facturas/revisar_factura.html:353
+#: templates/tem_facturas/vista_revisar_factura.html:376
+msgid "Confirmar y generar stock"
+msgstr "Confirmar e gerar estoque"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:196
+msgid "Documento"
+msgstr "Documento"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:230
+msgid "Cont./Envase"
+msgstr "Cont./Embalagem"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:232
+msgid "Total stock"
+msgstr "Total estoque"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:263
+msgid "Coincidencia"
+msgstr "Correspondência"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:274
+msgid "Usar producto existente"
+msgstr "Usar produto existente"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:336
+#: templates/tem_facturas/revisar_factura_mejorado.html:536
+msgid "Nueva presentación"
+msgstr "Nova apresentação"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:347
+msgid "Unidad de stock"
+msgstr "Unidade de estoque"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:350
+msgid "Unidad contenido (BD)"
+msgstr "Unidade conteúdo (BD)"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:418
+msgid "Confirmar factura y generar stock"
+msgstr "Confirmar nota e gerar estoque"
+
+#: templates/tem_facturas/revisar_factura_mejorado.html:534
+#: templates/tem_facturas/revisar_factura_mejorado.html:550
+msgid "Cancelar nueva presentación"
+msgstr "Cancelar nova apresentação"
+
+#: templates/tem_facturas/vista_cargar_factura.html:29
+msgid "Cargar Factura"
+msgstr "Importar Nota Fiscal"
+
+#: templates/tem_facturas/vista_cargar_factura.html:33
+msgid "Subí una factura en PDF para procesarla automáticamente"
+msgstr "Envie uma nota fiscal em PDF para processamento automático"
+
+#: templates/tem_facturas/vista_cargar_factura.html:50
+msgid "Formato compatible: archivo PDF de factura."
+msgstr "Formato aceito: PDF de nota fiscal."
+
+#: templates/tem_facturas/vista_cargar_factura.html:58
+msgid "Seleccioná un archivo PDF"
+msgstr "Selecione um arquivo PDF"
+
+#: templates/tem_facturas/vista_cargar_factura.html:60
+msgid "Elegí una factura desde tu computadora"
+msgstr "Escolha uma nota fiscal do seu computador"
+
+#: templates/tem_facturas/vista_cargar_factura.html:73
+msgid "Tamaño máximo: 10MB"
+msgstr "Tamanho máximo: 10MB"
+
+#: templates/tem_facturas/vista_cargar_factura.html:84
+msgid "Cargar manual"
+msgstr "Entrada manual"
+
+#: templates/tem_facturas/vista_cargar_factura.html:88
+msgid "Procesar Factura"
+msgstr "Processar Nota Fiscal"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:79
+msgid "Cargar factura manual"
+msgstr "Entrada manual de nota fiscal"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:103
+msgid "Seleccioná un proveedor."
+msgstr "Selecione um fornecedor."
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:121
+#: templates/tem_facturas/vista_revisar_factura.html:120
+msgid "Depósito destino"
+msgstr "Armazém destino"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:123
+#: templates/tem_facturas/vista_revisar_factura.html:122
+msgid "Sin asignar"
+msgstr "Não atribuído"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:180
+msgid "nuevo producto"
+msgstr "novo produto"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:197
+msgid "nueva presentación"
+msgstr "nova apresentação"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:305
+#: templates/vista_producto.html:61
+msgid "Nuevo producto"
+msgstr "Novo produto"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:315
+#: templates/vista_crear_ciclo.html:217
+msgid "Producto final"
+msgstr "Produto de colheita"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:356
+#: templates/vista_producto.html:131
+msgid "Datos de semilla"
+msgstr "Dados da semente"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:373
+#: templates/tem_facturas/vista_cargar_factura_manual.html:519
+#: templates/tem_facturas/vista_cargar_factura_manual.html:543
+msgid "Seleccionar cultivo"
+msgstr "Selecionar cultura"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:383
+msgid "O escribí una variedad nueva"
+msgstr "Ou escreva uma variedade nova"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:387
+msgid "variedad nueva"
+msgstr "nova variedade"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:392
+#: templates/tem_facturas/vista_revisar_factura.html:214
+msgid "PMG"
+msgstr "PMG"
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:395
+msgid "Peso de Mil Granos — necesario para calcular kg de semilla en cosecha."
+msgstr "Peso de Mil Grãos — necessário para calcular kg de semente na colheita."
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:614
+msgid "Completá código, nombre, categoría y unidad base."
+msgstr "Preencha código, nome, categoria e unidade base."
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:619
+msgid "Completá los datos de la presentación."
+msgstr "Preencha os dados da apresentação."
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:624
+msgid "Seleccioná el cultivo."
+msgstr "Selecione a cultura."
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:629
+msgid "Seleccioná o escribí la variedad."
+msgstr "Selecione ou escreva a variedade."
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:680
+#: templates/tem_facturas/vista_cargar_factura_manual.html:723
+#: templates/tem_facturas/vista_cargar_factura_manual.html:725
+msgid "Error al guardar."
+msgstr "Erro ao salvar."
+
+#: templates/tem_facturas/vista_cargar_factura_manual.html:718
+msgid "Producto creado correctamente."
+msgstr "Produto criado com sucesso."
+
+#: templates/tem_facturas/vista_lista_facturas.html:32
+msgid "Facturas de Compra"
+msgstr "Notas Fiscais de Compra"
+
+#: templates/tem_facturas/vista_lista_facturas.html:34
+msgid "Listado de facturas ingresadas"
+msgstr "Notas fiscais registradas"
+
+#: templates/tem_facturas/vista_lista_facturas.html:38
+msgid "Cargar PDF"
+msgstr "Importar Nota Fiscal"
+
+#: templates/tem_facturas/vista_lista_facturas.html:41
+msgid "Carga manual"
+msgstr "Entrada manual"
+
+#: templates/tem_facturas/vista_lista_facturas.html:54
+msgid "Ítems"
+msgstr "Itens"
+
+#: templates/tem_facturas/vista_lista_facturas.html:55
+msgid "Creada"
+msgstr "Registrada"
+
+#: templates/tem_facturas/vista_lista_facturas.html:81
+msgid "No hay facturas cargadas"
+msgstr "Nenhuma nota fiscal registrada"
+
+#: templates/temp_mapas/mapa.html:19
+#: templates/temp_mapas/vista_mapa_principal.html:17
+msgid "Selección"
+msgstr "Seleção"
+
+#: templates/temp_mapas/mapa.html:24
+#: templates/temp_mapas/vista_mapa_principal.html:22
+msgid "Seleccione campo"
+msgstr "Selecione o campo"
+
+#: templates/temp_mapas/mapa.html:33
+#: templates/temp_mapas/vista_mapa_principal.html:31
+msgid "Capas disponibles"
+msgstr "Camadas disponíveis"
+
+#: templates/temp_mapas/mapa.html:35
+#: templates/temp_mapas/vista_mapa_principal.html:33
+msgid "Seleccione un campo"
+msgstr "Selecione um campo"
+
+#: templates/temp_mapas/mapa.html:41 templates/temp_mapas/mapa.html:80
+#: templates/temp_mapas/vista_mapa_principal.html:39
+#: templates/temp_mapas/vista_mapa_principal.html:106
+msgid "Subir nueva capa"
+msgstr "Carregar nova camada"
+
+#: templates/temp_mapas/mapa.html:46
+msgid "Información del punto"
+msgstr "Informações do ponto"
+
+#: templates/temp_mapas/mapa.html:51
+#: templates/temp_mapas/vista_mapa_principal.html:77
+msgid "Leyenda"
+msgstr "Legenda"
+
+#: templates/temp_mapas/mapa.html:61
+#: templates/temp_mapas/vista_mapa_principal.html:86
+msgid "Mapa"
+msgstr "Mapa"
+
+#: templates/temp_mapas/mapa.html:64
+#: templates/temp_mapas/vista_mapa_principal.html:89
+msgid "Satélite"
+msgstr "Satélite"
+
+#: templates/temp_mapas/mapa.html:67
+#: templates/temp_mapas/vista_mapa_principal.html:92
+msgid "Centrar"
+msgstr "Centralizar"
+
+#: templates/temp_mapas/mapa.html:94
+#: templates/temp_mapas/vista_mapa_principal.html:124
+msgid "Prescripción"
+msgstr "Prescrição"
+
+#: templates/temp_mapas/mapa.html:95
+#: templates/temp_mapas/vista_mapa_principal.html:125
+msgid "Análisis de suelo"
+msgstr "Análise de solo"
+
+#: templates/temp_mapas/mapa.html:96
+#: templates/temp_mapas/vista_mapa_principal.html:126
+#: templates/vista_detalle_ciclo.html:462
+msgid "Rendimiento"
+msgstr "Produtividade"
+
+#: templates/temp_mapas/mapa.html:98
+#: templates/temp_mapas/vista_mapa_principal.html:128
+msgid "Otro"
+msgstr "Outro"
+
+#: templates/temp_mapas/mapa.html:112
+#: templates/temp_mapas/vista_mapa_principal.html:148
+msgid "Suba los 3 archivos del shapefile:"
+msgstr "Envie os 3 arquivos do shapefile:"
+
+#: templates/temp_mapas/mapa.html:134
+#: templates/temp_mapas/vista_mapa_principal.html:180
+msgid "Subir y procesar"
+msgstr "Enviar e processar"
+
+#: templates/temp_mapas/ndvi_campo.html:48
+msgid "Seleccionar campo"
+msgstr "Selecione o campo"
+
+#: templates/temp_mapas/ndvi_campo.html:57
+msgid "Obtener Sentinel-2"
+msgstr "Obter Sentinel-2"
+
+#: templates/temp_mapas/ndvi_campo.html:60
+#: templates/vista_agregar_actividad.html:442
+#: templates/vista_crear_campana.html:111 templates/vista_crear_campo.html:140
+#: templates/vista_crear_ciclo.html:269 templates/vista_crear_cultivo.html:90
+#: templates/vista_crear_deposito.html:114 templates/vista_producto.html:141
+msgid "Actualizar"
+msgstr "Atualizar"
+
+#: templates/temp_mapas/ndvi_campo.html:64
+#: templates/temp_mapas/vista_mapas.html:295
+#: templates/temp_mapas/vista_mapas.html:961
+msgid "Regenerar imagen"
+msgstr "Regenerar imagem"
+
+#: templates/temp_mapas/ndvi_campo.html:86
+msgid "Indicadores"
+msgstr "Indicadores"
+
+#: templates/temp_mapas/ndvi_campo.html:109
+msgid "Días desde"
+msgstr "Data inicial"
+
+#: templates/temp_mapas/ndvi_campo.html:130
+#: templates/temp_mapas/vista_mapas.html:361
+msgid "Capturas"
+msgstr "Culturas"
+
+#: templates/temp_mapas/ndvi_campo.html:132
+#: templates/temp_mapas/vista_mapas.html:721
+msgid "Seleccioná un campo"
+msgstr "Selecione um campo"
+
+#: templates/temp_mapas/ndvi_campo.html:139
+msgid "Evolución"
+msgstr "Seleção"
+
+#: templates/temp_mapas/ndvi_campo.html:174
+msgid "Opacidad NDVI"
+msgstr "Opacidade NDVI"
+
+#: templates/temp_mapas/vista_mapa_principal.html:48
+msgid "Sin áreas definidas"
+msgstr "Sem áreas definidas"
+
+#: templates/temp_mapas/vista_mapa_principal.html:52
+msgid "Dibujar área"
+msgstr "Desenhar área"
+
+#: templates/temp_mapas/vista_mapa_principal.html:55
+msgid "Cargar archivo"
+msgstr "Importar Nota Fiscal"
+
+#: templates/temp_mapas/vista_mapa_principal.html:62
+msgid "Completá el polígono con doble click"
+msgstr "Complete o polígono com duplo clique"
+
+#: templates/temp_mapas/vista_mapa_principal.html:66
+msgid "Área:"
+msgstr "Área:"
+
+#: templates/temp_mapas/vista_mapa_principal.html:194
+msgid "Cargar área"
+msgstr "Importar Nota Fiscal"
+
+#: templates/temp_mapas/vista_mapa_principal.html:210
+msgid "Arrastrá los archivos acá"
+msgstr "Arraste os arquivos aqui"
+
+#: templates/temp_mapas/vista_mapa_principal.html:224
+msgid "Subir y crear área"
+msgstr "Enviar e processar"
+
+#: templates/temp_mapas/vista_mapas.html:28
+msgid "Suelo"
+msgstr "Solo"
+
+#: templates/temp_mapas/vista_mapas.html:38
+msgid "NDVI / Satélite"
+msgstr "Satélite"
+
+#: templates/temp_mapas/vista_mapas.html:43
+msgid "Comparación"
+msgstr "Configurações"
+
+#: templates/temp_mapas/vista_mapas.html:49
+msgid "Subir datos"
+msgstr "Enviar dados"
+
+#: templates/temp_mapas/vista_mapas.html:112
+msgid "Seleccioná un campo en el filtro para ver el análisis de suelo"
+msgstr "Selecione um campo no filtro para ver a análise de solo"
+
+#: templates/temp_mapas/vista_mapas.html:127
+msgid "Tildá uno o más análisis para ver en el mapa"
+msgstr "Marque um ou mais análises para ver no mapa"
+
+#: templates/temp_mapas/vista_mapas.html:135
+msgid "Análisis cargados"
+msgstr "Análise de solo"
+
+#: templates/temp_mapas/vista_mapas.html:138
+#: templates/temp_mapas/vista_mapas.html:1120
+#: templates/temp_mapas/vista_mapas.html:1129
+msgid "Combinar"
+msgstr "Excluir"
+
+#: templates/temp_mapas/vista_mapas.html:155
+msgid "Seleccioná un análisis para ver el mapa"
+msgstr "Selecione um fornecedor."
+
+#: templates/temp_mapas/vista_mapas.html:163
+msgid "Hacé click para ver el valor"
+msgstr "Clique para ver o valor"
+
+#: templates/temp_mapas/vista_mapas.html:180
+msgid "Ciclos con datos"
+msgstr "Ciclos Produtivos"
+
+#: templates/temp_mapas/vista_mapas.html:189
+msgid "Rendimiento promedio"
+msgstr "Produtividade esperada"
+
+#: templates/temp_mapas/vista_mapas.html:217
+#: templates/vista_agregar_actividad.html:346
+msgid "Datos de cosecha"
+msgstr "Dados de colheita"
+
+#: templates/temp_mapas/vista_mapas.html:218
+#: templates/vista_lista_stock.html:144 templates/vista_lista_stock.html:304
+#: templates/vista_movimientos_producto.html:176
+msgid "registros"
+msgstr "registros"
+
+#: templates/temp_mapas/vista_mapas.html:227
+msgid "Mín"
+msgstr "Mín"
+
+#: templates/temp_mapas/vista_mapas.html:228
+msgid "Máx"
+msgstr "Máx"
+
+#: templates/temp_mapas/vista_mapas.html:254
+msgid "Sin datos de cosecha cargados"
+msgstr "Dados de colheita"
+
+#: templates/temp_mapas/vista_mapas.html:273
+msgid "Seleccioná un campo en el filtro para ver las capturas NDVI"
+msgstr "Selecione um campo no filtro para ver as capturas NDVI"
+
+#: templates/temp_mapas/vista_mapas.html:292
+#: templates/temp_mapas/vista_mapas.html:1371
+#: templates/temp_mapas/vista_mapas.html:1387
+msgid "Actualizar Sentinel-2"
+msgstr "Obter Sentinel-2"
+
+#: templates/temp_mapas/vista_mapas.html:331
+msgid "Rango"
+msgstr "Intervalo"
+
+#: templates/temp_mapas/vista_mapas.html:337
+#: templates/temp_mapas/vista_mapas.html:390
+msgid "Nubes"
+msgstr "Nuvens"
+
+#: templates/temp_mapas/vista_mapas.html:343
+msgid "Días"
+msgstr "Data inicial"
+
+#: templates/temp_mapas/vista_mapas.html:350
+msgid "Caída detectada"
+msgstr "Queda detectada"
+
+#: templates/temp_mapas/vista_mapas.html:417
+msgid "Variables disponibles"
+msgstr "Camadas disponíveis"
+
+#: templates/temp_mapas/vista_mapas.html:426
+msgid "Períodos con datos"
+msgstr "Períodos com dados"
+
+#: templates/temp_mapas/vista_mapas.html:435
+msgid "Áreas comparables"
+msgstr "Áreas comparáveis"
+
+#: templates/temp_mapas/vista_mapas.html:444
+msgid "Tendencia general"
+msgstr "Tendência geral"
+
+#: templates/temp_mapas/vista_mapas.html:454
+msgid "Evolución por variable"
+msgstr "Seleção"
+
+#: templates/temp_mapas/vista_mapas.html:467
+msgid "Δ cambio"
+msgstr "Δ variação"
+
+#: templates/temp_mapas/vista_mapas.html:492
+msgid "Cargá al menos dos análisis de la misma variable para ver la comparación"
+msgstr "Carregue pelo menos duas análises da mesma variável para ver a comparação"
+
+#: templates/temp_mapas/vista_mapas.html:515
+msgid "Subir análisis de suelo"
+msgstr "Análise de solo"
+
+#: templates/temp_mapas/vista_mapas.html:525
+msgid "Seleccioná"
+msgstr "Selecionar"
+
+#: templates/temp_mapas/vista_mapas.html:532
+msgid "Área (opcional)"
+msgstr "opcional"
+
+#: templates/temp_mapas/vista_mapas.html:538
+msgid "Fecha del análisis"
+msgstr "Camada de análise"
+
+#: templates/temp_mapas/vista_mapas.html:552
+msgid "Arrastrá los archivos acá o hacé clic"
+msgstr "Arraste os arquivos aqui"
+
+#: templates/temp_mapas/vista_mapas.html:553
+msgid "Shapefile (.shp + .shx + .dbf), ZIP, CSV, GeoJSON, KML"
+msgstr "Shapefile (.shp + .shx + .dbf), ZIP, CSV, GeoJSON, KML"
+
+#: templates/temp_mapas/vista_mapas.html:574
+#: templates/temp_mapas/vista_mapas.html:748
+#: templates/temp_mapas/vista_mapas.html:774
+msgid "Subir"
+msgstr "Enviar"
+
+#: templates/temp_mapas/vista_mapas.html:662
+msgid "Faltan"
+msgstr "Faltam"
+
+#: templates/temp_mapas/vista_mapas.html:688
+msgid "El ZIP debe contener"
+msgstr "O ZIP deve conter"
+
+#: templates/temp_mapas/vista_mapas.html:693
+msgid "No se pudo leer el ZIP"
+msgstr "Não foi possível ler o ZIP"
+
+#: templates/temp_mapas/vista_mapas.html:708
+msgid "Formato no soportado. Usá ZIP, Shapefile (.shp+.shx+.dbf), CSV, GeoJSON o KML"
+msgstr "Formato não suportado. Use ZIP, Shapefile (.shp+.shx+.dbf), CSV, GeoJSON ou KML"
+
+#: templates/temp_mapas/vista_mapas.html:725
+msgid "Subiendo..."
+msgstr "Enviando..."
+
+#: templates/temp_mapas/vista_mapas.html:777
+#: templates/temp_mapas/vista_mapas.html:1130
+#: templates/temp_mapas/vista_mapas.html:1388
+msgid "Error de conexión"
+msgstr "Fator de conversão"
+
+#: templates/temp_mapas/vista_mapas.html:899
+#: templates/temp_mapas/vista_mapas.html:1093
+msgid "Sin análisis cargados. Usá el botón Subir datos."
+msgstr "Sem análises carregadas. Use o botão Enviar dados."
+
+#: templates/temp_mapas/vista_mapas.html:920
+#: templates/vista_crear_campo.html:575
+msgid "Procesando..."
+msgstr "Carregando..."
+
+#: templates/temp_mapas/vista_mapas.html:931
+msgid "Error al procesar"
+msgstr "Erro ao salvar."
+
+#: templates/temp_mapas/vista_mapas.html:934
+msgid "Reintentar"
+msgstr "Registrar venda"
+
+#: templates/temp_mapas/vista_mapas.html:936
+#: templates/temp_mapas/vista_mapas.html:964
+#: templates/vista_agregar_actividad.html:446
+#: templates/vista_crear_campana.html:115 templates/vista_crear_campo.html:144
+#: templates/vista_crear_cultivo.html:94
+#: templates/vista_crear_deposito.html:118 templates/vista_producto.html:145
+msgid "Eliminar"
+msgstr "Excluir"
+
+#: templates/temp_mapas/vista_mapas.html:949
+msgid "Sin imagen generada"
+msgstr "Sem imagem gerada"
+
+#: templates/temp_mapas/vista_mapas.html:955
+msgid "sin imagen"
+msgstr "Imagem"
+
+#: templates/temp_mapas/vista_mapas.html:1053
+msgid "Sí"
+msgstr "Sim"
+
+#: templates/temp_mapas/vista_mapas.html:1054
+msgid "No"
+msgstr "Não"
+
+#: templates/temp_mapas/vista_mapas.html:1155
+msgid "Valores"
+msgstr "Valores"
+
+#: templates/temp_mapas/vista_mapas.html:1238
+msgid "Sin capturas. Hacé click en Actualizar Sentinel-2."
+msgstr "Sem capturas. Clique em Atualizar Sentinel-2."
+
+#: templates/temp_mapas/vista_mapas.html:1298
+msgid "primera captura"
+msgstr "Número da nota"
+
+#: templates/temp_mapas/vista_mapas.html:1358
+msgid "Consultando..."
+msgstr "Carregando..."
+
+#: templates/temp_mapas/vista_mapas.html:1362
+msgid "Regenerando..."
+msgstr "Carregando..."
+
+#: templates/temp_mapas/vista_mapas.html:1362
+msgid "Consultando CDSE / Sentinel-2..."
+msgstr "Consultando CDSE / Sentinel-2..."
+
+#: templates/temp_mapas/vista_mapas.html:1375
+msgid "Sin imágenes nuevas"
+msgstr "Sem áreas definidas"
+
+#: templates/temp_mapas/vista_mapas.html:1378
+msgid "Completado"
+msgstr "Concluído"
+
+#: templates/vista_agregar_actividad.html:42
+msgid "Agregar Actividad Agrícola"
+msgstr "Registrar Atividade Agrícola"
+
+#: templates/vista_agregar_actividad.html:61
+#: templates/vista_crear_campo.html:192 templates/vista_detalle_ciclo.html:135
+msgid "Superficie"
+msgstr "Área"
+
+#: templates/vista_agregar_actividad.html:81
+#: templates/vista_crear_campana.html:145
+#: templates/vista_detalle_ciclo.html:149 templates/vista_lista_ciclos.html:139
+msgid "Inicio"
+msgstr "Início"
+
+#: templates/vista_agregar_actividad.html:96
+#: templates/vista_lista_ciclos.html:157
+msgid "Cerrado"
+msgstr "Encerrado"
+
+#: templates/vista_agregar_actividad.html:115
+msgid "Datos de la actividad"
+msgstr "Dados da atividade"
+
+#: templates/vista_agregar_actividad.html:129
+msgid "Subtipo"
+msgstr "Subtipo"
+
+#: templates/vista_agregar_actividad.html:148
+#: templates/vista_detalle_ciclo.html:331
+msgid "Mano de obra"
+msgstr "Mão de obra"
+
+#: templates/vista_agregar_actividad.html:163
+#: templates/vista_agregar_actividad.html:192
+msgid "Total horas"
+msgstr "Total de horas"
+
+#: templates/vista_agregar_actividad.html:167
+#: templates/vista_agregar_actividad.html:196
+#: templates/vista_detalle_ciclo.html:74
+msgid "Costo total"
+msgstr "Custo total"
+
+#: templates/vista_agregar_actividad.html:177
+#: templates/vista_detalle_ciclo.html:362
+msgid "Maquinaria"
+msgstr "Maquinário"
+
+#: templates/vista_agregar_actividad.html:206
+msgid "Insumos utilizados"
+msgstr "Insumos utilizados"
+
+#: templates/vista_agregar_actividad.html:209
+msgid "Agregar insumo"
+msgstr "Adicionar insumo"
+
+#: templates/vista_agregar_actividad.html:226
+msgid "≈ sem/ha"
+msgstr "≈ sem/ha"
+
+#: templates/vista_agregar_actividad.html:227
+msgid "Total a usar"
+msgstr "Total a utilizar"
+
+#: templates/vista_agregar_actividad.html:282
+msgid "Datos de monitoreo"
+msgstr "Monitoramento"
+
+#: templates/vista_agregar_actividad.html:378
+msgid "Destino del grano"
+msgstr "Destino do grão"
+
+#: templates/vista_agregar_actividad.html:384
+msgid "Inspección aprobada:"
+msgstr "Inspeção aprovada:"
+
+#: templates/vista_agregar_actividad.html:387
+msgid "Semilla estimada:"
+msgstr "Semente estimada:"
+
+#: templates/vista_agregar_actividad.html:391
+msgid "Resp.:"
+msgstr "Resp.:"
+
+#: templates/vista_agregar_actividad.html:397
+msgid "Sin inspección aprobada — todo irá a consumo."
+msgstr "Sem inspeção aprovada — tudo irá para consumo."
+
+#: templates/vista_agregar_actividad.html:445
+#: templates/vista_crear_campana.html:114 templates/vista_crear_cultivo.html:93
+#: templates/vista_crear_deposito.html:117 templates/vista_producto.html:144
+msgid "¿Confirmar eliminación?"
+msgstr "Confirmar exclusão?"
+
+#: templates/vista_crear_campana.html:37
+msgid "Creación de nueva campaña"
+msgstr "Nova safra"
+
+#: templates/vista_crear_campana.html:51 templates/vista_crear_campo.html:109
+#: templates/vista_crear_ciclo.html:178 templates/vista_crear_cultivo.html:53
+#: templates/vista_crear_deposito.html:45
+msgid "Información general"
+msgstr "Informações gerais"
+
+#: templates/vista_crear_campana.html:63
+msgid "Se generará automáticamente"
+msgstr "Gerado automaticamente"
+
+#: templates/vista_crear_campana.html:146
+#: templates/vista_detalle_ciclo.html:163
+msgid "Fin"
+msgstr "Fim"
+
+#: templates/vista_crear_campana.html:147
+#: templates/vista_crear_cultivo.html:124
+#: templates/vista_crear_deposito.html:149
+#: templates/vista_lista_ciclos.html:141 templates/vista_lista_stock.html:157
+#: templates/vista_lista_stock.html:317
+msgid "Acciones"
+msgstr "Ações"
+
+#: templates/vista_crear_campana.html:159 templates/vista_crear_campo.html:214
+#: templates/vista_crear_cultivo.html:164
+#: templates/vista_crear_deposito.html:163
+msgid "Editar"
+msgstr "Editar"
+
+#: templates/vista_crear_campana.html:166
+msgid "No hay campañas cargadas"
+msgstr "Nenhuma safra registrada"
+
+#: templates/vista_crear_campo.html:94
+msgid "Creación y edición de campos"
+msgstr "Cadastro de campos"
+
+#: templates/vista_crear_campo.html:117 templates/vista_crear_deposito.html:72
+#: templates/vista_crear_deposito.html:146
+msgid "Ciudad"
+msgstr "Cidade"
+
+#: templates/vista_crear_campo.html:143
+msgid "¿Eliminar campo?"
+msgstr "Selecione o campo"
+
+#: templates/vista_crear_campo.html:148
+msgid "Guardar campo"
+msgstr "Salvar nota fiscal"
+
+#: templates/vista_crear_campo.html:163
+msgid "Contorno del campo"
+msgstr "Contorno do campo (GeoJSON)"
+
+#: templates/vista_crear_campo.html:168
+msgid "Subir archivo"
+msgstr "Importar Nota Fiscal"
+
+#: templates/vista_crear_campo.html:185
+msgid "Campos registrados"
+msgstr "Sem pagamentos registrados ainda."
+
+#: templates/vista_crear_campo.html:193
+msgid "Contorno"
+msgstr "Conteúdo"
+
+#: templates/vista_crear_campo.html:205
+msgid "Definido"
+msgstr "Definido"
+
+#: templates/vista_crear_campo.html:209
+msgid "Sin contorno"
+msgstr "Sem contorno"
+
+#: templates/vista_crear_campo.html:218
+msgid "No hay campos cargados"
+msgstr "Nenhum campo cadastrado"
+
+#: templates/vista_crear_campo.html:235
+msgid "Cargar contorno desde archivo"
+msgstr "Importar Nota Fiscal"
+
+#: templates/vista_crear_campo.html:248
+msgid "Arrastrá los archivos acá o hacé click"
+msgstr "Arraste os arquivos aqui"
+
+#: templates/vista_crear_campo.html:249
+msgid "Shapefile (.shp + .dbf + .shx), KML, KMZ, ZIP"
+msgstr "Shapefile (.shp + .dbf + .shx), KML, KMZ, ZIP"
+
+#: templates/vista_crear_campo.html:258
+msgid "Archivos cargados"
+msgstr "Nenhuma cultura cadastrada"
+
+#: templates/vista_crear_campo.html:271 templates/vista_crear_campo.html:608
+#: templates/vista_crear_campo.html:629
+msgid "Cargar en el mapa"
+msgstr "Entrada manual"
+
+#: templates/vista_crear_campo.html:559 templates/vista_crear_campo.html:561
+msgid "Falta el archivo"
+msgstr "Importar Nota Fiscal"
+
+#: templates/vista_crear_campo.html:713
+msgid "Error al procesar el archivo."
+msgstr "Erro ao conectar com o servidor."
+
+#: templates/vista_crear_ciclo.html:104
+msgid "Editar ciclo productivo"
+msgstr "Editar ciclo produtivo"
+
+#: templates/vista_crear_ciclo.html:106
+msgid "Nuevo ciclo productivo"
+msgstr "Novo ciclo produtivo"
+
+#: templates/vista_crear_ciclo.html:112
+msgid "Actualizá la información general del lote y su planificación productiva."
+msgstr "Atualize as informações do talhão e seu planejamento produtivo."
+
+#: templates/vista_crear_ciclo.html:114
+msgid "Registrá un nuevo ciclo agrícola para comenzar a cargar actividades, insumos y producción."
+msgstr "Registre um novo ciclo agrícola para começar a lançar atividades, insumos e produção."
+
+#: templates/vista_crear_ciclo.html:130 templates/vista_lista_ciclos.html:136
+msgid "Lote"
+msgstr "Talhão"
+
+#: templates/vista_crear_ciclo.html:135
+msgid "Se genera automáticamente al guardar"
+msgstr "Gerado automaticamente ao salvar"
+
+#: templates/vista_crear_ciclo.html:150
+msgid "Estado inicial"
+msgstr "Status inicial"
+
+#: templates/vista_crear_ciclo.html:156 templates/vista_crear_ciclo.html:258
+#: templates/vista_producto.html:202
+msgid "Inactivo"
+msgstr "Inativo"
+
+#: templates/vista_crear_ciclo.html:159
+msgid "Activo al crear"
+msgstr "Ativo ao criar"
+
+#: templates/vista_crear_ciclo.html:199
+msgid "Sin área seleccionada"
+msgstr "Sem áreas definidas"
+
+#: templates/vista_crear_ciclo.html:227
+msgid "Indicá la superficie estimada o comprometida para este lote."
+msgstr "Informe a área estimada ou comprometida para este talhão."
+
+#: templates/vista_crear_ciclo.html:232
+msgid "Fechas del ciclo"
+msgstr "Datas do ciclo"
+
+#: templates/vista_crear_ciclo.html:242
+msgid "Fecha de fin"
+msgstr "Data de encerramento"
+
+#: templates/vista_crear_ciclo.html:245
+msgid "Podés dejarla vacía al inicio."
+msgstr "Pode deixar em branco e preencher quando o ciclo for encerrado."
+
+#: templates/vista_crear_ciclo.html:252
+msgid "Nombre del lote"
+msgstr "Nome do talhão"
+
+#: templates/vista_crear_ciclo.html:270
+msgid "Borrar"
+msgstr "Excluir"
+
+#: templates/vista_crear_ciclo.html:272
+msgid "Crear ciclo"
+msgstr "Criar ciclo"
+
+#: templates/vista_crear_ciclo.html:289
+msgid "Ampliar"
+msgstr "Ampliar"
+
+#: templates/vista_crear_ciclo.html:297
+msgid "Seleccioná un campo para ver el mapa"
+msgstr "Selecione um campo"
+
+#: templates/vista_crear_ciclo.html:304
+msgid "El dibujo es referencial. Ingresá la superficie real en ha."
+msgstr "O desenho é referencial. Insira a superfície real em ha."
+
+#: templates/vista_crear_cultivo.html:40
+msgid "Edición de cultivo"
+msgstr "Editar cultura"
+
+#: templates/vista_crear_cultivo.html:42
+msgid "Creación de nuevos cultivos"
+msgstr "Cadastro de culturas"
+
+#: templates/vista_crear_cultivo.html:122
+msgid "Producto default"
+msgstr "Produto padrão"
+
+#: templates/vista_crear_cultivo.html:123
+msgid "Productos finales"
+msgstr "Produtos de colheita"
+
+#: templates/vista_crear_cultivo.html:144
+msgid "Sin productos finales"
+msgstr "Sem produtos de colheita"
+
+#: templates/vista_crear_cultivo.html:155
+msgid "Sin productos finales adicionales"
+msgstr "Sem produtos adicionais de colheita"
+
+#: templates/vista_crear_cultivo.html:181
+msgid "No hay cultivos cargados"
+msgstr "Nenhuma cultura cadastrada"
+
+#: templates/vista_crear_cultivo.html:203
+msgid "Nuevo producto final"
+msgstr "Novo produto de colheita"
+
+#: templates/vista_crear_cultivo.html:243
+msgid "Dejar como producto default"
+msgstr "Definir como produto padrão"
+
+#: templates/vista_crear_deposito.html:34
+msgid "Creación de nuevos depósitos"
+msgstr "Cadastro de armazéns"
+
+#: templates/vista_crear_deposito.html:81
+#: templates/vista_crear_deposito.html:147
+msgid "Dirección"
+msgstr "Endereço"
+
+#: templates/vista_crear_deposito.html:93
+#: templates/vista_crear_deposito.html:148
+msgid "Teléfono"
+msgstr "Telefone"
+
+#: templates/vista_crear_deposito.html:170
+msgid "No hay depósitos cargados"
+msgstr "Nenhum armazém cadastrado"
+
+#: templates/vista_detalle_ciclo.html:56
+msgid "Requerimiento hídrico"
+msgstr "Necessidade hídrica"
+
+#: templates/vista_detalle_ciclo.html:70
+msgid "Economía"
+msgstr "Economia"
+
+#: templates/vista_detalle_ciclo.html:82
+msgid "Costo/ha"
+msgstr "Custo/ha"
+
+#: templates/vista_detalle_ciclo.html:90
+msgid "Precio mercado"
+msgstr "Preço de mercado"
+
+#: templates/vista_detalle_ciclo.html:104
+msgid "Objetivos"
+msgstr "Metas"
+
+#: templates/vista_detalle_ciclo.html:108
+msgid "Equilibrio"
+msgstr "Ponto de equilíbrio"
+
+#: templates/vista_detalle_ciclo.html:117
+msgid "Rendimiento esperado"
+msgstr "Produtividade esperada"
+
+#: templates/vista_detalle_ciclo.html:169
+msgid "En curso"
+msgstr "Em andamento"
+
+#: templates/vista_detalle_ciclo.html:181
+msgid "Actividades"
+msgstr "Atividades"
+
+#: templates/vista_detalle_ciclo.html:200
+msgid "Agregar actividad"
+msgstr "Registrar atividade"
+
+#: templates/vista_detalle_ciclo.html:215
+msgid "Línea de tiempo de actividades"
+msgstr "Histórico de atividades"
+
+#: templates/vista_detalle_ciclo.html:218
+msgid "Historial cronológico con separación por fases"
+msgstr "Histórico cronológico separado por fases"
+
+#: templates/vista_detalle_ciclo.html:240
+msgid "Inicio de fase"
+msgstr "Início de fase"
+
+#: templates/vista_detalle_ciclo.html:297
+msgid "insumos"
+msgstr "insumos"
+
+#: templates/vista_detalle_ciclo.html:339
+#: templates/vista_detalle_ciclo.html:370
+#: templates/vista_detalle_ciclo.html:404
+msgid "Costo unitario"
+msgstr "Custo unitário"
+
+#: templates/vista_detalle_ciclo.html:393
+msgid "Insumos aplicados"
+msgstr "Insumos aplicados"
+
+#: templates/vista_detalle_ciclo.html:447
+msgid "Total actividad"
+msgstr "Total da atividade"
+
+#: templates/vista_detalle_ciclo.html:506
+msgid "Aprobadas/ha"
+msgstr "Aprovadas/ha"
+
+#: templates/vista_detalle_ciclo.html:535
+msgid "Fin de fase"
+msgstr "Encerramento de fase"
+
+#: templates/vista_detalle_ciclo.html:552
+msgid "Fase en curso"
+msgstr "Fase em andamento"
+
+#: templates/vista_detalle_ciclo.html:559
+msgid "actividad"
+msgstr "atividade"
+
+#: templates/vista_detalle_ciclo.html:561
+msgid "actividades"
+msgstr "atividades"
+
+#: templates/vista_detalle_ciclo.html:574
+msgid "No hay actividades registradas"
+msgstr "Nenhuma atividade registrada"
+
+#: templates/vista_detalle_ciclo.html:576
+msgid "Comienza agregando la primera actividad para este ciclo productivo"
+msgstr "Comece registrando a primeira atividade deste ciclo produtivo"
+
+#: templates/vista_detalle_ciclo.html:581
+msgid "Agregar primera actividad"
+msgstr "Registrar primeira atividade"
+
+#: templates/vista_lista_ciclos.html:71
+msgid "Lotes Productivos"
+msgstr "Talhões Produtivos"
+
+#: templates/vista_lista_ciclos.html:75
+msgid "Gestión de lotes productivos"
+msgstr "Gestão de talhões produtivos"
+
+#: templates/vista_lista_ciclos.html:83
+msgid "Nuevo ciclo"
+msgstr "Novo ciclo"
+
+#: templates/vista_lista_ciclos.html:124
+msgid "Limpiar filtros"
+msgstr "Limpar filtros"
+
+#: templates/vista_lista_ciclos.html:169
+msgid "Ver"
+msgstr "Ver"
+
+#: templates/vista_lista_ciclos.html:176
+msgid "No hay ciclos agrícolas creados"
+msgstr "Nenhum ciclo agrícola registrado"
+
+#: templates/vista_lista_stock.html:28
+msgid "Stock de insumos"
+msgstr "Estoque de insumos"
+
+#: templates/vista_lista_stock.html:33
+msgid "Stock de cosecha"
+msgstr "Estoque de colheita"
+
+#: templates/vista_lista_stock.html:51
+msgid "Nombre o código"
+msgstr "Nome ou código"
+
+#: templates/vista_lista_stock.html:113
+#: templates/vista_movimientos_producto.html:139
+msgid "Total ingresado"
+msgstr "Total recebido"
+
+#: templates/vista_lista_stock.html:122
+#: templates/vista_movimientos_producto.html:149
+msgid "Total consumido"
+msgstr "Total consumido"
+
+#: templates/vista_lista_stock.html:131 templates/vista_lista_stock.html:156
+msgid "Disponible"
+msgstr "Disponível"
+
+#: templates/vista_lista_stock.html:142
+msgid "Insumos"
+msgstr "Insumos"
+
+#: templates/vista_lista_stock.html:154
+msgid "Ingresado"
+msgstr "Recebido"
+
+#: templates/vista_lista_stock.html:155
+msgid "Consumido"
+msgstr "Consumido"
+
+#: templates/vista_lista_stock.html:186 templates/vista_lista_stock.html:360
+msgid "Ver historial de movimientos"
+msgstr "Ver histórico de movimentações"
+
+#: templates/vista_lista_stock.html:193 templates/vista_lista_stock.html:375
+msgid "Transferir stock entre depósitos"
+msgstr "Transferir estoque entre armazéns"
+
+#: templates/vista_lista_stock.html:199 templates/vista_lista_stock.html:381
+msgid "Sin depósito asignado — cargá una factura para asignar depósito"
+msgstr "Sem armazém atribuído — carregue uma nota fiscal para atribuir"
+
+#: templates/vista_lista_stock.html:207 templates/vista_lista_stock.html:389
+msgid "Ver stock por depósito"
+msgstr "Ver estoque por armazém"
+
+#: templates/vista_lista_stock.html:213 templates/vista_lista_stock.html:395
+msgid "Sin datos por depósito"
+msgstr "Sem dados por armazém"
+
+#: templates/vista_lista_stock.html:241
+msgid "No hay insumos con movimientos"
+msgstr "Nenhum insumo com movimentações"
+
+#: templates/vista_lista_stock.html:302
+msgid "Producción cosechada"
+msgstr "Produção colhida"
+
+#: templates/vista_lista_stock.html:314
+msgid "Cosechado"
+msgstr "Colhido"
+
+#: templates/vista_lista_stock.html:423
+msgid "No hay producción cosechada registrada"
+msgstr "Nenhuma produção de colheita registrada"
+
+#: templates/vista_lista_stock.html:444
+msgid "Transferir stock"
+msgstr "Transferir estoque"
+
+#: templates/vista_lista_stock.html:453
+msgid "Desde depósito"
+msgstr "Armazém de origem"
+
+#: templates/vista_lista_stock.html:458
+msgid "Hacia depósito"
+msgstr "Armazém de destino"
+
+#: templates/vista_lista_stock.html:482
+#: templates/vista_movimientos_producto.html:189
+msgid "Observación"
+msgstr "Observação"
+
+#: templates/vista_lista_stock.html:482
+msgid "opcional"
+msgstr "opcional"
+
+#: templates/vista_lista_stock.html:492
+msgid "Confirmar"
+msgstr "Confirmar"
+
+#: templates/vista_lista_stock.html:541
+msgid "N° factura"
+msgstr "Nº Nota Fiscal"
+
+#: templates/vista_lista_stock.html:553
+msgid "Precio unitario"
+msgstr "Preço unit."
+
+#: templates/vista_lista_stock.html:660
+msgid "Venta registrada correctamente."
+msgstr "Atividade registrada com sucesso."
+
+#: templates/vista_movimientos_producto.html:14
+msgid "Volver a stock"
+msgstr "Voltar ao estoque"
+
+#: templates/vista_movimientos_producto.html:23
+msgid "Movimientos de producto"
+msgstr "Movimentações do produto"
+
+#: templates/vista_movimientos_producto.html:26
+msgid "Detalle completo de entradas y salidas"
+msgstr "Histórico completo de entradas e saídas"
+
+#: templates/vista_movimientos_producto.html:56
+msgid "Filtros"
+msgstr "Filtros"
+
+#: templates/vista_movimientos_producto.html:94
+#: templates/vista_movimientos_producto.html:188
+msgid "Origen"
+msgstr "Origem"
+
+#: templates/vista_movimientos_producto.html:101
+#: templates/vista_movimientos_producto.html:211
+msgid "Factura manual"
+msgstr "Nota fiscal manual"
+
+#: templates/vista_movimientos_producto.html:115
+msgid "Referencia u observación"
+msgstr "Referência ou observação"
+
+#: templates/vista_movimientos_producto.html:159
+msgid "Stock actual"
+msgstr "Estoque atual"
+
+#: templates/vista_movimientos_producto.html:173
+msgid "Movimientos"
+msgstr "Movimentações"
+
+#: templates/vista_movimientos_producto.html:244
 msgid "No hay movimientos registrados"
 msgstr "Nenhuma movimentação registrada"
 
-#: core/templates/vista_producto.html:59
+#: templates/vista_producto.html:59
 msgid "Editar producto"
 msgstr "Editar produto"
 
-#: core/templates/vista_producto.html:200
+#: templates/vista_producto.html:134
+msgid "El PMG se configura al cargar la factura de compra de semilla."
+msgstr "O PMG é configurado ao carregar a fatura de compra de semente."
+
+#: templates/vista_producto.html:209
 msgid "No hay productos cargados."
 msgstr "Nenhum produto cadastrado."
+
+#~ msgid "El cultivo debe pertenecer a la misma empresa que el campo."
+#~ msgstr "A cultura precisa pertencer à mesma empresa do campo."
+
+#~ msgid "Mapa de prescripción"
+#~ msgstr "Mapa de prescrição"
+
+#~ msgid "Mapa de rendimiento"
+#~ msgstr "Mapa de produtividade"
+
+#~ msgid "Nombre del campo numérico en el shapefile (ej: rate, ph, k)"
+#~ msgstr "Nome do campo numérico no shapefile (ex: rate, ph, k)"
+
+#~ msgid "Sentinel-2 automático"
+#~ msgstr "Sentinel-2 automático"
+
+#, fuzzy
+#~| msgid "Factura manual"
+#~ msgid "Subida manual"
+#~ msgstr "Nota fiscal manual"
+
+#~ msgid "Fecha imagen satélite"
+#~ msgstr "Data imagem satélite"
+
+#~ msgid "Captura NDVI"
+#~ msgstr "Captura NDVI"
+
+#~ msgid "Capturas NDVI"
+#~ msgstr "Capturas NDVI"
+
+#~ msgid "NDVI"
+#~ msgstr "NDVI"
+
+#~ msgid "Ambientes"
+#~ msgstr "Ambientes"
+
+#~ msgid "Comparativas"
+#~ msgstr "Comparativos"
+
+#~ msgid "Nueva Factura"
+#~ msgstr "Nova Nota Fiscal"
+
+#~ msgid "Imagen del campo"
+#~ msgstr "Imagem do campo"
+
+#~ msgid "implantaciones"
+#~ msgstr "implantações"
+
+#~ msgid "Mostrando todas las implantaciones registradas"
+#~ msgstr "Exibindo todas as implantações registradas"
+
+#~ msgid "Seleccioná el campo donde se desarrollará el ciclo."
+#~ msgstr "Selecione o campo onde o ciclo será desenvolvido."
+
+#~ msgid "Se propone automáticamente la campaña activa de la empresa."
+#~ msgstr "A safra ativa da empresa é sugerida automaticamente."
+
+#~ msgid "Seleccioná el cultivo. El producto final se completa automáticamente desde su configuración."
+#~ msgstr "Selecione a cultura. O produto de colheita é preenchido automaticamente."
+
+#~ msgid "Datos del lote"
+#~ msgstr "Dados do talhão"
+
+#~ msgid "Este valor se genera automáticamente al crear el ciclo."
+#~ msgstr "Este valor é gerado automaticamente ao criar o ciclo."
+
+#~ msgid "Compartir"
+#~ msgstr "Compartilhar"
+
+#~ msgid "Imprimir"
+#~ msgstr "Imprimir"
+
+#~ msgid "Exportar"
+#~ msgstr "Exportar"
+
+#~ msgid "Observaciones generales de la actividad"
+#~ msgstr "Observações gerais da atividade"
+
+#~ msgid "Compras y Stock"
+#~ msgstr "Compras e Estoque"
+
+#~ msgid "Lista Facturas"
+#~ msgstr "Notas Fiscais"
+
+#~ msgid "Vendido"
+#~ msgstr "Vendido"

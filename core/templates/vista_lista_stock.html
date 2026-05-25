@@ -34,16 +34,10 @@
                             </a>
                         </li>
                     </ul>
-                    <div class="btn-wrapper d-flex gap-2 pb-2">
-                        <button class="btn btn-otline-dark" disabled>
-                            <i class="icon-share me-1"></i>{% translate "Compartir" %}
-                        </button>
-                        <button class="btn btn-otline-dark" disabled>
-                            <i class="icon-printer me-1"></i>{% translate "Imprimir" %}
-                        </button>
-                        <button class="btn btn-primary text-white me-0" disabled>
-                            <i class="icon-download me-1"></i>{% translate "Exportar" %}
-                        </button>
+                    <div class="d-flex gap-2 pb-2">
+                        <a href="{% url 'vista_cargar_factura_manual' %}" class="btn btn-success btn-sm">
+                            <i class="mdi mdi-plus me-1"></i>{% translate "Cargar factura" %}
+                        </a>
                     </div>
                 </div>
 
@@ -82,11 +76,11 @@
                                     value="{{ request.GET.fecha_entrada_hasta }}">
                             </div>
                             <div class="col-md-2 d-flex gap-2">
-                                <button type="submit" class="btn btn-primary text-white">
-                                    <i class="icon-check me-1"></i>{% translate "Filtrar" %}
+                                <button type="submit" class="btn btn-success btn-sm flex-fill">
+                                    <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
                                 </button>
-                                <a href="{% url 'vista_lista_stock' %}" class="btn btn-otline-dark">
-                                    <i class="icon-close me-1"></i>{% translate "Limpiar" %}
+                                <a href="{% url 'vista_lista_stock' %}" class="btn btn-outline-secondary btn-sm">
+                                    {% translate "Limpiar" %}
                                 </a>
                             </div>
                         </form>
@@ -193,7 +187,7 @@
                                                     <i class="mdi mdi-history"></i>
                                                 </a>
                                                 {% if item.por_deposito %}
-                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
                                                     onclick="abrirModalMover({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ prod.unidad_base }}', {{ prod.unidad_base.id }}, '{{ item.destino|default:'' }}')"
                                                     data-bs-toggle="tooltip"
                                                     data-bs-title="{% translate 'Transferir stock entre depósitos' %}">
@@ -367,7 +361,7 @@
                                                     <i class="mdi mdi-history"></i>
                                                 </a>
                                                 {% if item.restante > 0 %}
-                                                <button type="button" class="btn btn-sm btn-outline-success"
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
                                                     onclick="abrirModalVenta({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ item.destino }}', '{{ item.destino_label|escapejs }}')"
                                                     data-bs-toggle="tooltip"
                                                     data-bs-title="{% translate 'Registrar venta' %}">
@@ -375,7 +369,7 @@
                                                 </button>
                                                 {% endif %}
                                                 {% if item.por_deposito %}
-                                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
                                                     onclick="abrirModalMover({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ prod.unidad_base }}', {{ prod.unidad_base.id }}, '{{ item.destino|default:'' }}')"
                                                     data-bs-toggle="tooltip"
                                                     data-bs-title="{% translate 'Transferir stock entre depósitos' %}">
@@ -493,8 +487,8 @@
 
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
-                <button type="button" id="btn-confirmar-transferencia" class="btn btn-primary">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                <button type="button" id="btn-confirmar-transferencia" class="btn btn-success">
                     <i class="mdi mdi-check me-1"></i>{% translate "Confirmar" %}
                 </button>
             </div>

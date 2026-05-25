@@ -1,0 +1,1396 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+    <div class="row">
+        <div class="col-sm-12">
+
+            {% if messages %}
+            <div class="mb-3">
+                {% for message in messages %}
+                <div class="alert {{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="home-tab">
+
+                {# ── TABS HEADER ── #}
+                <div class="d-sm-flex align-items-center justify-content-between border-bottom">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active ps-0" data-bs-toggle="tab" href="#tab-suelo" role="tab">
+                                <i class="mdi mdi-molecule me-1"></i>{% translate "Suelo" %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-cosecha" role="tab">
+                                <i class="mdi mdi-sprout me-1"></i>{% translate "Cosecha" %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-ndvi" role="tab">
+                                <i class="mdi mdi-satellite-variant me-1"></i>{% translate "NDVI / Satélite" %}
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab-comparacion" role="tab">
+                                <i class="mdi mdi-chart-line me-1"></i>{% translate "Comparación" %}
+                            </a>
+                        </li>
+                    </ul>
+                    <div class="d-flex gap-2 pb-2">
+                        <button id="btn-subir-datos" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#modalSubirDatos">
+                            <i class="mdi mdi-upload me-1"></i>{% translate "Subir datos" %}
+                        </button>
+                    </div>
+                </div>
+
+                {# ── FILTROS ── #}
+                <div class="card border-0 shadow-sm my-3">
+                    <div class="card-body py-2">
+                        <form method="get" class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">{% translate "Campo" %}</label>
+                                <select name="campo" class="form-select form-select-sm">
+                                    <option value="">{% translate "Todos" %}</option>
+                                    {% for c in campos %}
+                                    <option value="{{ c.id }}" {% if request.GET.campo == c.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ c.nombre }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small mb-1">{% translate "Área" %}</label>
+                                <select name="area" class="form-select form-select-sm">
+                                    <option value="">{% translate "Todas" %}</option>
+                                    {% for a in areas %}
+                                    <option value="{{ a.id }}" {% if request.GET.area == a.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ a.nombre }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small mb-1">{% translate "Fecha desde" %}</label>
+                                <input type="date" name="fecha_desde" class="form-control form-control-sm"
+                                       value="{{ request.GET.fecha_desde }}">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small mb-1">{% translate "Fecha hasta" %}</label>
+                                <input type="date" name="fecha_hasta" class="form-control form-control-sm"
+                                       value="{{ request.GET.fecha_hasta }}">
+                            </div>
+                            <div class="col-md-2 d-flex gap-2">
+                                <button type="submit" class="btn btn-success btn-sm flex-fill">
+                                    <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
+                                </button>
+                                <a href="{% url 'vista_mapas' %}" class="btn btn-outline-secondary btn-sm">
+                                    {% translate "Limpiar" %}
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {# ── TAB CONTENT ── #}
+                <div class="tab-content tab-content-basic">
+
+                    {# ══════════════════ TAB SUELO ══════════════════ #}
+                    <div class="tab-pane fade show active" id="tab-suelo" role="tabpanel">
+
+                        {% if not campo_sel %}
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center text-muted py-5">
+                                <i class="mdi mdi-flask-outline d-block mb-2" style="font-size:2.5rem;opacity:.25"></i>
+                                {% translate "Seleccioná un campo en el filtro para ver el análisis de suelo" %}
+                            </div>
+                        </div>
+                        {% else %}
+
+                        <div id="suelo-visor-layout" style="display:flex;gap:16px">
+
+                            {# SIDEBAR #}
+                            <div style="width:270px;min-width:270px;display:flex;flex-direction:column;gap:12px">
+
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="fw-semibold mb-1" style="font-size:.82rem">
+                                            <i class="mdi mdi-map-marker text-muted me-1"></i>{{ campo_sel.nombre }}
+                                        </div>
+                                        <div class="small text-muted" style="font-size:.73rem">{% translate "Tildá uno o más análisis para ver en el mapa" %}</div>
+                                    </div>
+                                </div>
+
+                                <div class="card border-0 shadow-sm" style="flex:1;min-height:0">
+                                    <div class="card-body p-0" style="display:flex;flex-direction:column;height:100%">
+                                        <div class="px-3 py-2 border-bottom d-flex align-items-center justify-content-between" style="background:#fafafa">
+                                            <span style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af">
+                                                {% translate "Análisis cargados" %}
+                                            </span>
+                                            <button id="suelo-btn-combinar" class="btn btn-success btn-sm py-0 px-2" style="display:none;font-size:.72rem">
+                                                <i class="mdi mdi-merge me-1"></i>{% translate "Combinar" %}
+                                            </button>
+                                        </div>
+                                        <div id="suelo-lista" style="flex:1;overflow-y:auto;padding:8px">
+                                            <p class="text-muted small ps-1">{% translate "Cargando..." %}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>{# /sidebar #}
+
+                            {# MAPA #}
+                            <div id="suelo-mapa-wrapper" style="flex:1;position:relative;min-height:400px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+                                <div id="suelo-mapa" style="position:absolute;top:0;left:0;right:0;bottom:0;border-radius:8px"></div>
+
+                                <div id="suelo-mapa-vacio" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:#9ca3af;pointer-events:none;z-index:500">
+                                    <i class="mdi mdi-flask-outline d-block mb-2" style="font-size:2.5rem;opacity:.4"></i>
+                                    <div class="small">{% translate "Seleccioná un análisis para ver el mapa" %}</div>
+                                </div>
+
+                                <div id="suelo-leyenda" style="display:none;position:absolute;top:12px;left:12px;z-index:1000;background:rgba(255,255,255,.94);border-radius:8px;padding:9px 13px;box-shadow:0 2px 8px rgba(0,0,0,.13)"></div>
+
+                                <div id="suelo-stats" style="display:none;position:absolute;bottom:12px;right:12px;z-index:1000;background:rgba(255,255,255,.94);border-radius:8px;padding:8px 12px;box-shadow:0 2px 8px rgba(0,0,0,.13);min-width:220px"></div>
+
+                                <div id="suelo-hint-click" style="display:none;position:absolute;bottom:12px;left:12px;z-index:1000;background:rgba(0,0,0,.45);border-radius:6px;padding:4px 9px;pointer-events:none">
+                                    <span style="font-size:.7rem;color:#fff"><i class="mdi mdi-cursor-default-click me-1"></i>{% translate "Hacé click para ver el valor" %}</span>
+                                </div>
+                            </div>{# /mapa #}
+
+                        </div>{# /layout #}
+
+                        {% endif %}
+                    </div>
+
+                    {# ══════════════════ TAB COSECHA ══════════════════ #}
+                    <div class="tab-pane fade" id="tab-cosecha" role="tabpanel">
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-sprout fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Ciclos con datos" %}</div>
+                                        <div class="fw-semibold">{{ cosecha_ciclos|default:"—" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-chart-bar fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Rendimiento promedio" %}</div>
+                                        <div class="fw-semibold">{{ cosecha_promedio|default:"—" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-arrow-up-bold fs-4 text-success"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Máximo" %}</div>
+                                        <div class="fw-semibold">{{ cosecha_max|default:"—" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-arrow-down-bold fs-4 text-danger"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Mínimo" %}</div>
+                                        <div class="fw-semibold">{{ cosecha_min|default:"—" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body p-0">
+                                <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <span class="fw-semibold" style="font-size:.85rem">{% translate "Datos de cosecha" %}</span>
+                                    <span class="text-muted small">{{ mediciones_cosecha|length }} {% translate "registros" %}</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table mb-0" style="font-size:.83rem">
+                                        <thead style="background:#fafafa">
+                                            <tr>
+                                                <th class="px-4 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Ciclo" %}</th>
+                                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Variable" %}</th>
+                                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Promedio" %}</th>
+                                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Mín" %}</th>
+                                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Máx" %}</th>
+                                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Fecha" %}</th>
+                                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Área" %}</th>
+                                                <th class="px-3 py-2"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for m in mediciones_cosecha %}
+                                            <tr style="border-bottom:1px solid #f3f4f6">
+                                                <td class="px-4 py-2 fw-semibold" style="color:#111827">{{ m.ciclo|default:"—" }}</td>
+                                                <td class="px-3 py-2">{{ m.variable.nombre }}</td>
+                                                <td class="px-3 py-2">{{ m.promedio }} {{ m.variable.unidad }}</td>
+                                                <td class="px-3 py-2 text-muted">{{ m.minimo|default:"—" }}</td>
+                                                <td class="px-3 py-2 text-muted">{{ m.maximo|default:"—" }}</td>
+                                                <td class="px-3 py-2 text-muted">{{ m.fecha|date:"d/m/Y" }}</td>
+                                                <td class="px-3 py-2 text-muted">{{ m.area_campo.nombre|default:"Campo completo" }}</td>
+                                                <td class="px-3 py-2 text-end">
+                                                    <button class="btn btn-outline-secondary btn-sm py-0 px-2">
+                                                        <i class="mdi mdi-dots-horizontal"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="8" class="text-center text-muted py-5">
+                                                    <i class="mdi mdi-sprout d-block mb-2" style="font-size:2rem;opacity:.3"></i>
+                                                    {% translate "Sin datos de cosecha cargados" %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# ══════════════════ TAB NDVI ══════════════════ #}
+                    <div class="tab-pane fade" id="tab-ndvi" role="tabpanel">
+
+                        {% if not campo_sel %}
+
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body text-center text-muted py-5">
+                                <i class="mdi mdi-satellite-variant d-block mb-2" style="font-size:2.5rem;opacity:.25"></i>
+                                {% translate "Seleccioná un campo en el filtro para ver las capturas NDVI" %}
+                            </div>
+                        </div>
+
+                        {% else %}
+
+                        {# ── Layout: sidebar + mapa ── #}
+                        <div id="ndvi-visor-layout" style="display:flex;gap:16px">
+
+                            {# SIDEBAR #}
+                            <div style="width:270px;min-width:270px;display:flex;flex-direction:column;gap:12px">
+
+                                {# Botones acción #}
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="fw-semibold mb-2" style="font-size:.82rem">
+                                            <i class="mdi mdi-map-marker text-muted me-1"></i>{{ campo_sel.nombre }}
+                                        </div>
+                                        <button id="ndvi-btn-actualizar" class="btn btn-success btn-sm w-100 mb-1">
+                                            <i class="mdi mdi-satellite-variant me-1"></i>{% translate "Actualizar Sentinel-2" %}
+                                        </button>
+                                        <button id="ndvi-btn-regenerar" class="btn btn-outline-warning btn-sm w-100" style="display:none">
+                                            <i class="mdi mdi-reload me-1"></i>{% translate "Regenerar imagen" %}
+                                        </button>
+                                        {# Log #}
+                                        <div id="ndvi-log-panel" class="mt-2" style="display:none">
+                                            <div class="d-flex align-items-center gap-2 mb-1">
+                                                <div id="ndvi-spinner" class="spinner-border spinner-border-sm text-success" style="display:none"></div>
+                                                <span id="ndvi-log-titulo" class="small fw-semibold text-muted"></span>
+                                            </div>
+                                            <div id="ndvi-log-texto" class="bg-light rounded p-2 small font-monospace"
+                                                 style="max-height:70px;overflow-y:auto;font-size:.71rem;white-space:pre-wrap"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {# KPIs #}
+                                <div id="ndvi-panel-stats" class="card border-0 shadow-sm" style="display:none">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="d-flex align-items-end justify-content-between mb-2">
+                                            <div>
+                                                <div style="font-size:1.7rem;font-weight:700;line-height:1" id="stat-promedio">—</div>
+                                                <div style="font-size:.68rem;color:#6c757d;text-transform:uppercase;letter-spacing:.05em">NDVI promedio</div>
+                                            </div>
+                                            <div class="text-end">
+                                                <div id="stat-delta" style="font-size:1rem;font-weight:600"></div>
+                                                <div id="stat-tendencia" style="font-size:.73rem;color:#6c757d"></div>
+                                            </div>
+                                        </div>
+                                        <div class="row g-1">
+                                            <div class="col-6">
+                                                <div class="text-center border rounded py-1">
+                                                    <div style="font-size:.65rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em">{% translate "Fecha" %}</div>
+                                                    <div style="font-size:.78rem;font-weight:600" id="stat-fecha">—</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="text-center border rounded py-1">
+                                                    <div style="font-size:.65rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em">{% translate "Rango" %}</div>
+                                                    <div style="font-size:.76rem;font-weight:600" id="stat-rango">—</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="text-center border rounded py-1">
+                                                    <div style="font-size:.65rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em">☁ {% translate "Nubes" %}</div>
+                                                    <div style="font-size:.78rem;font-weight:600" id="stat-nubes">—</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="text-center border rounded py-1">
+                                                    <div style="font-size:.65rem;color:#9ca3af;text-transform:uppercase;letter-spacing:.04em">{% translate "Días" %}</div>
+                                                    <div style="font-size:.78rem;font-weight:600" id="stat-dias">—</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {# Alerta caída #}
+                                        <div id="ndvi-alerta" class="alert alert-danger p-2 small mt-2 mb-0" style="display:none">
+                                            <i class="mdi mdi-alert me-1"></i><strong>{% translate "Caída detectada" %}</strong>
+                                            <div id="ndvi-alerta-detalle" class="mt-1 text-muted" style="font-size:.74rem"></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {# Lista de capturas #}
+                                <div class="card border-0 shadow-sm" style="flex:1;min-height:0">
+                                    <div class="card-body p-0" style="display:flex;flex-direction:column;height:100%">
+                                        <div class="px-3 py-2 border-bottom" style="background:#fafafa">
+                                            <span style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af">
+                                                {% translate "Capturas" %}
+                                            </span>
+                                        </div>
+                                        <div id="ndvi-lista" style="flex:1;overflow-y:auto;padding:8px">
+                                            <p class="text-muted small ps-1">{% translate "Cargando..." %}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            </div>{# /sidebar #}
+
+                            {# MAPA #}
+                            <div style="flex:1;position:relative;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.1)">
+                                <div id="ndvi-mapa" style="width:100%;height:100%"></div>
+
+                                {# Leyenda #}
+                                <div id="ndvi-leyenda" style="position:absolute;top:12px;left:12px;z-index:1000;
+                                     background:rgba(255,255,255,.94);border-radius:8px;padding:9px 13px;
+                                     box-shadow:0 2px 8px rgba(0,0,0,.13);display:none">
+                                    <div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6c757d;margin-bottom:5px">NDVI</div>
+                                    {% for color,lbl in leyenda_ndvi %}
+                                    <div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">
+                                        <div style="width:11px;height:11px;border-radius:2px;background:{{ color }};flex-shrink:0"></div>
+                                        <span style="font-size:.72rem">{{ lbl }}</span>
+                                    </div>
+                                    {% endfor %}
+                                    <div style="display:flex;align-items:center;gap:5px">
+                                        <div style="width:11px;height:11px;border-radius:2px;background:rgb(160,160,160);flex-shrink:0"></div>
+                                        <span style="font-size:.72rem">{% translate "Nubes" %}</span>
+                                    </div>
+                                </div>
+
+                                {# Opacidad #}
+                                <div id="ndvi-ctrl-opacidad" style="position:absolute;bottom:12px;right:12px;z-index:1000;
+                                     background:rgba(255,255,255,.94);border-radius:8px;padding:8px 12px;
+                                     box-shadow:0 2px 8px rgba(0,0,0,.13);display:none">
+                                    <div style="font-size:.68rem;font-weight:600;color:#6c757d;margin-bottom:4px">{% translate "Opacidad" %}</div>
+                                    <input type="range" id="ndvi-opacidad" min="0" max="100" value="75"
+                                           class="form-range" style="width:120px">
+                                </div>
+                            </div>{# /mapa #}
+
+                        </div>{# /layout #}
+
+                        {% endif %}
+                    </div>
+
+                    {# ══════════════════ TAB COMPARACIÓN ══════════════════ #}
+                    <div class="tab-pane fade" id="tab-comparacion" role="tabpanel">
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-flask-outline fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Variables disponibles" %}</div>
+                                        <div class="fw-semibold">{{ comp_variables|default:"—" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-calendar-range fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Períodos con datos" %}</div>
+                                        <div class="fw-semibold">{{ comp_periodos|default:"—" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-map-marker-multiple fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Áreas comparables" %}</div>
+                                        <div class="fw-semibold">{{ comp_areas|default:"—" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card text-center h-100 border-0 shadow-sm">
+                                    <div class="card-body">
+                                        <i class="mdi mdi-trending-up fs-4 text-muted"></i>
+                                        <div class="mt-2 small text-muted">{% translate "Tendencia general" %}</div>
+                                        <div class="fw-semibold">{{ comp_tendencia|default:"—" }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body p-0">
+                                <div class="px-4 py-3 border-bottom">
+                                    <span class="fw-semibold" style="font-size:.85rem">{% translate "Evolución por variable" %}</span>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table mb-0" style="font-size:.83rem">
+                                        <thead style="background:#fafafa">
+                                            <tr>
+                                                <th class="px-4 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Variable" %}</th>
+                                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Área" %}</th>
+                                                {% for fecha in comp_fechas %}
+                                                <th class="px-3 py-2 text-center" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">
+                                                    {{ fecha|date:"m/Y" }}
+                                                </th>
+                                                {% endfor %}
+                                                <th class="px-3 py-2" style="color:#9ca3af;font-size:.7rem;text-transform:uppercase;font-weight:700">{% translate "Δ cambio" %}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for fila in comp_filas %}
+                                            <tr style="border-bottom:1px solid #f3f4f6">
+                                                <td class="px-4 py-2 fw-semibold" style="color:#111827">{{ fila.variable }}</td>
+                                                <td class="px-3 py-2 text-muted">{{ fila.area|default:"Campo completo" }}</td>
+                                                {% for val in fila.valores %}
+                                                <td class="px-3 py-2 text-center">{{ val|default:"—" }}</td>
+                                                {% endfor %}
+                                                <td class="px-3 py-2">
+                                                    {% if fila.delta > 0 %}
+                                                    <span class="text-success fw-semibold">▲ {{ fila.delta }}</span>
+                                                    {% elif fila.delta < 0 %}
+                                                    <span class="text-danger fw-semibold">▼ {{ fila.delta }}</span>
+                                                    {% else %}
+                                                    <span class="text-muted">—</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="10" class="text-center text-muted py-5">
+                                                    <i class="mdi mdi-chart-line d-block mb-2" style="font-size:2rem;opacity:.3"></i>
+                                                    {% translate "Cargá al menos dos análisis de la misma variable para ver la comparación" %}
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>{# /tab-content #}
+            </div>{# /home-tab #}
+        </div>
+    </div>
+</div>
+
+{# ══ Modal subir datos de suelo ══ #}
+<div class="modal fade" id="modalSubirDatos" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold">
+                    <i class="mdi mdi-upload me-2 text-muted"></i>{% translate "Subir análisis de suelo" %}
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+
+                <div class="row g-2 mb-3">
+                    <div class="col-12">
+                        <label class="form-label small fw-semibold">{% translate "Campo" %} *</label>
+                        <select class="form-select form-select-sm" id="modal-campo">
+                            <option value="">— {% translate "Seleccioná" %} —</option>
+                            {% for c in campos %}
+                            <option value="{{ c.id }}" {% if campo_sel and campo_sel.id == c.id %}selected{% endif %}>{{ c.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">{% translate "Área (opcional)" %}</label>
+                        <select class="form-select form-select-sm" id="modal-area">
+                            <option value="">{% translate "Todo el campo" %}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">{% translate "Fecha del análisis" %} *</label>
+                        <input type="date" class="form-control form-control-sm" id="modal-fecha"
+                               value="{% now 'Y-m-d' %}">
+                    </div>
+                </div>
+
+                <div class="drop-zone rounded-3 p-4 text-center"
+                     id="modal-drop-zone"
+                     style="border:2px dashed #dee2e6;cursor:pointer;background:#f8f9fa;transition:.2s"
+                     ondragover="event.preventDefault();this.style.borderColor='#198754';this.style.background='#f0fdf4'"
+                     ondragleave="this.style.borderColor='#dee2e6';this.style.background='#f8f9fa'"
+                     ondrop="onDropModalDatos(event)"
+                     onclick="document.getElementById('modal-input-archivo').click()">
+                    <i class="mdi mdi-file-upload-outline d-block mb-1" style="font-size:2rem;color:#9ca3af"></i>
+                    <div class="fw-semibold" style="font-size:.88rem">{% translate "Arrastrá los archivos acá o hacé clic" %}</div>
+                    <div class="text-muted small mt-1">{% translate "Shapefile (.shp + .shx + .dbf), ZIP, CSV, GeoJSON, KML" %}</div>
+                    <input type="file" id="modal-input-archivo" style="display:none" multiple
+                           accept=".shp,.shx,.dbf,.zip,.csv,.geojson,.json,.kml,.kmz">
+                </div>
+
+                <div id="modal-archivo-seleccionado" class="mt-2" style="display:none">
+                    <div class="d-flex align-items-center gap-2 p-2 rounded" style="background:#f9fafb;border:1px solid #e5e7eb">
+                        <i class="mdi mdi-file-outline text-muted"></i>
+                        <span id="modal-archivo-nombre" class="small flex-fill"></span>
+                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-2" onclick="limpiarArchivoModal()">
+                            <i class="mdi mdi-close"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="modal-resultado" class="mt-2" style="display:none"></div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                <button type="button" class="btn btn-success btn-sm" id="btn-procesar-datos" disabled onclick="subeloCargar()">
+                    <i class="mdi mdi-arrow-up me-1"></i>{% translate "Subir" %}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block custom_js %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+
+// Recordar y restaurar tab activa
+var TAB_KEY = 'mapas_tab_activa';
+document.querySelectorAll('.nav-tabs a[data-bs-toggle="tab"]').forEach(function (link) {
+    link.addEventListener('shown.bs.tab', function (e) {
+        var href = e.target.getAttribute('href');
+        localStorage.setItem(TAB_KEY, href);
+        var esNdvi = href === '#tab-ndvi';
+        document.getElementById('btn-subir-datos').style.display = esNdvi ? 'none' : '';
+    });
+});
+
+{% if campo_sel %}
+document.addEventListener('DOMContentLoaded', function () {
+    var tabGuardada = localStorage.getItem(TAB_KEY) || '#tab-suelo';
+    var link = document.querySelector('a[href="' + tabGuardada + '"]');
+    if (!link) link = document.querySelector('a[href="#tab-suelo"]');
+    var href = link.getAttribute('href');
+
+    // Persist now so the next filter submit stays on this tab
+    localStorage.setItem(TAB_KEY, href);
+    document.getElementById('btn-subir-datos').style.display = href === '#tab-ndvi' ? 'none' : '';
+
+    var pane = document.querySelector(href);
+    if (pane && pane.classList.contains('active')) {
+        // Tab is already active in the HTML — Tab.show() is a no-op and won't fire shown.bs.tab
+        if (href === '#tab-suelo') sueloTabActivar();
+    } else {
+        new bootstrap.Tab(link).show();
+    }
+});
+{% endif %}
+
+// ── Modal subir datos de suelo ──────────────────────────────────────
+var CSRF                 = '{{ csrf_token }}';
+var SUELO_CARGAR_URL_TPL = '{% url "ajax_suelo_cargar" campo_id=0 %}';
+var modalShpFiles        = null;  // {shp, shx, dbf} cuando se suben sueltos
+
+document.getElementById('modal-input-archivo').addEventListener('change', function() {
+    if (this.files.length) procesarSeleccionModal(this.files);
+});
+function onDropModalDatos(e) {
+    e.preventDefault();
+    document.getElementById('modal-drop-zone').style.borderColor = '#dee2e6';
+    document.getElementById('modal-drop-zone').style.background  = '#f8f9fa';
+    if (e.dataTransfer.files.length) procesarSeleccionModal(e.dataTransfer.files);
+}
+
+function procesarSeleccionModal(files) {
+    modalShpFiles = null;
+    var arr   = Array.from(files);
+    var lower = arr.map(function (f) { return f.name.toLowerCase(); });
+
+    document.getElementById('modal-resultado').style.display    = 'none';
+    document.getElementById('btn-procesar-datos').disabled      = true;
+    document.getElementById('modal-archivo-seleccionado').style.display = 'block';
+
+    var shpFile = arr.find(function (f) { return f.name.toLowerCase().endsWith('.shp'); });
+    var shxFile = arr.find(function (f) { return f.name.toLowerCase().endsWith('.shx'); });
+    var dbfFile = arr.find(function (f) { return f.name.toLowerCase().endsWith('.dbf'); });
+    var zipFile = arr.find(function (f) { return f.name.toLowerCase().endsWith('.zip'); });
+
+    // Modo shapefile suelto (cualquiera de los 3 está presente)
+    if (shpFile || shxFile || dbfFile) {
+        document.getElementById('modal-archivo-nombre').textContent =
+            arr.map(function (f) { return f.name; }).join(', ');
+        var faltantes = [];
+        if (!shpFile) faltantes.push('.shp');
+        if (!shxFile) faltantes.push('.shx');
+        if (!dbfFile) faltantes.push('.dbf');
+        var el = document.getElementById('modal-resultado');
+        if (faltantes.length) {
+            el.style.display = '';
+            el.innerHTML = '<div class="alert alert-warning p-2 small mb-0">' +
+                '{% translate "Faltan" %}: ' + faltantes.join(', ') + '</div>';
+        } else {
+            modalShpFiles = { shp: shpFile, shx: shxFile, dbf: dbfFile };
+            document.getElementById('btn-procesar-datos').disabled = false;
+        }
+        return;
+    }
+
+    // Modo ZIP
+    if (zipFile) {
+        document.getElementById('modal-archivo-nombre').textContent = zipFile.name;
+        JSZip.loadAsync(zipFile).then(function (zip) {
+            var nombres  = Object.keys(zip.files).map(function (f) { return f.toLowerCase(); });
+            var tieneShp = nombres.some(function (f) { return f.endsWith('.shp'); });
+            var tieneShx = nombres.some(function (f) { return f.endsWith('.shx'); });
+            var tieneDbf = nombres.some(function (f) { return f.endsWith('.dbf'); });
+            var el = document.getElementById('modal-resultado');
+            if (tieneShp && tieneShx && tieneDbf) {
+                document.getElementById('btn-procesar-datos').disabled = false;
+            } else {
+                var faltantes = [];
+                if (!tieneShp) faltantes.push('.shp');
+                if (!tieneShx) faltantes.push('.shx');
+                if (!tieneDbf) faltantes.push('.dbf');
+                el.style.display = '';
+                el.innerHTML = '<div class="alert alert-danger p-2 small mb-0">' +
+                    '{% translate "El ZIP debe contener" %}: ' + faltantes.join(', ') + '</div>';
+            }
+        }).catch(function () {
+            var el = document.getElementById('modal-resultado');
+            el.style.display = '';
+            el.innerHTML = '<div class="alert alert-danger p-2 small mb-0">{% translate "No se pudo leer el ZIP" %}</div>';
+        });
+        return;
+    }
+
+    // Modo archivo único (CSV, GeoJSON, KML)
+    var extsSimples = ['csv', 'geojson', 'json', 'kml', 'kmz'];
+    var archivoUnico = arr[0];
+    var ext = archivoUnico ? archivoUnico.name.toLowerCase().split('.').pop() : '';
+    if (arr.length === 1 && extsSimples.indexOf(ext) !== -1) {
+        document.getElementById('modal-archivo-nombre').textContent = archivoUnico.name;
+        document.getElementById('btn-procesar-datos').disabled = false;
+    } else {
+        document.getElementById('modal-resultado').style.display = '';
+        document.getElementById('modal-resultado').innerHTML =
+            '<div class="alert alert-danger p-2 small mb-0">{% translate "Formato no soportado. Usá ZIP, Shapefile (.shp+.shx+.dbf), CSV, GeoJSON o KML" %}</div>';
+    }
+}
+
+function limpiarArchivoModal() {
+    modalShpFiles = null;
+    document.getElementById('modal-archivo-seleccionado').style.display = 'none';
+    document.getElementById('modal-resultado').style.display = 'none';
+    document.getElementById('modal-input-archivo').value = '';
+    document.getElementById('btn-procesar-datos').disabled = true;
+}
+function subeloCargar() {
+    var campoId = document.getElementById('modal-campo').value;
+    if (!campoId) { alert('{% translate "Seleccioná un campo" %}'); return; }
+
+    var btn = document.getElementById('btn-procesar-datos');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>{% translate "Subiendo..." %}';
+
+    var fd = new FormData();
+    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('area',  document.getElementById('modal-area').value);
+    fd.append('fecha', document.getElementById('modal-fecha').value);
+
+    if (modalShpFiles) {
+        fd.append('shp', modalShpFiles.shp);
+        fd.append('shx', modalShpFiles.shx);
+        fd.append('dbf', modalShpFiles.dbf);
+    } else {
+        var archivo = document.getElementById('modal-input-archivo').files[0];
+        if (!archivo) { btn.disabled = false; return; }
+        fd.append('archivo', archivo);
+    }
+
+    var url = SUELO_CARGAR_URL_TPL.replace('/0/', '/' + campoId + '/');
+    $.ajax({
+        url: url, method: 'POST', data: fd,
+        processData: false, contentType: false,
+        success: function (res) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="mdi mdi-arrow-up me-1"></i>{% translate "Subir" %}';
+            if (res.ok) {
+                limpiarArchivoModal();
+                var modal = bootstrap.Modal.getInstance(document.getElementById('modalSubirDatos'));
+                if (modal) modal.hide();
+                if (res.imagen_url) {
+                    var datos = { id: res.id, imagen_url: res.imagen_url, bbox: res.bbox,
+                                  leyenda: res.leyenda, estadisticas: res.estadisticas };
+                    sueloPending = datos;
+                    new bootstrap.Tab(document.querySelector('a[href="#tab-suelo"]')).show();
+                    if (sueloMapa) {
+                        sueloToggleOverlay(datos, true);
+                        sueloPending = null;
+                        sueloCargarLista();
+                    }
+                } else {
+                    if (sueloMapa) sueloCargarLista();
+                }
+            } else {
+                var el = document.getElementById('modal-resultado');
+                el.style.display = '';
+                el.innerHTML = '<div class="alert alert-danger p-2 small mb-0">✗ ' + (res.error || 'Error') + '</div>';
+            }
+        },
+        error: function () {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="mdi mdi-arrow-up me-1"></i>{% translate "Subir" %}';
+            var el = document.getElementById('modal-resultado');
+            el.style.display = '';
+            el.innerHTML = '<div class="alert alert-danger p-2 small mb-0">{% translate "Error de conexión" %}</div>';
+        },
+    });
+}
+
+{% if campo_sel %}
+// ══════════════════════════════════════════════════════════════════════
+// SUELO — multi-overlay + combinación asíncrona
+// ══════════════════════════════════════════════════════════════════════
+var URL_SUELO_ARCHIVOS    = '{% url "ajax_suelo_archivos"        campo_id=campo_sel.id %}';
+var URL_SUELO_COMBINAR    = '{% url "ajax_suelo_combinar"        campo_id=campo_sel.id %}';
+var URL_SUELO_ELIM_TPL    = '{% url "ajax_suelo_archivo_eliminar" archivo_id=0 %}';
+var URL_SUELO_CLIC_TPL   = '{% url "ajax_suelo_clic"          archivo_id=0 %}';
+var URL_SUELO_ESTADO_TPL = '{% url "ajax_suelo_archivo_estado" archivo_id=0 %}';
+
+var sueloMapa     = null;
+var sueloOverlays = {};      // { id: L.imageOverlay }
+var sueloActivos  = {};      // { id: datos }  — archivos con overlay visible
+var sueloPending  = null;    // datos a mostrar cuando el mapa esté listo
+var sueloPollTimers = {};    // { id: intervalId } para items en estado 'pendiente'
+
+// ── Altura dinámica ──────────────────────────────────────────────────
+function sueloAjustarAltura() {
+    var wrapper = document.getElementById('suelo-mapa-wrapper');
+    var layout  = document.getElementById('suelo-visor-layout');
+    if (!layout) return;
+    var top = layout.getBoundingClientRect().top;
+    var h   = window.innerHeight - top - 16;
+    if (h < 300) h = 300;
+    layout.style.height = h + 'px';
+    if (wrapper) wrapper.style.height = h + 'px';
+}
+window.addEventListener('resize', sueloAjustarAltura);
+
+// ── Inicializar mapa ─────────────────────────────────────────────────
+function sueloTabActivar() {
+    sueloAjustarAltura();
+    if (!sueloMapa) {
+        sueloMapa = L.map('suelo-mapa', {
+            center: [-27.45, -51.22], zoom: 13,
+            layers: [L.tileLayer(
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                { maxZoom: 20, attribution: 'Esri World Imagery' }
+            )]
+        });
+        // Click: consulta todos los layers activos en orden, muestra el primer hit
+        sueloMapa.on('click', function (e) {
+            var ids = Object.keys(sueloActivos);
+            if (!ids.length) return;
+            var idx = 0;
+            function consultarSiguiente() {
+                if (idx >= ids.length) return;
+                var id  = ids[idx++];
+                var url = URL_SUELO_CLIC_TPL.replace('/0/', '/' + id + '/') +
+                          '?lng=' + e.latlng.lng + '&lat=' + e.latlng.lat;
+                $.get(url, function (res) {
+                    if (res.ok && res.encontrado) {
+                        var props = res.propiedades;
+                        var html = '<div style="font-size:.78rem;max-height:220px;overflow-y:auto">' +
+                            '<table class="table table-sm mb-0">';
+                        for (var k in props) {
+                            if (k === 'v') continue;
+                            html += '<tr><td class="pe-2 fw-semibold text-nowrap" style="color:#374151">' + k + '</td>' +
+                                    '<td>' + (typeof props[k] === 'number' ? props[k].toFixed(2) : props[k]) + '</td></tr>';
+                        }
+                        html += '</table></div>';
+                        L.popup({ maxWidth: 260 }).setLatLng(e.latlng).setContent(html).openOn(sueloMapa);
+                    } else {
+                        consultarSiguiente();
+                    }
+                });
+            }
+            consultarSiguiente();
+        });
+    }
+    sueloMapa.invalidateSize();
+    sueloCargarLista();
+    if (sueloPending) {
+        sueloToggleOverlay(sueloPending, true);
+        sueloPending = null;
+    }
+}
+document.querySelector('a[href="#tab-suelo"]').addEventListener('shown.bs.tab', sueloTabActivar);
+
+// ── Añadir / quitar overlay del mapa ─────────────────────────────────
+function sueloToggleOverlay(datos, activar) {
+    var id = datos.id;
+    if (activar) {
+        if (!sueloMapa) { sueloPending = datos; return; }
+        document.getElementById('suelo-mapa-vacio').style.display = 'none';
+        if (!sueloOverlays[id]) {
+            var b = datos.bbox;
+            sueloOverlays[id] = L.imageOverlay(
+                datos.imagen_url,
+                [[b[1], b[0]], [b[3], b[2]]],
+                { opacity: 0.82, interactive: false }
+            ).addTo(sueloMapa);
+        }
+        sueloActivos[id] = datos;
+        // fitBounds al bbox del último activado
+        var b = datos.bbox;
+        sueloMapa.fitBounds([[b[1], b[0]], [b[3], b[2]]], { padding: [20, 20] });
+    } else {
+        if (sueloOverlays[id]) {
+            sueloMapa.removeLayer(sueloOverlays[id]);
+            delete sueloOverlays[id];
+        }
+        delete sueloActivos[id];
+        if (!Object.keys(sueloActivos).length) {
+            document.getElementById('suelo-mapa-vacio').style.display = '';
+        }
+    }
+    sueloActualizarLeyenda();
+    sueloActualizarBtnCombinar();
+}
+
+// ── Lista de archivos ─────────────────────────────────────────────────
+function sueloCargarLista() {
+    $.get(URL_SUELO_ARCHIVOS, function (res) {
+        var lista = document.getElementById('suelo-lista');
+        if (!lista) return;
+        if (!res.ok || !res.archivos.length) {
+            lista.innerHTML = '<p class="text-muted small ps-1 mt-2">{% translate "Sin análisis cargados. Usá el botón Subir datos." %}</p>';
+            return;
+        }
+        lista.innerHTML = '';
+        res.archivos.forEach(function (a) { lista.appendChild(sueloCrearItem(a)); });
+    });
+}
+
+function sueloCrearItem(a) {
+    var el = document.createElement('div');
+    el.className = 'suelo-item';
+    el.dataset.id = a.id;
+    el.style.cssText = 'display:flex;align-items:center;gap:7px;padding:5px 7px;border-radius:6px;' +
+                       'border:1px solid transparent;margin-bottom:3px;transition:background .12s';
+
+    if (a.estado === 'pendiente') {
+        // Spinner — se actualiza por polling
+        el.innerHTML =
+            '<div class="spinner-border spinner-border-sm text-secondary" style="flex-shrink:0;width:14px;height:14px;border-width:2px"></div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:.80rem;font-weight:600;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + a.nombre + '</div>' +
+              '<div style="font-size:.72rem;color:#9ca3af">{% translate "Procesando..." %}</div>' +
+            '</div>';
+        sueloIniciarPoll(a.id, el);
+        return el;
+    }
+
+    if (a.estado === 'error') {
+        el.innerHTML =
+            '<input type="checkbox" disabled style="flex-shrink:0;width:14px;height:14px;opacity:.2">' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:.80rem;font-weight:600;color:#9ca3af;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (a.nombre || '—') + '</div>' +
+              '<div style="font-size:.72rem;color:#ef4444">{% translate "Error al procesar" %}</div>' +
+            '</div>' +
+            '<button class="suelo-btn-regen btn btn-outline-danger btn-sm py-0 px-1" data-id="' + a.id + '" ' +
+            'style="font-size:.65rem;flex-shrink:0" title="{% translate "Reintentar" %}">↺</button>' +
+            '<button class="suelo-btn-del btn btn-link p-0 ms-1" data-id="' + a.id + '" data-nombre="' + (a.nombre || '') + '" ' +
+            'style="color:#d1d5db;font-size:.85rem;flex-shrink:0;line-height:1" title="{% translate "Eliminar" %}">' +
+            '<i class="mdi mdi-delete-outline"></i></button>';
+        return el;
+    }
+
+    // Estado procesado — siempre checkbox; deshabilitado si no tiene imagen
+    var yaActivo = !!sueloActivos[a.id];
+    var sinImagen = !a.mapeable;
+    el.innerHTML =
+        '<input type="checkbox" class="suelo-chk" data-id="' + a.id + '" ' +
+        'style="flex-shrink:0;accent-color:#16a34a;width:14px;height:14px;' +
+        (sinImagen ? 'opacity:.35;cursor:not-allowed' : 'cursor:pointer') + '"' +
+        (yaActivo ? ' checked' : '') +
+        (sinImagen ? ' disabled title="{% translate "Sin imagen generada" %}"' : '') + '>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:.80rem;font-weight:600;color:' + (sinImagen ? '#9ca3af' : '#111') + ';' +
+               'white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + a.nombre + '</div>' +
+          '<div style="font-size:.72rem;color:#6c757d">' + a.fecha + ' · ' + a.tipo +
+            (sinImagen
+                ? ' <span class="text-muted" style="font-size:.68rem">· {% translate "sin imagen" %}</span>'
+                : ' <span style="color:#16a34a">✓</span>') +
+          '</div>' +
+        '</div>' +
+        (sinImagen
+            ? '<button class="suelo-btn-regen btn btn-outline-secondary btn-sm py-0 px-1" data-id="' + a.id + '" ' +
+              'style="font-size:.65rem;flex-shrink:0" title="{% translate "Regenerar imagen" %}">↺</button>'
+            : '') +
+        '<button class="suelo-btn-del btn btn-link p-0 ms-1" data-id="' + a.id + '" data-nombre="' + a.nombre + '" ' +
+        'style="color:#d1d5db;font-size:.85rem;flex-shrink:0;line-height:1" title="{% translate "Eliminar" %}">' +
+        '<i class="mdi mdi-delete-outline"></i></button>';
+
+    if (!sinImagen) {
+        var chk = el.querySelector('.suelo-chk');
+        chk.addEventListener('change', function () {
+            sueloToggleOverlay(a, this.checked);
+        });
+        el.addEventListener('mouseenter', function () { this.style.background = '#f8f9fa'; });
+        el.addEventListener('mouseleave', function () { this.style.background = ''; });
+    }
+    return el;
+}
+
+// ── Polling para items pendientes ─────────────────────────────────────
+function sueloIniciarPoll(id, el) {
+    if (sueloPollTimers[id]) return;
+    sueloPollTimers[id] = setInterval(function () {
+        var url = URL_SUELO_ESTADO_TPL.replace('/0/', '/' + id + '/');
+        $.get(url, function (res) {
+            if (!res.ok || res.estado === 'pendiente') return;
+            clearInterval(sueloPollTimers[id]);
+            delete sueloPollTimers[id];
+            if (res.estado === 'procesado') {
+                var datos = { id: id, imagen_url: res.imagen_url, bbox: res.bbox,
+                              leyenda: res.leyenda, estadisticas: res.estadisticas,
+                              nombre: res.nombre, fecha: res.fecha, tipo: 'geojson' };
+                var nuevoEl = sueloCrearItem({
+                    id: id, nombre: res.nombre, fecha: res.fecha,
+                    tipo: 'geojson', estado: 'procesado', mapeable: true,
+                    imagen_url: res.imagen_url, bbox: res.bbox,
+                    leyenda: res.leyenda, estadisticas: res.estadisticas,
+                });
+                el.replaceWith(nuevoEl);
+                // Auto-mostrar el resultado combinado
+                var chk = nuevoEl.querySelector('.suelo-chk');
+                if (chk) { chk.checked = true; sueloToggleOverlay(datos, true); }
+            } else {
+                // error — reemplazar el elemento completo con el item de error
+                var nombre = el.querySelector('div div') ? el.querySelector('div div').textContent.trim() : '—';
+                var errEl = sueloCrearItem({ id: id, nombre: nombre, estado: 'error' });
+                el.replaceWith(errEl);
+            }
+        });
+    }, 2000);
+}
+
+// ── Regenerar imagen para archivos sin PNG ────────────────────────────
+var URL_SUELO_REGEN_TPL = '{% url "ajax_suelo_regenerar" archivo_id=0 %}';
+
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.suelo-btn-regen');
+    if (!btn) return;
+    e.stopPropagation();
+    var id  = btn.dataset.id;
+    var row = btn.closest('.suelo-item');
+    btn.disabled = true;
+    btn.textContent = '…';
+    $.post(URL_SUELO_REGEN_TPL.replace('/0/', '/' + id + '/'),
+           { csrfmiddlewaretoken: CSRF },
+    function (res) {
+        if (!res.ok) { btn.disabled = false; btn.textContent = '↺'; return; }
+        // Reemplazar row con spinner y arrancar polling
+        var tmpA = { id: parseInt(id), nombre: row.querySelector('div').firstElementChild.textContent,
+                     estado: 'pendiente' };
+        var nuevoEl = sueloCrearItem(tmpA);
+        row.replaceWith(nuevoEl);
+    }).fail(function () { btn.disabled = false; btn.textContent = '↺'; });
+});
+
+// ── Eliminar archivo ─────────────────────────────────────────────────
+document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.suelo-btn-del');
+    if (!btn) return;
+    e.stopPropagation();
+
+    var id     = btn.dataset.id;
+    var nombre = btn.dataset.nombre || 'este archivo';
+    var row    = btn.closest('.suelo-item');
+
+    // Confirmación inline: reemplaza los botones por [Eliminar] [Cancelar]
+    btn.style.display = 'none';
+    var sibling = row.querySelector('.suelo-btn-regen');
+    if (sibling) sibling.style.display = 'none';
+
+    var conf = document.createElement('span');
+    conf.style.cssText = 'display:flex;align-items:center;gap:4px;flex-shrink:0';
+    conf.innerHTML =
+        '<span style="font-size:.68rem;color:#374151">¿Eliminar?</span>' +
+        '<button class="suelo-conf-si btn btn-danger btn-sm py-0 px-1" style="font-size:.66rem">{% translate "Sí" %}</button>' +
+        '<button class="suelo-conf-no btn btn-outline-secondary btn-sm py-0 px-1" style="font-size:.66rem">{% translate "No" %}</button>';
+    row.appendChild(conf);
+
+    conf.querySelector('.suelo-conf-no').addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        conf.remove();
+        btn.style.display = '';
+        if (sibling) sibling.style.display = '';
+    });
+
+    conf.querySelector('.suelo-conf-si').addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        conf.querySelector('.suelo-conf-si').disabled = true;
+        conf.querySelector('.suelo-conf-si').textContent = '…';
+        var url = URL_SUELO_ELIM_TPL.replace('/0/', '/' + id + '/');
+        $.post(url, { csrfmiddlewaretoken: CSRF }, function (res) {
+            if (!res.ok) {
+                conf.remove();
+                btn.style.display = '';
+                if (sibling) sibling.style.display = '';
+                return;
+            }
+            // Quitar overlay del mapa si estaba activo
+            var numId = parseInt(id);
+            if (sueloOverlays[numId]) {
+                sueloMapa.removeLayer(sueloOverlays[numId]);
+                delete sueloOverlays[numId];
+            }
+            delete sueloActivos[numId];
+            // Animar salida y quitar del DOM
+            row.style.transition = 'opacity .2s';
+            row.style.opacity = '0';
+            setTimeout(function () {
+                row.remove();
+                sueloActualizarLeyenda();
+                sueloActualizarBtnCombinar();
+                // Si la lista quedó vacía mostrar mensaje
+                var lista = document.getElementById('suelo-lista');
+                if (lista && !lista.querySelector('.suelo-item')) {
+                    lista.innerHTML = '<p class="text-muted small ps-1 mt-2">{% translate "Sin análisis cargados. Usá el botón Subir datos." %}</p>';
+                }
+            }, 200);
+        }).fail(function () {
+            conf.remove();
+            btn.style.display = '';
+            if (sibling) sibling.style.display = '';
+        });
+    });
+});
+
+// ── Combinar capas seleccionadas ──────────────────────────────────────
+function sueloActualizarBtnCombinar() {
+    var checked = document.querySelectorAll('.suelo-chk:checked').length;
+    var btn = document.getElementById('suelo-btn-combinar');
+    if (btn) btn.style.display = checked >= 2 ? '' : 'none';
+}
+
+document.addEventListener('click', function (e) {
+    if (e.target && e.target.id === 'suelo-btn-combinar') {
+        var ids = Array.from(document.querySelectorAll('.suelo-chk:checked')).map(function (c) { return c.dataset.id; });
+        if (ids.length < 2) return;
+        var btn = e.target;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm" style="width:10px;height:10px;border-width:2px"></span>';
+        $.post(URL_SUELO_COMBINAR, { 'ids[]': ids, csrfmiddlewaretoken: CSRF }, function (res) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="mdi mdi-merge me-1"></i>{% translate "Combinar" %}';
+            btn.style.display = 'none';
+            if (!res.ok) { alert(res.error || 'Error'); return; }
+            // Agregar item en estado pendiente al top de la lista
+            var lista = document.getElementById('suelo-lista');
+            var itemPending = sueloCrearItem({ id: res.id, nombre: res.nombre, estado: 'pendiente' });
+            lista.insertBefore(itemPending, lista.firstChild);
+        }).fail(function () {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="mdi mdi-merge me-1"></i>{% translate "Combinar" %}';
+            alert('{% translate "Error de conexión" %}');
+        });
+    }
+});
+
+// ── Leyenda unificada (última capa activa) ────────────────────────────
+function sueloActualizarLeyenda() {
+    var ids = Object.keys(sueloActivos);
+    if (!ids.length) {
+        document.getElementById('suelo-leyenda').style.display = 'none';
+        document.getElementById('suelo-stats').style.display   = 'none';
+        document.getElementById('suelo-hint-click').style.display = 'none';
+        return;
+    }
+    var ultimo = sueloActivos[ids[ids.length - 1]];
+    sueloRenderLeyenda(ultimo.leyenda);
+    sueloRenderStats(ultimo.estadisticas);
+    document.getElementById('suelo-hint-click').style.display = '';
+}
+
+// ── Leyenda ───────────────────────────────────────────────────────────
+function sueloRenderLeyenda(leyenda) {
+    var el = document.getElementById('suelo-leyenda');
+    if (!el) return;
+    if (!leyenda || !leyenda.length) { el.style.display = 'none'; return; }
+    var titulo = (leyenda[0] && leyenda[0].columna) ? leyenda[0].columna.toUpperCase() : '{% translate "Valores" %}';
+    var html = '<div style="font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#6c757d;margin-bottom:5px">' + titulo + '</div>';
+    leyenda.forEach(function (c) {
+        html += '<div style="display:flex;align-items:center;gap:5px;margin-bottom:2px">' +
+            '<div style="width:11px;height:11px;border-radius:2px;background:' + c.color + ';flex-shrink:0"></div>' +
+            '<span style="font-size:.70rem">' + c.rango + '</span></div>';
+    });
+    el.innerHTML = html;
+    el.style.display = '';
+}
+
+// ── Estadísticas ──────────────────────────────────────────────────────
+function sueloRenderStats(stats) {
+    var el = document.getElementById('suelo-stats');
+    if (!el || !stats) return;
+    el.innerHTML =
+        '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+        _statChip('Mín', stats.min) + _statChip('Máx', stats.max) +
+        _statChip('Prom', stats.prom) + (stats.std != null ? _statChip('σ', stats.std) : '') +
+        '</div>';
+    el.style.display = '';
+}
+function _statChip(lbl, val) {
+    return '<div style="flex:1;text-align:center;border:1px solid #e5e7eb;border-radius:5px;padding:3px 5px">' +
+        '<div style="font-size:.62rem;color:#9ca3af;text-transform:uppercase">' + lbl + '</div>' +
+        '<div style="font-size:.78rem;font-weight:600">' + (val != null ? val : '—') + '</div></div>';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// NDVI
+// ══════════════════════════════════════════════════════════════════════
+var URL_SERIE = '{% url "ajax_ndvi_serie"     campo_id=campo_sel.id %}';
+var URL_PROC  = '{% url "vista_ndvi_procesar" campo_id=campo_sel.id %}';
+
+function ndviAjustarAltura() {
+    var el = document.getElementById('ndvi-visor-layout');
+    if (!el) return;
+    var top = el.getBoundingClientRect().top;
+    var h   = window.innerHeight - top - 16;
+    if (h < 300) h = 300;
+    el.style.height = h + 'px';
+}
+document.addEventListener('DOMContentLoaded', ndviAjustarAltura);
+window.addEventListener('resize', ndviAjustarAltura);
+
+var ndviMapa      = null;
+var ndviOverlay   = null;
+var ndviContorno  = null;
+var ndviCapturas  = [];
+var ndviIdxActual = null;
+var ndviBbox      = null;
+
+document.querySelector('a[href="#tab-ndvi"]').addEventListener('shown.bs.tab', function () {
+    ndviAjustarAltura();
+    if (!ndviMapa) {
+        ndviMapa = L.map('ndvi-mapa', {
+            center: [-27.45, -51.22], zoom: 13,
+            layers: [L.tileLayer(
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                { maxZoom: 20, attribution: 'Esri World Imagery' }
+            )]
+        });
+    }
+    ndviMapa.invalidateSize();
+    if (!ndviCapturas.length) ndviCargarSerie();
+});
+
+function ndviCargarSerie() {
+    $.get(URL_SERIE, function (res) {
+        if (!res.ok) return;
+        ndviCapturas = res.capturas || [];
+        ndviBbox     = res.bbox;
+
+        if (ndviContorno) { ndviMapa.removeLayer(ndviContorno); ndviContorno = null; }
+        if (res.area_geojson) {
+            ndviContorno = L.geoJSON(res.area_geojson, {
+                style: { color: '#ffffff', weight: 2, fillOpacity: 0, dashArray: '5 4' }
+            }).addTo(ndviMapa);
+            ndviMapa.fitBounds(ndviContorno.getBounds(), { padding: [30, 30] });
+        }
+
+        if (!ndviCapturas.length) {
+            document.getElementById('ndvi-lista').innerHTML =
+                '<p class="text-muted small ps-1">{% translate "Sin capturas. Hacé click en Actualizar Sentinel-2." %}</p>';
+            return;
+        }
+        ndviRenderLista();
+        ndviMostrarCaptura(ndviCapturas.length - 1);
+    });
+}
+
+function ndviMostrarCaptura(idx) {
+    ndviIdxActual = idx;
+    var cap  = ndviCapturas[idx];
+    var prev = idx > 0 ? ndviCapturas[idx - 1] : null;
+
+    document.querySelectorAll('#ndvi-lista .ndvi-item').forEach(function (el) {
+        var a = parseInt(el.dataset.idx) === idx;
+        el.style.background  = a ? '#e8f5e9' : '';
+        el.style.borderColor = a ? '#a5d6a7' : 'transparent';
+    });
+
+    if (ndviOverlay) { ndviMapa.removeLayer(ndviOverlay); ndviOverlay = null; }
+    if (cap.imagen_url && ndviBbox) {
+        var b  = ndviBbox;
+        var op = document.getElementById('ndvi-opacidad').value / 100;
+        ndviOverlay = L.imageOverlay(cap.imagen_url, [[b[0], b[1]], [b[2], b[3]]], { opacity: op }).addTo(ndviMapa);
+        document.getElementById('ndvi-leyenda').style.display       = '';
+        document.getElementById('ndvi-ctrl-opacidad').style.display = '';
+    }
+
+    document.getElementById('ndvi-panel-stats').style.display = '';
+    document.getElementById('stat-promedio').textContent =
+        cap.ndvi_promedio != null ? cap.ndvi_promedio.toFixed(3) : '—';
+    document.getElementById('stat-fecha').textContent  = cap.fecha;
+    document.getElementById('stat-nubes').textContent  =
+        cap.nubosidad != null ? cap.nubosidad.toFixed(0) + ' %' : '—';
+    document.getElementById('stat-rango').textContent  =
+        cap.ndvi_min != null ? cap.ndvi_min.toFixed(2) + ' – ' + cap.ndvi_max.toFixed(2) : '—';
+
+    var dias   = Math.floor((new Date() - new Date(cap.fecha)) / 86400000);
+    var elDias = document.getElementById('stat-dias');
+    elDias.textContent = dias + ' d';
+    elDias.style.color = dias > 21 ? '#c62828' : '';
+
+    var elDelta = document.getElementById('stat-delta');
+    var elTend  = document.getElementById('stat-tendencia');
+    if (prev && prev.ndvi_promedio != null && cap.ndvi_promedio != null) {
+        var diff  = cap.ndvi_promedio - prev.ndvi_promedio;
+        var pct   = (diff / prev.ndvi_promedio * 100).toFixed(1);
+        var color = diff >= 0 ? '#2e7d32' : '#c62828';
+        elDelta.innerHTML  = '<span style="color:' + color + '">' + (diff >= 0 ? '▲' : '▼') + ' ' + Math.abs(pct) + '%</span>';
+        elTend.textContent = 'vs ' + prev.fecha;
+        var diasEntre = Math.floor((new Date(cap.fecha) - new Date(prev.fecha)) / 86400000);
+        var caida     = (prev.ndvi_promedio - cap.ndvi_promedio) / prev.ndvi_promedio * 100;
+        var alerta    = document.getElementById('ndvi-alerta');
+        if (caida > 15 && diasEntre <= 14) {
+            alerta.style.display = '';
+            document.getElementById('ndvi-alerta-detalle').textContent =
+                'Caída de ' + caida.toFixed(1) + '% en ' + diasEntre + ' días (' + prev.fecha + ' → ' + cap.fecha + ')';
+        } else { alerta.style.display = 'none'; }
+    } else {
+        elDelta.textContent = '—';
+        elTend.textContent  = '{% translate "primera captura" %}';
+        document.getElementById('ndvi-alerta').style.display = 'none';
+    }
+    if (ndviCapturas.length >= 3) {
+        var vals  = ndviCapturas.slice(-3).map(function (c) { return c.ndvi_promedio; });
+        var trend = vals[2] > vals[0] ? '↗ Subiendo' : vals[2] < vals[0] ? '↘ Bajando' : '→ Estable';
+        elTend.textContent += ' · ' + trend;
+    }
+}
+
+function ndviRenderLista() {
+    var lista = document.getElementById('ndvi-lista');
+    lista.innerHTML = '';
+    ndviCapturas.slice().reverse().forEach(function (cap, i) {
+        var idxReal = ndviCapturas.length - 1 - i;
+        var prev    = idxReal > 0 ? ndviCapturas[idxReal - 1] : null;
+        var dHtml   = '';
+        if (prev && prev.ndvi_promedio != null && cap.ndvi_promedio != null) {
+            var diff  = cap.ndvi_promedio - prev.ndvi_promedio;
+            var pct   = (diff / prev.ndvi_promedio * 100).toFixed(1);
+            var color = diff >= 0 ? '#2e7d32' : '#c62828';
+            dHtml = '<span style="font-size:.69rem;color:' + color + '">' +
+                    (diff >= 0 ? '▲' : '▼') + ' ' + Math.abs(pct) + '%</span>';
+        }
+        var el = document.createElement('div');
+        el.className   = 'ndvi-item';
+        el.dataset.idx = idxReal;
+        el.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;' +
+                           'cursor:pointer;border:1px solid transparent;margin-bottom:3px;transition:background .12s';
+        el.innerHTML =
+            '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:.81rem;font-weight:600;color:#111">' + cap.fecha + '</div>' +
+            '<div style="font-size:.73rem;color:#6c757d">NDVI ' +
+                (cap.ndvi_promedio != null ? cap.ndvi_promedio.toFixed(3) : '—') +
+                ' · ☁ ' + (cap.nubosidad != null ? cap.nubosidad.toFixed(0) : 0) + '%' +
+            '</div></div>' + dHtml;
+        el.addEventListener('click', function () { ndviMostrarCaptura(parseInt(this.dataset.idx)); });
+        el.addEventListener('mouseenter', function () {
+            if (parseInt(this.dataset.idx) !== ndviIdxActual) this.style.background = '#f8f9fa';
+        });
+        el.addEventListener('mouseleave', function () {
+            if (parseInt(this.dataset.idx) !== ndviIdxActual) this.style.background = '';
+        });
+        lista.appendChild(el);
+    });
+}
+
+document.getElementById('ndvi-opacidad').addEventListener('input', function () {
+    if (ndviOverlay) ndviOverlay.setOpacity(this.value / 100);
+});
+
+document.getElementById('ndvi-btn-actualizar').addEventListener('click', function () { ndviConsultar(false); });
+document.getElementById('ndvi-btn-regenerar').addEventListener('click', function () {
+    this.style.display = 'none';
+    ndviConsultar(true);
+});
+
+function ndviConsultar(forzar) {
+    var btn = document.getElementById('ndvi-btn-actualizar');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>{% translate "Consultando..." %}';
+    document.getElementById('ndvi-log-panel').style.display = '';
+    document.getElementById('ndvi-spinner').style.display   = '';
+    document.getElementById('ndvi-log-titulo').textContent  =
+        forzar ? '{% translate "Regenerando..." %}' : '{% translate "Consultando CDSE / Sentinel-2..." %}';
+    document.getElementById('ndvi-log-texto').textContent   = '';
+
+    var data = { csrfmiddlewaretoken: CSRF };
+    if (forzar) data.forzar = '1';
+
+    $.post(URL_PROC, data, function (res) {
+        document.getElementById('ndvi-spinner').style.display = 'none';
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="mdi mdi-satellite-variant me-1"></i>{% translate "Actualizar Sentinel-2" %}';
+        if (res.log && res.log.length)
+            document.getElementById('ndvi-log-texto').textContent = res.log.join('\n');
+        if (res.sin_nuevas) {
+            document.getElementById('ndvi-log-titulo').textContent    = 'ℹ {% translate "Sin imágenes nuevas" %}';
+            document.getElementById('ndvi-btn-regenerar').style.display = '';
+        } else if (res.ok) {
+            document.getElementById('ndvi-log-titulo').textContent = '✓ {% translate "Completado" %}';
+            ndviCargarSerie();
+        } else {
+            document.getElementById('ndvi-log-titulo').textContent = '✗ {% translate "Error" %}';
+            if (res.error) document.getElementById('ndvi-log-texto').textContent += '\n' + res.error;
+        }
+    }).fail(function (xhr) {
+        document.getElementById('ndvi-spinner').style.display = 'none';
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="mdi mdi-satellite-variant me-1"></i>{% translate "Actualizar Sentinel-2" %}';
+        document.getElementById('ndvi-log-titulo').textContent = '✗ {% translate "Error de conexión" %}';
+        try { var r = JSON.parse(xhr.responseText);
+              document.getElementById('ndvi-log-texto').textContent = r.error || xhr.responseText;
+        } catch(e) {}
+    });
+}
+{% endif %}
+</script>
+{% endblock %}

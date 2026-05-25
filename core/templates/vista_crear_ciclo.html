@@ -3,6 +3,8 @@
 {% load i18n %}
 
 {% block plugin_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css"/>
 <style>
     .ciclo-card {
         border: 1px solid #e5e7eb;
@@ -161,208 +163,418 @@
             </div>
         </div>
 
-        <div class="card ciclo-card">
-            <div class="card-body">
-                <form class="form-sample" method="post" novalidate>
-                    {% csrf_token %}
+        <form class="form-sample" method="post" novalidate>
+            {% csrf_token %}
+            {{ form.contorno }}
+            <div class="row g-4">
 
-                    <div class="ciclo-section-title">
-                        <i class="mdi mdi-information-outline"></i>
-                        {% translate "Información general" %}
-                    </div>
+                {# ── Columna izquierda: campos del formulario ── #}
+                <div class="col-lg-6">
+                    <div class="card ciclo-card h-100">
+                        <div class="card-body">
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{% translate "Campo" %} *</label>
-                            {{ form.campo }}
-                            {% if form.campo.errors %}
-                                <div class="form-error-text">{{ form.campo.errors.0 }}</div>
+                            <div class="ciclo-section-title">
+                                <i class="mdi mdi-information-outline"></i>
+                                {% translate "Información general" %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{% translate "Campo" %} *</label>
+                                {{ form.campo }}
+                                {% if form.campo.errors %}<div class="form-error-text">{{ form.campo.errors.0 }}</div>{% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{% translate "Área del ciclo" %}</label>
+                                <div class="d-flex gap-3 flex-wrap">
+                                    {% for radio in form.tipo_area %}
+                                    <div class="form-check">
+                                        {{ radio.tag }}
+                                        <label class="form-check-label" for="{{ radio.id_for_label }}">{{ radio.choice_label }}</label>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div id="area-nombre-wrap" class="d-none mt-2">
+                                    <input type="text" id="area-nombre-display" class="form-control readonly-lote"
+                                           readonly placeholder="{% translate 'Sin área seleccionada' %}">
+                                </div>
+                                <div class="d-none">{{ form.area }}</div>
+                                {% if form.area.errors %}<div class="form-error-text">{{ form.area.errors.0 }}</div>{% endif %}
+                                {% if form.tipo_area.errors %}<div class="form-error-text">{{ form.tipo_area.errors.0 }}</div>{% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{% translate "Campaña" %} *</label>
+                                {{ form.campana }}
+                                {% if form.campana.errors %}<div class="form-error-text">{{ form.campana.errors.0 }}</div>{% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{% translate "Cultivo" %} *</label>
+                                {{ form.cultivo }}
+                                {% if form.cultivo.errors %}<div class="form-error-text">{{ form.cultivo.errors.0 }}</div>{% endif %}
+                                <div class="mt-2">
+                                    <label class="form-label">{% translate "Producto final" %}</label>
+                                    <input type="text" id="id_producto_final_preview" class="form-control readonly-lote"
+                                           value="{% if form.instance.producto_final %}{{ form.instance.producto_final.nombre }}{% endif %}" readonly>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">{% translate "Superficie (ha)" %} *</label>
+                                {{ form.superficie_ha }}
+                                {% if form.superficie_ha.errors %}<div class="form-error-text">{{ form.superficie_ha.errors.0 }}</div>{% endif %}
+                                <div class="ciclo-help">{% translate "Indicá la superficie estimada o comprometida para este lote." %}</div>
+                            </div>
+
+                            <div class="ciclo-section-title mt-3">
+                                <i class="mdi mdi-calendar-range"></i>
+                                {% translate "Fechas del ciclo" %}
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">{% translate "Fecha de inicio" %} *</label>
+                                    {{ form.fecha_inicio }}
+                                    {% if form.fecha_inicio.errors %}<div class="form-error-text">{{ form.fecha_inicio.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">{% translate "Fecha de fin" %}</label>
+                                    {{ form.fecha_fin }}
+                                    {% if form.fecha_fin.errors %}<div class="form-error-text">{{ form.fecha_fin.errors.0 }}</div>{% endif %}
+                                    <div class="ciclo-help">{% translate "Podés dejarla vacía al inicio." %}</div>
+                                </div>
+                            </div>
+
+                            {% if modificacion %}
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">{% translate "Nombre del lote" %}</label>
+                                    <input type="text" class="form-control readonly-lote" value="{{ form.instance.nombre_lote }}" readonly>
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label">{% translate "Estado" %}</label>
+                                    <input type="text" class="form-control readonly-lote"
+                                           value="{% if form.instance.activa %}{% translate 'Activo' %}{% else %}{% translate 'Inactivo' %}{% endif %}" readonly>
+                                </div>
+                            </div>
                             {% endif %}
-                            <div class="ciclo-help">
-                                {% translate "Seleccioná el campo donde se desarrollará el ciclo." %}
-                            </div>
-                        </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{% translate "Campaña" %} *</label>
-                            {{ form.campana }}
-                            {% if form.campana.errors %}
-                                <div class="form-error-text">{{ form.campana.errors.0 }}</div>
+                            {% if form.non_field_errors %}
+                            <div class="alert alert-danger mt-3">{{ form.non_field_errors }}</div>
                             {% endif %}
-                            <div class="ciclo-help">
-                                {% translate "Se propone automáticamente la campaña activa de la empresa." %}
+
+                            <div class="mt-4 d-flex flex-wrap gap-2">
+                                {% if modificacion %}
+                                    <button type="submit" name="ok" class="btn btn-success"><i class="mdi mdi-content-save me-1"></i>{% translate "Actualizar" %}</button>
+                                    <button type="submit" name="borrar" class="btn btn-danger"><i class="mdi mdi-delete me-1"></i>{% translate "Borrar" %}</button>
+                                {% else %}
+                                    <button type="submit" name="ok" class="btn btn-success"><i class="mdi mdi-check me-1"></i>{% translate "Crear ciclo" %}</button>
+                                {% endif %}
+                                <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-outline-secondary"><i class="mdi mdi-close me-1"></i>{% translate "Cancelar" %}</a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                {# ── Columna derecha: mapa sticky ── #}
+                <div class="col-lg-6">
+                    <div class="sticky-top" style="top:20px;">
+                        <div class="card ciclo-card">
+                            <div class="card-header d-flex justify-content-between align-items-center py-2">
+                                <span style="font-size:.9rem;font-weight:600;color:#374151;">
+                                    <i class="mdi mdi-map-outline me-1"></i>{% translate "Área del campo" %}
+                                </span>
+                                <button type="button" id="btn-expand-mapa" class="btn btn-sm btn-outline-secondary py-0 px-2" title="{% translate 'Ampliar' %}">
+                                    <i class="mdi mdi-fullscreen"></i>
+                                </button>
+                            </div>
+
+                            {# Placeholder cuando no hay campo seleccionado #}
+                            <div id="mapa-placeholder" class="d-flex flex-column align-items-center justify-content-center text-muted" style="height:300px;">
+                                <i class="mdi mdi-map-outline" style="font-size:3rem;opacity:.25;"></i>
+                                <p class="mt-2 mb-0" style="font-size:.85rem;">{% translate "Seleccioná un campo para ver el mapa" %}</p>
+                            </div>
+
+                            {# Mapa real #}
+                            <div id="seccion-mapa" class="d-none">
+                                <p id="mapa-instruccion" class="ciclo-help px-3 pt-2 mb-1"></p>
+                                <div id="mapa-area-ciclo" style="width:100%;height:450px;"></div>
+                                <p class="ciclo-help px-3 py-2 mb-0">{% translate "El dibujo es referencial. Ingresá la superficie real en ha." %}</p>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{% translate "Cultivo" %} *</label>
-                            {{ form.cultivo }}
-                            {% if form.cultivo.errors %}
-                                <div class="form-error-text">{{ form.cultivo.errors.0 }}</div>
-                            {% endif %}
-                            <div class="ciclo-help">
-                                {% translate "Seleccioná el cultivo. El producto final se completa automáticamente desde su configuración." %}
-                            </div>
-
-                            <div class="mt-2">
-                                <label class="form-label">{% translate "Producto final" %}</label>
-                                <input
-                                    type="text"
-                                    id="id_producto_final_preview"
-                                    class="form-control readonly-lote"
-                                    value="{% if form.instance.producto_final %}{{ form.instance.producto_final.nombre }}{% endif %}"
-                                    readonly
-                                >
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{% translate "Superficie (ha)" %} *</label>
-                            {{ form.superficie_ha }}
-                            {% if form.superficie_ha.errors %}
-                                <div class="form-error-text">{{ form.superficie_ha.errors.0 }}</div>
-                            {% endif %}
-                            <div class="ciclo-help">
-                                {% translate "Indicá la superficie estimada o comprometida para este lote." %}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="ciclo-section-title mt-2">
-                        <i class="mdi mdi-calendar-range"></i>
-                        {% translate "Fechas del ciclo" %}
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{% translate "Fecha de inicio" %} *</label>
-                            {{ form.fecha_inicio }}
-                            {% if form.fecha_inicio.errors %}
-                                <div class="form-error-text">{{ form.fecha_inicio.errors.0 }}</div>
-                            {% endif %}
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{% translate "Fecha de fin" %}</label>
-                            {{ form.fecha_fin }}
-                            {% if form.fecha_fin.errors %}
-                                <div class="form-error-text">{{ form.fecha_fin.errors.0 }}</div>
-                            {% endif %}
-                            <div class="ciclo-help">
-                                {% translate "Podés dejarla vacía al inicio y completarla cuando el ciclo termine." %}
-                            </div>
-                        </div>
-                    </div>
-
-                    {% if modificacion %}
-                    <div class="ciclo-section-title mt-2">
-                        <i class="mdi mdi-tag-outline"></i>
-                        {% translate "Datos del lote" %}
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{% translate "Nombre del lote" %}</label>
-                            <input
-                                type="text"
-                                class="form-control readonly-lote"
-                                value="{{ form.instance.nombre_lote }}"
-                                readonly
-                            >
-                            <div class="ciclo-help">
-                                {% translate "Este valor se genera automáticamente al crear el ciclo." %}
-                            </div>
-                        </div>
-
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">{% translate "Estado" %}</label>
-                            <input
-                                type="text"
-                                class="form-control readonly-lote"
-                                value="{% if form.instance.activa %}{% translate 'Activo' %}{% else %}{% translate 'Inactivo' %}{% endif %}"
-                                readonly
-                            >
-                        </div>
-                    </div>
-                    {% endif %}
-
-                    {% if form.non_field_errors %}
-                    <div class="alert alert-danger mt-3">
-                        {{ form.non_field_errors }}
-                    </div>
-                    {% endif %}
-
-                    <div class="mt-4 d-flex flex-wrap gap-2">
-                        {% if modificacion %}
-                            <button type="submit" name="ok" class="btn btn-primary">
-                                <i class="mdi mdi-content-save me-1"></i>
-                                {% translate "Actualizar" %}
-                            </button>
-
-                            <button type="submit" name="borrar" class="btn btn-danger">
-                                <i class="mdi mdi-delete me-1"></i>
-                                {% translate "Borrar" %}
-                            </button>
-                        {% else %}
-                            <button type="submit" name="ok" class="btn btn-primary">
-                                <i class="mdi mdi-check me-1"></i>
-                                {% translate "Crear ciclo" %}
-                            </button>
-                        {% endif %}
-
-                        <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-dark">
-                            <i class="mdi mdi-close me-1"></i>
-                            {% translate "Cancelar" %}
-                        </a>
-                    </div>
-                </form>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block custom_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
 <script>
-function cargarProductoFinalCultivo() {
-    var cultivoSel = document.getElementById("id_cultivo");
-    var inputProducto = document.getElementById("id_producto_final_preview");
+    
+let campoData={},selectedAreaId=null,modoArea="todo";
+let mapa=null,capaCampo=null,capaAreas=null,capaEditada=null,drawControl=null;
 
-    if (!cultivoSel || !inputProducto) return;
+function cargarProductoFinalCultivo(){
 
-    var cultivoId = cultivoSel.value;
-    if (!cultivoId) {
-        inputProducto.value = "";
+    let cultivo=$("#id_cultivo").val();
+
+    if(!cultivo){
+        $("#id_producto_final_preview").val("");
         return;
     }
 
     $.ajax({
-        url: "{% url 'ajax_info_cultivo' %}",
-        type: "GET",
-        data: { cultivo_id: cultivoId },
-        success: function(resp) {
-            if (!resp || !resp.ok) {
-                inputProducto.value = "";
-                return;
-            }
-            inputProducto.value = resp.producto_default ? resp.producto_default.nombre : "";
+        url:"{% url 'ajax_info_cultivo' %}",
+        data:{cultivo_id:cultivo},
+
+        success(resp){
+
+            let nombre="";
+
+            if(resp.ok && resp.producto_default)
+                nombre=resp.producto_default.nombre;
+
+            $("#id_producto_final_preview").val(nombre);
         },
-        error: function() {
-            inputProducto.value = "";
+
+        error(){
+            $("#id_producto_final_preview").val("");
         }
     });
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-    var cultivoSel = document.getElementById("id_cultivo");
-    if (cultivoSel) {
-        cultivoSel.addEventListener("change", cargarProductoFinalCultivo);
-        if (cultivoSel.value) {
-            cargarProductoFinalCultivo();
-        }
+function iniciarMapa(){
+
+    if(mapa){
+        mapa.invalidateSize();
+        return;
     }
+
+    mapa=L.map("mapa-area-ciclo",{preferCanvas:true})
+    .setView([-27.4,-51.22],12);
+
+    L.tileLayer(
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+        {attribution:"© Esri",maxZoom:19}
+    ).addTo(mapa);
+
+    capaCampo=new L.FeatureGroup();
+    capaAreas=new L.FeatureGroup();
+    capaEditada=new L.FeatureGroup();
+
+    mapa.addLayer(capaCampo);
+    mapa.addLayer(capaAreas);
+    mapa.addLayer(capaEditada);
+
+    drawControl=new L.Control.Draw({
+
+        edit:{featureGroup:capaEditada,remove:true},
+
+        draw:{
+            polygon:{
+                allowIntersection:false,
+                showArea:true,
+                shapeOptions:{
+                    color:"#16a34a",
+                    weight:2,
+                    fillColor:"#16a34a",
+                    fillOpacity:.25
+                }
+            },
+
+            rectangle:false,
+            circle:false,
+            marker:false,
+            polyline:false,
+            circlemarker:false
+        }
+
+    });
+
+    mapa.on(L.Draw.Event.CREATED,function(e){
+        capaEditada.clearLayers();
+        let layer=e.layer;
+
+        capaEditada.addLayer(layer);
+
+        $("#id_contorno").val(
+            JSON.stringify(
+                layer.toGeoJSON().geometry
+            )
+        );
+    });
+}
+
+function refrescarMapa(){
+    capaCampo.clearLayers();
+    capaAreas.clearLayers();
+
+    if(campoData.campo_contorno){
+
+        let campo=L.geoJSON(
+            JSON.parse(campoData.campo_contorno),
+            {
+                style:{
+                    color:"#bad45a",
+                    weight:2,
+                    fillColor:"#bad45a",
+                    fillOpacity:.10
+                }
+            }
+        );
+        campo.eachLayer(
+            l=>capaCampo.addLayer(l)
+        );
+
+    }
+
+    (campoData.areas||[]).forEach(area=>{
+
+        if(!area.contorno) return;
+
+        let activa=String(area.id)===String(selectedAreaId);
+
+        let capa=L.geoJSON(
+            JSON.parse(area.contorno),
+            {
+                style:{
+                    color:activa?"#16a34a":"#2563eb",
+                    weight:activa?3:1.5,
+                    fillOpacity:activa?.35:.12
+                }
+            }
+        );
+
+        if(modoArea==="existente")
+            capa.on("click",()=>elegirArea(area));
+
+        capa.bindTooltip(area.nombre,{sticky:true});
+
+        capa.eachLayer(
+            l=>capaAreas.addLayer(l)
+        );
+    });
+
+    try{
+        mapa.removeControl(drawControl);
+    }
+    catch(e){}
+
+    if(modoArea==="nueva")
+        mapa.addControl(drawControl);
+
+    let grupo=new L.featureGroup([
+        ...capaCampo.getLayers(),
+        ...capaAreas.getLayers()
+    ]);
+
+    if(grupo.getLayers().length)
+        mapa.fitBounds(grupo.getBounds(),{padding:[30,30]});
+
+}
+
+function elegirArea(area){
+    selectedAreaId=area.id;
+    $("#id_area").val(area.id);
+    $("#id_contorno").val(area.contorno);
+    $("#id_superficie_ha").val(area.superficie_ha||"");
+
+    refrescarMapa();
+}
+
+function mostrarMapa(campoId){
+    $("#mapa-placeholder").addClass("d-none");
+    $("#seccion-mapa").removeClass("d-none");
+
+    iniciarMapa();
+    $.ajax({
+
+        url:"{% url 'ajax_areas_por_campo' %}",
+        data:{campo_id:campoId},
+        success(resp){
+            if(!resp.ok) return;
+
+            campoData=resp;
+            if(modoArea==="todo")
+                $("#id_superficie_ha").val(
+                    resp.campo_superficie_ha||""
+                );
+
+            refrescarMapa();
+        }
+    });
+
+}
+
+$(function(){
+    $("#id_campo").on("change",function(){
+        if(this.value)
+            mostrarMapa(this.value);
+    });
+
+    $("#id_cultivo").on(
+        "change",
+        cargarProductoFinalCultivo
+    );
+
+    $("#id_tipo_area_0").on("change",function(){
+
+    modoArea="todo";
+
+    try{
+        mapa.removeControl(drawControl);
+    }
+    catch(e){}
+
+    capaEditada.clearLayers();
+    $("#id_contorno").val("");
+    $("#id_area").val("");
+
+    refrescarMapa();
+
+    });
+
+    $("#id_tipo_area_1").on("change",function(){
+        modoArea="existente";
+
+        try{
+            mapa.removeControl(drawControl);
+        }
+        catch(e){}
+
+        capaEditada.clearLayers();
+        $("#id_contorno").val("");
+        refrescarMapa();
+
+    });
+
+    $("#id_tipo_area_2").on("change",function(){
+
+        modoArea="nueva";
+        try{
+            mapa.removeControl(drawControl);
+        }
+        catch(e){}
+
+        mapa.addControl(drawControl);
+        capaEditada.clearLayers();
+        $("#id_area").val("");
+        refrescarMapa();
+
+    });
+
+    if($("#id_campo").val())
+        mostrarMapa(
+            $("#id_campo").val()
+        );
+
 });
 </script>
 {% endblock %}

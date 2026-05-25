@@ -185,9 +185,7 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
 <script>
-const urlNdviBase  = "{% url 'ajax_ndvi_data' campo_id=0 %}".replace("/0/", "/");
-const urlFetchBase = "{% url 'ajax_fetch_ndvi_campo' campo_id=0 %}".replace("/0/fetch/", "/");
-const csrfToken    = "{{ csrf_token }}";
+var CSRF = '{{ csrf_token }}';
 
 const ESTADOS = {
   optimo:    { label: "Óptimo",  badge: "bg-success" },
@@ -213,9 +211,9 @@ let campoActual  = null;
 let datosCampo   = null;
 
 // ── Selector campo ────────────────────────────────────────────────────
-document.getElementById("select-campo-ndvi").addEventListener("change", function () {
-  campoActual = this.value || null;
-  document.getElementById("btn-fetch-ndvi").disabled = !campoActual;
+$('#select-campo-ndvi').on('change', function () {
+  campoActual = $(this).val() || null;
+  $('#btn-fetch-ndvi').prop('disabled', !campoActual);
   document.getElementById("panel-stats").style.display = "none";
   document.getElementById("lista-capturas").innerHTML =
     '<p class="text-muted small">Cargando...</p>';
@@ -226,13 +224,13 @@ document.getElementById("select-campo-ndvi").addEventListener("change", function
 
 // ── Cargar datos ──────────────────────────────────────────────────────
 function cargarNdvi(id) {
-  fetch(`${urlNdviBase}${id}/`)
-    .then(r => r.json())
-    .then(res => {
+  $.ajax({
+    url: '{% url "ajax_ndvi_data" campo_id=1 %}'.replace('/1/', '/' + id + '/'),
+    type: 'GET',
+    success: function(res) {
       if (!res.ok) return;
       datosCampo = res;
 
-      // Mostrar contorno del área
       if (contornoLayer) mapa.removeLayer(contornoLayer);
       if (res.area_geojson) {
         contornoLayer = L.geoJSON(res.area_geojson, {
@@ -252,13 +250,14 @@ function cargarNdvi(id) {
       renderListaCapturas(res.capturas, res.bbox);
       renderChart(res.capturas);
 
-      // Mostrar la última captura automáticamente
-      const ultima = res.capturas[res.capturas.length - 1];
+      var ultima = res.capturas[res.capturas.length - 1];
       if (ultima.imagen_url && res.bbox) {
         mostrarOverlay(ultima.imagen_url, res.bbox);
-        document.querySelector('.captura-item')?.classList.add('activa');
+        var primer = document.querySelector('.captura-item');
+        if (primer) primer.classList.add('activa');
       }
-    });
+    }
+  });
 }
 
 // ── Overlay NDVI en el mapa ───────────────────────────────────────────
@@ -401,71 +400,66 @@ function renderChart(capturas) {
 }
 
 // ── Obtener Sentinel-2 ────────────────────────────────────────────────
-document.getElementById("btn-fetch-ndvi").addEventListener("click", function () {
+$('#btn-fetch-ndvi').on('click', function () {
   if (!campoActual) return;
   fetchNdvi(false);
 });
 
-document.getElementById("btn-recargar-ndvi").addEventListener("click", function () {
+$('#btn-recargar-ndvi').on('click', function () {
   if (campoActual) cargarNdvi(campoActual);
 });
 
-document.getElementById("btn-forzar-ndvi").addEventListener("click", function () {
+$('#btn-forzar-ndvi').on('click', function () {
   if (!campoActual) return;
-  this.style.display = "none";
+  $(this).hide();
   fetchNdvi(true);
 });
 
-function fetchNdvi(forzar = false) {
-  const btn = document.getElementById("btn-fetch-ndvi");
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Consultando...';
+function fetchNdvi(forzar) {
+  var btnFetch = $('#btn-fetch-ndvi');
+  btnFetch.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Consultando...');
 
-  const logPanel  = document.getElementById("panel-log");
-  const logTitulo = document.getElementById("log-titulo");
-  const logConten = document.getElementById("log-contenido");
-  const spinner   = document.getElementById("spinner-fetch");
+  $('#panel-log').show();
+  $('#spinner-fetch').show();
+  $('#log-titulo').text(forzar ? 'Regenerando imagen...' : 'Consultando CDSE / Sentinel-2...');
+  $('#log-contenido').text('');
 
-  logPanel.style.display = "block";
-  spinner.style.display  = "inline-block";
-  logTitulo.textContent  = forzar ? "Regenerando imagen..." : "Consultando CDSE / Sentinel-2...";
-  logConten.textContent  = "";
+  var data = { csrfmiddlewaretoken: CSRF };
+  if (forzar) data.forzar = '1';
 
-  const body = new URLSearchParams({ csrfmiddlewaretoken: csrfToken });
-  if (forzar) body.append("forzar", "1");
-
-  fetch(`${urlFetchBase}${campoActual}/fetch/`, {
-    method: "POST",
-    headers: { "X-CSRFToken": csrfToken, "Content-Type": "application/x-www-form-urlencoded" },
-    body: body.toString(),
-  })
-    .then(r => r.json())
-    .then(res => {
-      spinner.style.display = "none";
-      btn.disabled = false;
-      btn.innerHTML = '<i class="mdi mdi-satellite-variant me-1"></i>Obtener Sentinel-2';
-      if (res.log?.length) {
-        logConten.textContent = res.log.join("\n");
-        logConten.scrollTop   = logConten.scrollHeight;
+  $.ajax({
+    url: '{% url "ajax_fetch_ndvi_campo" campo_id=1 %}'.replace('/1/fetch/', '/' + campoActual + '/fetch/'),
+    type: 'POST',
+    data: data,
+    success: function(res) {
+      $('#spinner-fetch').hide();
+      btnFetch.prop('disabled', false).html('<i class="mdi mdi-satellite-variant me-1"></i>Obtener Sentinel-2');
+      if (res.log && res.log.length) {
+        $('#log-contenido').text(res.log.join('\n'));
       }
       if (res.sin_nuevas) {
-        logTitulo.textContent = "ℹ Sin imágenes nuevas";
-        document.getElementById("btn-forzar-ndvi").style.display = "block";
+        $('#log-titulo').text('ℹ Sin imágenes nuevas');
+        $('#btn-forzar-ndvi').show();
       } else if (res.ok) {
-        logTitulo.textContent = "✓ Completado";
+        $('#log-titulo').text('✓ Completado');
         cargarNdvi(campoActual);
       } else {
-        logTitulo.textContent = "✗ Error";
-        if (res.error) logConten.textContent += "\n" + res.error;
+        $('#log-titulo').text('✗ Error');
+        if (res.error) $('#log-contenido').append('\n' + res.error);
       }
-    })
-    .catch(err => {
-      spinner.style.display = "none";
-      btn.disabled = false;
-      btn.innerHTML = '<i class="mdi mdi-satellite-variant me-1"></i>Obtener Sentinel-2';
-      logTitulo.textContent = "✗ Error de conexión";
-      logConten.textContent = err.toString();
-    });
+    },
+    error: function(xhr) {
+      $('#spinner-fetch').hide();
+      btnFetch.prop('disabled', false).html('<i class="mdi mdi-satellite-variant me-1"></i>Obtener Sentinel-2');
+      $('#log-titulo').text('✗ Error');
+      try {
+        var resp = JSON.parse(xhr.responseText);
+        $('#log-contenido').text(resp.error || xhr.responseText);
+      } catch(e) {
+        $('#log-contenido').text('Error de conexión');
+      }
+    }
+  });
 }
 </script>
 {% endblock %}

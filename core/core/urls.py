@@ -5,8 +5,10 @@ from django.conf.urls.static import static
 from agro.views import index, login_page, vista_configuracion, vista_registro, vista_cuenta_suspendida, ajax_cotizaciones
 from administracion.views import (vista_registrar_venta, vista_lista_ventas, ajax_registrar_cobro,
     vista_gestion_facturas, ajax_indicadores_proveedor,
-    ajax_buscar_facturas, ajax_registrar_pago, ajax_buscar_pagos, ajax_detalle_pago)
-from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo,
+    ajax_buscar_facturas, ajax_registrar_pago, ajax_buscar_pagos, ajax_detalle_pago,
+    vista_cargar_factura_venta_manual, ajax_info_producto_venta, ajax_depositos_producto_destino,
+    vista_cuenta_corriente_proveedor, vista_cuenta_corriente_cliente)
+from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_areas_por_campo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo,
 vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
 vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo, ajax_get_ciclos_data, vista_agregar_actividad,
 ajax_subtipos_tipo_actividad, ajax_productos_por_actividad, ajax_valores_actividad, vista_lista_stock,
@@ -46,6 +48,7 @@ urlpatterns = [
     path('ciclos/', vista_lista_ciclos, name='vista_lista_ciclos'),
     path('ciclos/nuevo/', vista_crear_ciclo, name='vista_crear_ciclo'),
     path("ajax/info-cultivo/", ajax_info_cultivo, name="ajax_info_cultivo"),
+    path("ajax/areas-por-campo/", ajax_areas_por_campo, name="ajax_areas_por_campo"),
     path('ajax/get_ciclos_data/', ajax_get_ciclos_data, name="ajax_get_ciclos_data"),
     path('ciclos/<int:id_ciclo>/', vista_detalle_ciclo, name='vista_detalle_ciclo'),
     path('ciclo/<int:id_ciclo>/actividad/nueva/', vista_agregar_actividad, name="vista_agregar_actividad"),
@@ -76,7 +79,12 @@ urlpatterns = [
 
     path('ventas/', vista_lista_ventas, name='vista_lista_ventas'),
     path('ventas/nueva/', vista_registrar_venta, name='vista_registrar_venta'),
+    path('ventas/cargar/', vista_cargar_factura_venta_manual, name='vista_cargar_factura_venta_manual'),
+    path('ajax/info-producto-venta/', ajax_info_producto_venta, name='ajax_info_producto_venta'),
+    path('ajax/depositos-producto-destino/', ajax_depositos_producto_destino, name='ajax_depositos_producto_destino'),
     path('ventas/cobro/', ajax_registrar_cobro, name='ajax_registrar_cobro'),
+    path('proveedores/cuenta-corriente/', vista_cuenta_corriente_proveedor, name='vista_cuenta_corriente_proveedor'),
+    path('clientes/cuenta-corriente/', vista_cuenta_corriente_cliente, name='vista_cuenta_corriente_cliente'),
     path('administracion/gestion-facturas/', vista_gestion_facturas, name='vista_gestion_facturas'),
     path('administracion/ajax/indicadores-proveedor/', ajax_indicadores_proveedor, name='ajax_indicadores_proveedor'),
     path('administracion/ajax/buscar-facturas/', ajax_buscar_facturas, name='ajax_buscar_facturas'),

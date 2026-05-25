@@ -3,6 +3,7 @@ from django import forms
 from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
+from django.forms import formset_factory
 
 from gestion_agro.models import Proveedor, FacturaCompra, Cliente, Deposito, Producto
 from agro.models import Unidad
@@ -148,3 +149,100 @@ class AplicacionPagoForm(forms.ModelForm):
                 }
             )
         return cd
+
+
+class FacturaVentaManualForm(forms.ModelForm):
+    class Meta:
+        model = FacturaVenta
+        fields = ["cliente", "numero", "fecha", "fecha_vencimiento"]
+        widgets = {
+            "cliente":           forms.Select(attrs={"class": "form-select form-select-sm"}),
+            "numero":            forms.TextInput(attrs={"class": "form-control form-control-sm"}),
+            "fecha":             forms.DateInput(attrs={"type": "date", "class": "form-control form-control-sm"}),
+            "fecha_vencimiento": forms.DateInput(attrs={"type": "date", "class": "form-control form-control-sm"}),
+        }
+
+    def __init__(self, empresa=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            self.fields["cliente"].queryset = Cliente.objects.filter(empresa=empresa).order_by("razon_social")
+        self.fields["fecha_vencimiento"].required = False
+
+
+class ProductoFinalChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        try:
+            ds = obj.datos_semilla
+            return f"{ds.cultivo.nombre} {ds.variedad.nombre}"
+        except Exception:
+            return obj.nombre
+
+
+class FacturaVentaManualItemForm(forms.Form):
+    DESTINO_CHOICES = [("", "— Todos —"), ("M", _("Semilla (M)")), ("C", _("Consumo (C)"))]
+
+    producto = ProductoFinalChoiceField(
+        queryset=Producto.objects.none(),
+        required=True,
+        empty_label="— Seleccionar —",
+        label=_("Producto"),
+    )
+    destino = forms.ChoiceField(
+        choices=DESTINO_CHOICES,
+        required=False,
+        label=_("Destino"),
+    )
+    deposito_origen = forms.ModelChoiceField(
+        queryset=Deposito.objects.none(),
+        required=False,
+        empty_label="— Sin filtro —",
+        label=_("Depósito origen"),
+    )
+    cantidad = forms.DecimalField(
+        min_value=Decimal("0.001"), decimal_places=3,
+        label=_("Cantidad"),
+        widget=forms.NumberInput(attrs={"step": "0.001", "min": "0.001"}),
+    )
+    precio_unitario = forms.DecimalField(
+        min_value=0, decimal_places=2,
+        label=_("Precio unit."),
+        widget=forms.NumberInput(attrs={"step": "0.01", "min": "0"}),
+    )
+    subtotal = forms.DecimalField(
+        required=False, decimal_places=2,
+        widget=forms.HiddenInput(),
+    )
+
+    def __init__(self, *args, empresa=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.empresa = empresa
+
+        for name, field in self.fields.items():
+            w = field.widget
+            if isinstance(w, forms.HiddenInput):
+                continue
+            if isinstance(w, forms.Select):
+                w.attrs["class"] = "form-select form-select-sm"
+            else:
+                w.attrs["class"] = "form-control form-control-sm"
+
+        if empresa:
+            self.fields["producto"].queryset = (
+                Producto.objects
+                .filter(empresa=empresa, activo=True, producto_final=True)
+                .select_related("categoria", "datos_semilla__cultivo", "datos_semilla__variedad")
+                .order_by("nombre")
+            )
+            self.fields["deposito_origen"].queryset = (
+                Deposito.objects.filter(empresa=empresa).order_by("nombre")
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        cantidad = cleaned.get("cantidad") or Decimal("0")
+        precio = cleaned.get("precio_unitario") or Decimal("0")
+        cleaned["subtotal"] = cantidad * precio
+        return cleaned
+
+
+FacturaVentaManualItemFormSet = formset_factory(FacturaVentaManualItemForm, extra=1)

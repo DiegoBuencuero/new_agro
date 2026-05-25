@@ -26,7 +26,7 @@ from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroF
                                 StockFiltroForm, CultivoProductoFinalForm, FacturaCompraForm, FacturaCompraItemFormSet, FacturaManualItemFormSet,
                                 CultivoForm, CultivoEditarForm, CultivoProductoFinalForm, CultivoEditarForm, DepositoForm
                                 )
-from gestion_agro.models import ( Campo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
+from gestion_agro.models import ( Campo, AreaCampo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
                                 ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
                                 ActividadInsumo, CategoriaProducto, MovimientoStock,
                                 FacturaCompra, Proveedor, PresentacionProducto, FacturaCompraItem, Variedad,
@@ -45,21 +45,16 @@ def vista_crear_campo(request):
             campo = form.save(commit=False)
             campo.empresa = empresa
             campo.save()
-
             messages.success(request, _("Campo creado correctamente"))
             return redirect("vista_crear_campo")
     else:
         form = CampoForm()
 
-    return render(
-        request,
-        "vista_crear_campo.html",
-        {
-            "form": form,
-            "campos": campos,
-            "empresa": empresa,
-        },
-    )
+    return render(request, "vista_crear_campo.html", {
+        "form":    form,
+        "campos":  campos,
+        "empresa": empresa,
+    })
 
 @login_required
 def vista_editar_campo(request, id_campo):
@@ -71,7 +66,7 @@ def vista_editar_campo(request, id_campo):
     empresa = request.user.profile.empresa
     if campo.empresa ==empresa:
         if request.method == 'POST':
-            form = CampoForm(request.POST, request.FILES, instance = campo)
+            form = CampoForm(request.POST, request.FILES, instance=campo)
             if form.is_valid():
                 campo = form.save(commit=False)
                 if request.POST.get('borrar') == '':
@@ -550,6 +545,43 @@ def vista_crear_ciclo(request):
     return render(request, "vista_crear_ciclo.html", context)
 
 @login_required
+def ajax_areas_por_campo(request):
+
+    empresa=request.user.profile.empresa
+    campo_id=request.GET.get("campo_id")
+
+    if not empresa or not campo_id:
+        return JsonResponse({
+            "ok":False,
+            "areas":[]
+        })
+
+    try:
+        campo=Campo.objects.get( id=campo_id, empresa=empresa )
+
+    except Campo.DoesNotExist:
+        return JsonResponse({ "ok":False, "areas":[] })
+
+    areas_json=[]
+
+    areas=AreaCampo.objects.filter(campo=campo,  contorno__isnull=False ).exclude(contorno="").order_by("nombre")
+
+    for area in areas:
+        areas_json.append({
+            "id":area.id,
+            "nombre":area.nombre,
+            "superficie_ha":str(area.superficie_ha or ""),
+            "contorno":area.contorno
+        })
+
+    return JsonResponse({
+        "ok":True,
+        "campo_superficie_ha":str(campo.superficie_ha or ""),
+        "campo_contorno":campo.contorno,
+        "areas":areas_json
+    })
+
+@login_required
 def ajax_info_cultivo(request):
     empresa = getattr(request.user.profile, "empresa", None)
     cultivo_id = request.GET.get("cultivo_id")
@@ -690,7 +722,7 @@ def vista_agregar_actividad(request, id_ciclo):
 
     fase = (FaseAgricola.objects.filter(ciclo=ciclo).order_by("-fecha_inicio", "-id").first())
 
-    # Si la fase quedó abierta pero ya tiene una actividad cierra_fase (ej: Cosecha
+    # Si la fase quedo abierta pero ya tiene una actividad cierra_fase (ej: Cosecha
     # guardada antes de que fallara el cierre), la cerramos ahora para que el formulario
     # muestre todos los tipos disponibles (incluyendo Siembra para una nueva fase).
     if fase and fase.estado != "cerrado":

@@ -4,159 +4,213 @@
 {% block content %}
 <div class="content-wrapper py-4 px-3">
 
-  <!-- Título -->
+  <!-- Encabezado -->
   <div class="d-flex align-items-center justify-content-between mb-4">
-    <div>
-      <h4 class="fw-bold mb-0">{% translate "Dashboard" %}</h4>
-      <small class="text-muted">{% translate "Resumen de tu operación" %}</small>
-    </div>
-    <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-outline-success btn-sm">
-      <i class="mdi mdi-sprout me-1"></i>{% translate "Ver ciclos" %}
-    </a>
+    <h4 class="fw-bold mb-0">{% translate "Dashboard" %}</h4>
+    {% if total_alertas %}
+    <span class="badge rounded-pill text-bg-danger px-3 py-2">
+      <i class="mdi mdi-bell-outline me-1"></i>{{ total_alertas }} {% translate "alertas" %}
+    </span>
+    {% endif %}
   </div>
 
-  <!-- Fila 0: Cotizaciones en vivo -->
+  <!-- Fila precios -->
   <div class="row g-3 mb-3">
-
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
+        <div class="card-body text-center py-3">
           <div class="text-muted small mb-1">USD / BRL</div>
           <div id="usd-spinner" class="spinner-border spinner-border-sm text-success"></div>
-          <div id="usd-val" class="fw-bold d-none" style="font-size:1.5rem;color:#1a6b3a"></div>
-          <div id="usd-fecha" class="text-muted d-none" style="font-size:.72rem"></div>
+          <div id="usd-val" class="fw-bold d-none" style="font-size:1.4rem;color:#1a6b3a"></div>
+          <div id="usd-fecha" class="text-muted d-none" style="font-size:.7rem"></div>
           <div id="usd-err" class="text-muted small d-none">—</div>
         </div>
       </div>
     </div>
-
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
+        <div class="card-body text-center py-3">
           <div class="text-muted small mb-1">SOJA CBOT</div>
           <div id="soja-spinner" class="spinner-border spinner-border-sm text-success"></div>
-          <div id="soja-val" class="fw-bold d-none" style="font-size:1.3rem;color:#1a6b3a"></div>
-          <div id="soja-sub" class="text-muted d-none" style="font-size:.72rem"></div>
+          <div id="soja-val" class="fw-bold d-none" style="font-size:1.2rem;color:#1a6b3a"></div>
+          <div id="soja-sub" class="text-muted d-none" style="font-size:.7rem"></div>
           <div id="soja-err" class="text-muted small d-none">—</div>
         </div>
       </div>
     </div>
-
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
+        <div class="card-body text-center py-3">
           <div class="text-muted small mb-1">MAÍZ CBOT</div>
           <div id="maiz-spinner" class="spinner-border spinner-border-sm text-success"></div>
-          <div id="maiz-val" class="fw-bold d-none" style="font-size:1.3rem;color:#1a6b3a"></div>
-          <div id="maiz-sub" class="text-muted d-none" style="font-size:.72rem"></div>
+          <div id="maiz-val" class="fw-bold d-none" style="font-size:1.2rem;color:#1a6b3a"></div>
+          <div id="maiz-sub" class="text-muted d-none" style="font-size:.7rem"></div>
           <div id="maiz-err" class="text-muted small d-none">—</div>
         </div>
       </div>
     </div>
-
-    <div class="col-md-3">
+    <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
+        <div class="card-body text-center py-3">
           <div class="text-muted small mb-1">TRIGO CBOT</div>
           <div id="trigo-spinner" class="spinner-border spinner-border-sm text-success"></div>
-          <div id="trigo-val" class="fw-bold d-none" style="font-size:1.3rem;color:#1a6b3a"></div>
-          <div id="trigo-sub" class="text-muted d-none" style="font-size:.72rem"></div>
+          <div id="trigo-val" class="fw-bold d-none" style="font-size:1.2rem;color:#1a6b3a"></div>
+          <div id="trigo-sub" class="text-muted d-none" style="font-size:.7rem"></div>
           <div id="trigo-err" class="text-muted small d-none">—</div>
         </div>
       </div>
     </div>
-
   </div>
 
-  <!-- Fila 1: KPIs -->
-  <div class="row g-3 mb-4">
-
-    <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
-          <div class="mb-2"><i class="mdi mdi-sprout text-success" style="font-size:1.8rem"></i></div>
-          <div class="text-muted small">{% translate "Ciclos activos" %}</div>
-          <div class="fw-bold" style="font-size:1.8rem;color:#1a6b3a">{{ ciclos_activos }}</div>
-          <div class="text-muted" style="font-size:.75rem">{% translate "de" %} {{ ciclos_totales }} {% translate "totales" %}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
-          <div class="mb-2"><i class="mdi mdi-grain text-success" style="font-size:1.8rem"></i></div>
-          <div class="text-muted small">{% translate "Total cosechado" %}</div>
-          <div class="fw-bold" style="font-size:1.5rem;color:#1a6b3a">{{ kg_cosechado|floatformat:0 }}</div>
-          <div class="text-muted" style="font-size:.75rem">kg</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
-          <div class="mb-2"><i class="mdi mdi-warehouse text-primary" style="font-size:1.8rem"></i></div>
-          <div class="text-muted small">{% translate "En stock" %}</div>
-          <div class="fw-bold" style="font-size:1.5rem;color:#1d4ed8">{{ kg_en_stock|floatformat:0 }}</div>
-          <div class="text-muted" style="font-size:.75rem">kg</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
-          <div class="mb-2"><i class="mdi mdi-cart-outline text-success" style="font-size:1.8rem"></i></div>
-          <div class="text-muted small">{% translate "Total ventas" %}</div>
-          <div class="fw-bold" style="font-size:1.4rem;color:#1a6b3a">${{ total_ventas|floatformat:0 }}</div>
-          <div class="text-muted" style="font-size:.75rem">{% translate "facturado" %}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
-          <div class="mb-2"><i class="mdi mdi-cash-check text-success" style="font-size:1.8rem"></i></div>
-          <div class="text-muted small">{% translate "Cobrado" %}</div>
-          <div class="fw-bold" style="font-size:1.4rem;color:#1a6b3a">${{ total_cobrado|floatformat:0 }}</div>
-          <div class="text-muted" style="font-size:.75rem">{% translate "recibido" %}</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="col-md-2">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body text-center">
-          <div class="mb-2"><i class="mdi mdi-clock-alert-outline text-warning" style="font-size:1.8rem"></i></div>
-          <div class="text-muted small">{% translate "Por cobrar" %}</div>
-          <div class="fw-bold" style="font-size:1.4rem;{% if por_cobrar > 0 %}color:#92680a{% else %}color:#1a6b3a{% endif %}">${{ por_cobrar|floatformat:0 }}</div>
-          <div class="text-muted" style="font-size:.75rem">{% translate "pendiente" %}</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- Fila 2: Últimas actividades + accesos rápidos -->
+  <!-- Layout principal: izquierda (col-8) + derecha columna ciclos (col-4) -->
   <div class="row g-3">
 
+    <!-- ═══ COLUMNA IZQUIERDA ═══ -->
     <div class="col-md-8">
+
+      <!-- KPIs fijos -->
+      <div class="row g-3 mb-3">
+
+        <!-- Deuda total -->
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm h-100 {% if deuda_vencida > 0 %}border-start border-danger border-3{% endif %}">
+            <div class="card-body text-center py-3">
+              <div class="mb-1">
+                <i class="mdi mdi-bank-transfer-out {% if deuda_vencida > 0 %}text-danger{% else %}text-muted{% endif %}" style="font-size:1.4rem"></i>
+              </div>
+              <div class="text-muted small">{% translate "Deuda total" %}</div>
+              <div class="fw-bold" style="font-size:1.25rem;color:{% if deuda_vencida > 0 %}#dc2626{% else %}#374151{% endif %}">
+                R$ {{ deuda_total|floatformat:0 }}
+              </div>
+              {% if deuda_vencida > 0 %}
+              <div style="font-size:.7rem;color:#dc2626">R$ {{ deuda_vencida|floatformat:0 }} {% translate "vencida" %}</div>
+              {% else %}
+              <div class="text-muted" style="font-size:.7rem">{% translate "proveedores" %}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Vence en 30 días -->
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-3">
+              <div class="mb-1"><i class="mdi mdi-clock-alert-outline text-warning" style="font-size:1.4rem"></i></div>
+              <div class="text-muted small">{% translate "Vence en 30 días" %}</div>
+              <div class="fw-bold" style="font-size:1.25rem;color:#92680a">R$ {{ deuda_proxima|floatformat:0 }}</div>
+              <div class="text-muted" style="font-size:.7rem">{% translate "por pagar" %}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stock productos finales -->
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-3">
+              <div class="mb-1"><i class="mdi mdi-silo text-success" style="font-size:1.4rem"></i></div>
+              <div class="text-muted small">{% translate "Stock granos" %}</div>
+              {% if granos_stock %}
+                {% for g in granos_stock %}
+                <div class="fw-bold" style="font-size:1.1rem;color:#1a6b3a">{{ g.sc|floatformat:0 }} sc</div>
+                <div class="text-muted" style="font-size:.7rem">{{ g.nombre }}</div>
+                {% endfor %}
+              {% else %}
+              <div class="fw-bold" style="font-size:1.25rem;color:#9ca3af">—</div>
+              <div class="text-muted" style="font-size:.7rem">{% translate "sin stock" %}</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Ciclos activos -->
+        <div class="col-6 col-md-3">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body text-center py-3">
+              <div class="mb-1"><i class="mdi mdi-sprout text-success" style="font-size:1.4rem"></i></div>
+              <div class="text-muted small">{% translate "Ciclos activos" %}</div>
+              <div class="fw-bold" style="font-size:1.8rem;color:#1a6b3a">{{ ciclos_count }}</div>
+              <div class="text-muted" style="font-size:.7rem">{% translate "de" %} {{ ciclos_totales }} {% translate "totales" %}</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Alertas -->
+      <div class="card border-0 shadow-sm mb-3">
+        {% if alertas_facturas or alertas_inactivos or alertas_ndvi %}
+        <div class="card-header bg-white border-0 pb-0">
+          <span class="fw-semibold text-danger"><i class="mdi mdi-bell-ring me-1"></i>{% translate "Alertas" %}</span>
+        </div>
+        <div class="card-body p-0">
+
+          {% if alertas_facturas %}
+          <div class="px-3 pt-2 pb-1" style="border-bottom:1px solid #fee2e2">
+            <div class="small fw-semibold text-danger mb-1">
+              <i class="mdi mdi-file-alert-outline me-1"></i>{% translate "Facturas vencidas" %}
+            </div>
+            {% for a in alertas_facturas %}
+            <div class="d-flex justify-content-between py-1" style="font-size:.82rem;border-bottom:1px solid #fef2f2">
+              <span class="text-truncate me-2"><strong>{{ a.proveedor }}</strong> N°{{ a.numero }}</span>
+              <span class="text-danger fw-semibold text-nowrap">R${{ a.saldo|floatformat:0 }} <span class="text-muted fw-normal">({{ a.dias }}d)</span></span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if alertas_inactivos %}
+          <div class="px-3 pt-2 pb-1" style="border-bottom:1px solid #fde68a">
+            <div class="small fw-semibold mb-1" style="color:#92680a">
+              <i class="mdi mdi-sprout-outline me-1"></i>{% translate "Ciclos sin actividad (+20 días)" %}
+            </div>
+            {% for a in alertas_inactivos %}
+            <div class="d-flex justify-content-between py-1" style="font-size:.82rem;border-bottom:1px solid #fffbeb">
+              <span><strong>{{ a.campo }}</strong> — {{ a.cultivo }}</span>
+              <span style="color:#92680a" class="text-nowrap">
+                {% if a.dias %}{{ a.dias }}d{% else %}{% translate "sin registros" %}{% endif %}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          {% if alertas_ndvi %}
+          <div class="px-3 pt-2 pb-1">
+            <div class="small fw-semibold mb-1" style="color:#15803d">
+              <i class="mdi mdi-satellite-variant me-1"></i>{% translate "NDVI en caída" %}
+            </div>
+            {% for a in alertas_ndvi %}
+            <div class="d-flex justify-content-between py-1" style="font-size:.82rem;border-bottom:1px solid #f0fdf4">
+              <span><strong>{{ a.campo }}</strong></span>
+              <span class="text-danger text-nowrap">{{ a.anterior }} → {{ a.actual }} (-{{ a.caida }}%)</span>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+        </div>
+        {% else %}
+        <div class="card-body text-center py-3">
+          <i class="mdi mdi-check-circle-outline text-success" style="font-size:1.6rem"></i>
+          <div class="text-muted small mt-1">{% translate "Sin alertas pendientes" %}</div>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Últimas actividades -->
       <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+        <div class="card-header bg-white border-0">
           <span class="fw-semibold"><i class="mdi mdi-history me-1 text-muted"></i>{% translate "Últimas actividades" %}</span>
-          <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-sm btn-outline-secondary">{% translate "Ver ciclos" %}</a>
         </div>
         <div class="card-body p-0">
           {% if ultimas_actividades %}
           <table class="table table-sm align-middle mb-0">
             <thead style="background:#f8f9fa">
               <tr>
-                <th class="px-3 py-2 small text-muted text-uppercase">{% translate "Fecha" %}</th>
-                <th class="px-3 py-2 small text-muted text-uppercase">{% translate "Actividad" %}</th>
-                <th class="px-3 py-2 small text-muted text-uppercase">{% translate "Campo" %}</th>
-                <th class="px-3 py-2 small text-muted text-uppercase">{% translate "Cultivo" %}</th>
+                <th class="px-3 py-2 small text-muted fw-normal text-uppercase">{% translate "Fecha" %}</th>
+                <th class="px-3 py-2 small text-muted fw-normal text-uppercase">{% translate "Actividad" %}</th>
+                <th class="px-3 py-2 small text-muted fw-normal text-uppercase">{% translate "Campo" %}</th>
+                <th class="px-3 py-2 small text-muted fw-normal text-uppercase">{% translate "Cultivo" %}</th>
               </tr>
             </thead>
             <tbody>
@@ -171,42 +225,85 @@
             </tbody>
           </table>
           {% else %}
-          <div class="text-center py-5 text-muted">
-            <i class="mdi mdi-sprout display-6 d-block mb-2"></i>
-            {% translate "No hay actividades registradas aún." %}
+          <div class="text-center py-4 text-muted">
+            <i class="mdi mdi-sprout display-6 d-block mb-1" style="font-size:2rem!important"></i>
+            <span class="small">{% translate "No hay actividades registradas aún." %}</span>
           </div>
           {% endif %}
         </div>
       </div>
-    </div>
 
+    </div><!-- /col-md-8 -->
+
+    <!-- ═══ COLUMNA DERECHA: Ciclos ═══ -->
     <div class="col-md-4">
+
+      <!-- Panel ciclos -->
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
+          <span class="fw-semibold"><i class="mdi mdi-sprout me-1 text-success"></i>{% translate "Ciclos productivos" %}</span>
+          <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-sm btn-outline-success py-0" style="font-size:.75rem">{% translate "Ver todos" %}</a>
+        </div>
+        <div class="card-body p-0">
+
+          <!-- Abiertos -->
+          {% if ciclos_count %}
+          <div class="px-3 pt-2 pb-1">
+            <div class="text-muted small fw-semibold text-uppercase mb-2" style="font-size:.68rem;letter-spacing:.05em">{% translate "Abiertos" %}</div>
+            <div id="ciclos-panel">
+              {% comment %}Se rellena por JS con los costos y sacas{% endcomment %}
+              <div class="text-center py-2">
+                <div class="spinner-border spinner-border-sm text-success"></div>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="text-center py-3 text-muted small">{% translate "Sin ciclos activos" %}</div>
+          {% endif %}
+
+          <!-- Cerrados recientes -->
+          {% if ciclos_cerrados_json != "[]" %}
+          <div class="px-3 pt-2 pb-2" style="border-top:1px solid #f1f3f5">
+            <div class="text-muted small fw-semibold text-uppercase mb-2" style="font-size:.68rem;letter-spacing:.05em">{% translate "Cerrados recientes" %}</div>
+            <div id="ciclos-cerrados-panel"></div>
+          </div>
+          {% endif %}
+
+        </div>
+      </div>
+
+      <!-- Accesos rápidos -->
       <div class="card border-0 shadow-sm">
         <div class="card-header bg-white border-0">
           <span class="fw-semibold"><i class="mdi mdi-lightning-bolt me-1 text-muted"></i>{% translate "Accesos rápidos" %}</span>
         </div>
         <div class="card-body d-flex flex-column gap-2">
-          <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-outline-success text-start">
+          <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-outline-success text-start btn-sm">
             <i class="mdi mdi-sprout me-2"></i>{% translate "Ciclos productivos" %}
           </a>
-          <a href="{% url 'vista_lista_stock' %}" class="btn btn-outline-primary text-start">
+          <a href="{% url 'vista_lista_stock' %}" class="btn btn-outline-primary text-start btn-sm">
             <i class="mdi mdi-warehouse me-2"></i>{% translate "Ver stock" %}
           </a>
-          <a href="{% url 'vista_lista_ventas' %}" class="btn btn-outline-success text-start">
+          <a href="{% url 'vista_lista_ventas' %}" class="btn btn-outline-success text-start btn-sm">
             <i class="mdi mdi-cart-outline me-2"></i>{% translate "Ventas" %}
           </a>
-          <a href="{% url 'vista_lista_facturas' %}" class="btn btn-outline-secondary text-start">
+          <a href="{% url 'vista_lista_facturas' %}" class="btn btn-outline-secondary text-start btn-sm">
             <i class="mdi mdi-file-document-outline me-2"></i>{% translate "Facturas de compra" %}
           </a>
         </div>
       </div>
-    </div>
 
-  </div>
+    </div><!-- /col-md-4 -->
+
+  </div><!-- /row principal -->
 
 </div>
+
 {% block custom_js %}
 <script>
+var CICLOS_DATA    = {{ ciclos_data_json|safe }};
+var CICLOS_CERRADOS = {{ ciclos_cerrados_json|safe }};
+
 function setVal(spinnerId, valId, errId, texto) {
     document.getElementById(spinnerId).classList.add('d-none');
     if (texto !== null) {
@@ -217,55 +314,102 @@ function setVal(spinnerId, valId, errId, texto) {
         document.getElementById(errId).classList.remove('d-none');
     }
 }
-
 function setValSub(key, principal, secundario) {
     document.getElementById(key+'-spinner').classList.add('d-none');
     if (principal !== null) {
-        var v = document.getElementById(key+'-val');
-        v.textContent = principal;
-        v.classList.remove('d-none');
+        document.getElementById(key+'-val').textContent = principal;
+        document.getElementById(key+'-val').classList.remove('d-none');
         if (secundario) {
-            var s = document.getElementById(key+'-sub');
-            s.textContent = secundario;
-            s.classList.remove('d-none');
+            document.getElementById(key+'-sub').textContent = secundario;
+            document.getElementById(key+'-sub').classList.remove('d-none');
         }
     } else {
         document.getElementById(key+'-err').classList.remove('d-none');
     }
 }
 
+function renderCiclosPanel(precios) {
+    var panel = document.getElementById('ciclos-panel');
+    if (!panel) return;
+    panel.innerHTML = '';
+
+    if (!CICLOS_DATA.length) return;
+
+    CICLOS_DATA.forEach(function(c) {
+        var sacasHtml = '';
+        if (c.commodity && precios[c.commodity] && precios[c.commodity].brl_saca) {
+            var sacas = (c.costo_ha / precios[c.commodity].brl_saca).toFixed(2);
+            var precioSc = precios[c.commodity].brl_saca.toFixed(2);
+            sacasHtml =
+                '<div style="margin-top:4px">' +
+                '<span style="font-size:.78rem;color:#6b7280">{% translate "Necesitás" %} </span>' +
+                '<strong style="color:#1a6b3a">' + sacas + ' sc/ha</strong>' +
+                '<span style="font-size:.72rem;color:#9ca3af"> @ R$' + precioSc + '</span>' +
+                '</div>';
+        }
+
+        var div = document.createElement('div');
+        div.style.cssText = 'padding:8px 0;border-bottom:1px solid #f1f3f5';
+        div.innerHTML =
+            '<div class="d-flex justify-content-between align-items-start">' +
+            '<div>' +
+            '<div class="fw-semibold" style="font-size:.88rem">' + c.cultivo + '</div>' +
+            '<div class="text-muted" style="font-size:.78rem">' + c.campo + ' — ' + c.ha.toFixed(1) + ' ha</div>' +
+            '</div>' +
+            '<div class="text-end">' +
+            '<div style="font-size:.78rem;color:#6b7280">{% translate "Costo/ha" %}</div>' +
+            '<div class="fw-bold" style="font-size:.95rem;color:#374151">R$' +
+                c.costo_ha.toLocaleString('pt-BR', {minimumFractionDigits:0,maximumFractionDigits:0}) +
+            '</div>' +
+            '</div>' +
+            '</div>' +
+            sacasHtml;
+        panel.appendChild(div);
+    });
+
+    // Ciclos cerrados
+    var panelC = document.getElementById('ciclos-cerrados-panel');
+    if (panelC && CICLOS_CERRADOS.length) {
+        CICLOS_CERRADOS.forEach(function(c) {
+            var div = document.createElement('div');
+            div.style.cssText = 'padding:6px 0;border-bottom:1px solid #f9fafb;opacity:.7';
+            div.innerHTML =
+                '<div class="d-flex justify-content-between">' +
+                '<div style="font-size:.82rem">' + c.cultivo + ' — ' + c.campo + '</div>' +
+                '<div class="text-muted" style="font-size:.75rem">' + c.fecha_fin + '</div>' +
+                '</div>';
+            panelC.appendChild(div);
+        });
+    }
+}
+
 fetch("{% url 'ajax_cotizaciones' %}")
     .then(r => r.json())
     .then(d => {
-        // USD/BRL
-        setVal('usd-spinner', 'usd-val', 'usd-err',
+        setVal('usd-spinner','usd-val','usd-err',
             d.usd_brl !== null ? 'R$ ' + d.usd_brl.toFixed(4) : null);
         if (d.usd_fecha) {
             var f = document.getElementById('usd-fecha');
             f.textContent = d.usd_fecha + ' UTC';
             f.classList.remove('d-none');
         }
-
-        // Soja
         setValSub('soja',
             d.soja && d.soja.brl_saca !== null ? 'R$ ' + d.soja.brl_saca.toFixed(2) + '/sc' : null,
             d.soja ? 'US$ ' + d.soja.usd_ton + '/tn' : null);
-
-        // Maíz
         setValSub('maiz',
             d.maiz && d.maiz.brl_saca !== null ? 'R$ ' + d.maiz.brl_saca.toFixed(2) + '/sc' : null,
             d.maiz ? 'US$ ' + d.maiz.usd_ton + '/tn' : null);
-
-        // Trigo
         setValSub('trigo',
             d.trigo && d.trigo.brl_saca !== null ? 'R$ ' + d.trigo.brl_saca.toFixed(2) + '/sc' : null,
             d.trigo ? 'US$ ' + d.trigo.usd_ton + '/tn' : null);
+        renderCiclosPanel(d);
     })
     .catch(() => {
         ['usd','soja','maiz','trigo'].forEach(k => {
             document.getElementById(k+'-spinner').classList.add('d-none');
             document.getElementById(k+'-err').classList.remove('d-none');
         });
+        renderCiclosPanel({});
     });
 </script>
 {% endblock %}

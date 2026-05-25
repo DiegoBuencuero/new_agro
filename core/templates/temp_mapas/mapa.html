@@ -127,7 +127,7 @@
           <div id="alert-subir" class="alert mt-2" style="display:none;"></div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
             {% translate "Cancelar" %}
           </button>
           <button type="submit" class="btn btn-success" id="btn-confirmar-subir">
@@ -140,131 +140,202 @@
 </div>
 
 {% endblock %}
+<style>
 
+#mapa-contorno {
+    height: 650px;
+    width: 100%;
+    border-radius: 12px;
+}
+
+/* líneas y polígonos */
+
+
+
+/* vértices */
+
+
+
+/* tooltip */
+
+.leaflet-draw-tooltip {
+    background: rgba(0,0,0,0.9);
+    border: none;
+    color: white;
+    font-size: 13px;
+}
+
+/* overlay */
+
+
+
+</style>
 {% block custom_js %}
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
         crossorigin=""></script>
 <script>
-const selectCampo = document.getElementById("select-campo");
-const listaCapas = document.getElementById("lista-capas");
+const arcgisBase =
+'https://server.arcgisonline.com/ArcGIS/rest/services';
 
-selectCampo.addEventListener("change", function () {
-  const campoId = this.value;
+/* mapa */
 
-  if (!campoId) return;
+var mapa = L.map('mapa-contorno', {
+    preferCanvas: true
+}).setView([-27.4, -51.22], 12);
 
-  const url = window.MAPA_URLS.listarCapas.replace("0", campoId);
+/* capas */
 
-  fetch(url)
-    .then(r => r.json())
-    .then(resp => {
-      if (!resp.ok) return;
-
-      renderListaCapas(resp.capas);
-    });
-});
-function renderListaCapas(capas) {
-  listaCapas.innerHTML = "";
-
-capas.forEach(capa => {
-  const div = document.createElement("div");
-
-  div.innerHTML = `
-    <label style="display:block; margin-bottom:5px;">
-      <input type="checkbox" data-id="${capa.id}">
-      ${capa.nombre} (${capa.variable})
-    </label>
-  `;
-
-  const checkbox = div.querySelector("input");
-
-  checkbox.addEventListener("change", function () {
-    if (this.checked) {
-      cargarCapa(capa);
-    } else {
-      removerCapa(capa.id);
+var capaMapa = L.tileLayer(
+    `${arcgisBase}/World_Street_Map/MapServer/tile/{z}/{y}/{x}`,
+    {
+        attribution: '© Esri',
+        maxZoom: 19
     }
-  });
+);
 
-  listaCapas.appendChild(div);
-});
-}
-const capasActivas = {};
-function cargarCapa(capa) {
-fetch(capa.geojson_url)
-  .then(r => r.json())
-  .then(data => {
-    const layer = crearLayer(data, capa);
-    layer.addTo(mapa);
-
-    capasActivas[capa.id] = layer;
-
-    if (capa.bbox) {
-      mapa.fitBounds([
-        [capa.bbox[1], capa.bbox[0]],
-        [capa.bbox[3], capa.bbox[2]]
-      ]);
+var capaSatelite = L.tileLayer(
+    `${arcgisBase}/World_Imagery/MapServer/tile/{z}/{y}/{x}`,
+    {
+        attribution: '© Esri',
+        maxZoom: 19
     }
+);
 
-    actualizarLeyenda(capa);
-  });
-}
-function crearLayer(data, capa) {
-  const min = Number(capa.valor_min);
-  const max = Number(capa.valor_max);
+/* etiquetas */
 
-  return L.geoJSON(data, {
-    style: function (feature) {
-      const v = Number(feature.properties.v);
+var etiquetas = L.tileLayer(
+    'https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+    {
+        attribution: '© Esri'
+    }
+);
 
-      return {
-        fillColor: getColor(v, min, max),
-        fillOpacity: 0.7,
-        weight: 0.3,
-        color: "#333"
-      };
+capaSatelite.addTo(mapa);
+etiquetas.addTo(mapa);
+
+/* control capas */
+
+L.control.layers(
+    {
+        '🛰 Satélite': capaSatelite,
+        '🗺 Mapa': capaMapa
+    },
+    {},
+    {
+        position: 'topright',
+        collapsed: false
+    }
+).addTo(mapa);
+
+/* grupo editable */
+
+var capaEditada = new L.FeatureGroup();
+
+mapa.addLayer(capaEditada);
+
+/* draw */
+
+var drawControl = new L.Control.Draw({
+
+    edit: {
+        featureGroup: capaEditada,
+        remove: true
     },
 
-    onEachFeature: function (feature, layer) {
-      const v = feature.properties.v;
+    draw: {
 
-      layer.bindPopup(`
-        <b>${capa.nombre}</b><br>
-        ${capa.variable}: ${v} ${capa.unidad || ""}
-      `);
+        polygon: {
+
+            allowIntersection: false,
+            showArea: true,
+
+            shapeOptions: {
+                color: '#00ffff',
+                weight: 5,
+                opacity: 1,
+                fillColor: '#00ffff',
+                fillOpacity: 0.10
+            }
+
+        },
+
+        rectangle: false,
+        circle: false,
+        circlemarker: false,
+        marker: false,
+        polyline: false
+
     }
-  });
-}
-function getColor(v, min, max) {
-  if (v == null || isNaN(v)) return "#ccc";
 
-  const r = (v - min) / (max - min);
+});
 
-  if (r > 0.8) return "#d73027";
-  if (r > 0.6) return "#fc8d59";
-  if (r > 0.4) return "#fee08b";
-  if (r > 0.2) return "#d9ef8b";
-  return "#1a9850";
-}
-function removerCapa(id) {
-  if (capasActivas[id]) {
-    mapa.removeLayer(capasActivas[id]);
-    delete capasActivas[id];
-  }
-}
-function actualizarLeyenda(capa) {
-  const panel = document.getElementById("panel-leyenda");
-  const div = document.getElementById("leyenda");
+mapa.addControl(drawControl);
 
-  panel.style.display = "block";
+/* crear */
 
-  div.innerHTML = `
-    <b>${capa.nombre}</b><br>
-    ${capa.variable} (${capa.unidad || ""})<br>
-    Min: ${capa.valor_min}<br>
-    Max: ${capa.valor_max}
-  `;
+mapa.on(L.Draw.Event.CREATED, function(e) {
+
+    capaEditada.clearLayers();
+
+    var layer = e.layer;
+
+    capaEditada.addLayer(layer);
+
+    var geom = layer.toGeoJSON().geometry;
+
+    document.getElementById('input-contorno').value =
+        JSON.stringify(geom);
+
+});
+
+/* editar */
+
+mapa.on(L.Draw.Event.EDITED, function() {
+
+    var gj = capaEditada.toGeoJSON();
+
+    if (!gj.features.length) return;
+
+    document.getElementById('input-contorno').value =
+        JSON.stringify(gj.features[0].geometry);
+
+});
+
+/* borrar */
+
+mapa.on(L.Draw.Event.DELETED, function() {
+
+    document.getElementById('input-contorno').value = '';
+
+});
+
+/* cargar contorno existente */
+
+function cargarGeoJSONEnMapa(geojson) {
+
+    capaEditada.clearLayers();
+
+    var layer = L.geoJSON(geojson, {
+
+        style: {
+            color: '#00ffff',
+            weight: 5,
+            opacity: 1,
+            fillColor: '#00ffff',
+            fillOpacity: 0.10
+        }
+
+    });
+
+    layer.eachLayer(function(l) {
+        capaEditada.addLayer(l);
+    });
+
+    mapa.fitBounds(layer.getBounds(), {
+        padding: [40, 40]
+    });
+
 }
 </script>
 <script src="{% static 'mapas/js/mapa.js' %}"></script>
