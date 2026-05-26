@@ -1,10 +1,13 @@
 import json
+import os
 import threading
 import zipfile
 import io as _io
+from collections import defaultdict
 
 from datetime import date, timedelta
 
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.http import JsonResponse
@@ -13,7 +16,7 @@ from django.views.decorators.http import require_POST
 
 from agro.models import Empresa
 from gestion_agro.models import Campo, AreaCampo
-from mapas.models import CapturaSatelite, IndiceVegetacion, ArchivoAnalitico, MedicionCampo
+from mapas.models import CapturaSatelite, IndiceVegetacion, ArchivoAnalitico, MedicionCampo, VariableAnalitica
 from mapas.forms import CapaMapaForm
 from mapas.aux_shapefile import procesar_shapefile_a_geojson, procesar_kml_a_geojson
 from mapas.aux_geo import geojson_union_areas, extraer_bbox
@@ -33,6 +36,13 @@ def vista_mapas(request):
     campo_sel = None
     capturas_ndvi = []
 
+    comp_filas     = []
+    comp_fechas    = []
+    comp_variables = None
+    comp_periodos  = None
+    comp_areas     = None
+    comp_tendencia = None
+
     campo_id = request.GET.get("campo")
     if campo_id:
         campo_sel = campos.filter(id=campo_id).first()
@@ -44,6 +54,56 @@ def vista_mapas(request):
                 .order_by("-fecha")
             )
 
+            # ── Datos para tab Comparación ─────────────────────────────
+            archivos_comp = (
+                ArchivoAnalitico.objects
+                .filter(campo=campo_sel, estado="procesado")
+                .select_related("variable", "area_campo")
+                .order_by("fecha_carga")
+            )
+
+            fechas_set = set()
+            # {(var_label, area_label): {fecha_date: prom}}
+            grp = defaultdict(dict)
+
+            for a in archivos_comp:
+                if not a.estadisticas:
+                    continue
+                prom = a.estadisticas.get("prom")
+                if prom is None:
+                    continue
+                var_label  = a.variable.nombre if a.variable else a.archivo.name.split("/")[-1].rsplit(".", 1)[0]
+                area_label = a.area_campo.nombre if a.area_campo else None
+                fecha_key  = a.fecha_carga.date()
+                fechas_set.add(fecha_key)
+                # keep last upload for that (var, area, date) combo
+                grp[(var_label, area_label)][fecha_key] = round(float(prom), 2)
+
+            comp_fechas = sorted(fechas_set)
+
+            for (var, area), vals_dict in grp.items():
+                valores = [vals_dict.get(f) for f in comp_fechas]
+                vals_validos = [v for v in valores if v is not None]
+                if len(vals_validos) >= 2:
+                    delta = round(vals_validos[-1] - vals_validos[0], 2)
+                else:
+                    delta = None
+                comp_filas.append({
+                    "variable": var,
+                    "area":     area,
+                    "valores":  [f"{v:.2f}" if v is not None else None for v in valores],
+                    "delta":    delta,
+                })
+
+            comp_variables = len(set(v for v, _ in grp)) or None
+            comp_periodos  = len(comp_fechas) or None
+            comp_areas     = len(set(a for _, a in grp)) or None
+
+            all_deltas = [f["delta"] for f in comp_filas if f["delta"] is not None]
+            if all_deltas:
+                avg = sum(all_deltas) / len(all_deltas)
+                comp_tendencia = "▲ Positiva" if avg > 0 else ("▼ Negativa" if avg < 0 else "→ Estable")
+
     return render(request, "temp_mapas/vista_mapas.html", {
         "campos":             campos,
         "areas":              areas,
@@ -51,8 +111,12 @@ def vista_mapas(request):
         "capturas_ndvi":      capturas_ndvi,
         "mediciones_suelo":   [],
         "mediciones_cosecha": [],
-        "comp_filas":         [],
-        "comp_fechas":        [],
+        "comp_filas":         comp_filas,
+        "comp_fechas":        comp_fechas,
+        "comp_variables":     comp_variables,
+        "comp_periodos":      comp_periodos,
+        "comp_areas":         comp_areas,
+        "comp_tendencia":     comp_tendencia,
     })
 
 
@@ -972,3 +1036,446 @@ def ajax_capa_procesar(request):
             return JsonResponse({"ok": False, "error": "Tipo de archivo no soportado"}, status=400)
         return JsonResponse({"ok": True, "nombre": nombre})
     return JsonResponse({"ok": False, "errors": form.errors.as_json()}, status=400)
+
+
+# =====================================================
+# AJAX — COSECHA
+# =====================================================
+
+def _get_or_create_variable_cosecha(empresa=None):
+    """Devuelve (o crea) la VariableAnalitica de rendimiento para cosecha."""
+    # VariableAnalitica no tiene campo empresa en el modelo actual,
+    # se busca por nombre+tipo de forma global.
+    var, _ = VariableAnalitica.objects.get_or_create(
+        nombre="Rendimiento",
+        tipo="cosecha",
+        defaults={"unidad": "kg/ha"},
+    )
+    return var
+
+
+@login_required
+@require_POST
+def ajax_cosecha_cargar(request, campo_id):
+    """Sube un archivo de cosecha (GeoJSON/Shapefile/ZIP) para un campo."""
+    empresa = request.user.profile.empresa
+    campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
+
+    variable = _get_or_create_variable_cosecha(empresa)
+
+    geojson_str = None
+    stats       = {}
+
+    # ── Modo shapefile suelto (.shp + .shx + .dbf) ──────────────────
+    if request.FILES.get("shp"):
+        partes = {}
+        for ext in ("shp", "shx", "dbf"):
+            f = request.FILES.get(ext)
+            if not f:
+                return JsonResponse({"ok": False, "error": f"Falta el archivo .{ext}"}, status=400)
+            partes[ext] = f
+        try:
+            geojson_str, stats = procesar_shapefile_a_geojson(partes)
+        except Exception as e:
+            return JsonResponse({"ok": False, "error": f"Error procesando shapefile: {e}"}, status=400)
+
+        buf  = _io.BytesIO()
+        base = partes["shp"].name.rsplit(".", 1)[0]
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for ext, f in partes.items():
+                f.seek(0)
+                zf.writestr(f"{base}.{ext}", f.read())
+        buf.seek(0)
+        archivo_final = ContentFile(buf.read(), name=f"{base}.zip")
+        tipo_archivo  = "shapefile"
+
+    # ── Modo archivo único ───────────────────────────────────────────
+    else:
+        archivo = request.FILES.get("archivo")
+        if not archivo:
+            return JsonResponse({"ok": False, "error": "No se recibió ningún archivo"}, status=400)
+
+        nombre = archivo.name.lower()
+
+        if nombre.endswith(".zip"):
+            tipo_archivo = "shapefile"
+            try:
+                contenido = archivo.read()
+                with zipfile.ZipFile(_io.BytesIO(contenido)) as z:
+                    nombres_zip = z.namelist()
+                    shp_n = next((n for n in nombres_zip if n.lower().endswith(".shp")), None)
+                    shx_n = next((n for n in nombres_zip if n.lower().endswith(".shx")), None)
+                    dbf_n = next((n for n in nombres_zip if n.lower().endswith(".dbf")), None)
+                    if not all([shp_n, shx_n, dbf_n]):
+                        faltantes = [f".{e}" for e, n in [("shp", shp_n), ("shx", shx_n), ("dbf", dbf_n)] if not n]
+                        return JsonResponse({"ok": False, "error": f"El ZIP debe contener: {', '.join(faltantes)}"}, status=400)
+
+                    def _buf(name):
+                        data = z.read(name)
+                        b = _io.BytesIO(data)
+                        b.name = name
+                        b.chunks = lambda: [data]
+                        return b
+
+                    geojson_str, stats = procesar_shapefile_a_geojson(
+                        {"shp": _buf(shp_n), "shx": _buf(shx_n), "dbf": _buf(dbf_n)}
+                    )
+                archivo.seek(0)
+            except zipfile.BadZipFile:
+                return JsonResponse({"ok": False, "error": "El archivo ZIP está dañado"}, status=400)
+            except Exception as e:
+                return JsonResponse({"ok": False, "error": f"Error procesando shapefile: {e}"}, status=400)
+
+        elif nombre.endswith(".kml") or nombre.endswith(".kmz"):
+            tipo_archivo = "geojson"
+            try:
+                geojson_str, stats = procesar_kml_a_geojson(archivo)
+                archivo.seek(0)
+            except Exception as e:
+                return JsonResponse({"ok": False, "error": f"Error procesando KML: {e}"}, status=400)
+
+        elif nombre.endswith(".geojson") or nombre.endswith(".json"):
+            tipo_archivo = "geojson"
+            try:
+                geojson_str = archivo.read().decode("utf-8")
+                archivo.seek(0)
+            except Exception as e:
+                return JsonResponse({"ok": False, "error": f"Error leyendo GeoJSON: {e}"}, status=400)
+
+        else:
+            return JsonResponse({"ok": False, "error": "Formato no soportado. Usá ZIP, Shapefile, GeoJSON o KML"}, status=400)
+
+        archivo_final = archivo
+
+    # ── Calcular bbox y rasterizar si hay GeoJSON ─────────────────────
+    bbox_list    = None
+    leyenda      = []
+    estadisticas = {}
+    png_bytes    = None
+    png_name     = None
+
+    if geojson_str:
+        bbox_list = [
+            stats.get("bbox_min_lng"), stats.get("bbox_min_lat"),
+            stats.get("bbox_max_lng"), stats.get("bbox_max_lat"),
+        ]
+        gj = json.loads(geojson_str)
+        try:
+            gj, leyenda, estadisticas = colorear_geojson(gj)
+            png_bytes = rasterizar_a_png(gj, bbox_list)
+            base_name = archivo_final.name.rsplit(".", 1)[0] if hasattr(archivo_final, "name") else "cosecha"
+            png_name  = f"{base_name}.png"
+        except Exception as e:
+            print(f"    ERROR rasterizando cosecha: {e}")
+            png_bytes = None
+
+    registro = ArchivoAnalitico.objects.create(
+        campo        = campo,
+        variable     = variable,
+        archivo      = archivo_final,
+        tipo_archivo = tipo_archivo,
+        cargado_por  = request.user,
+        estado       = "procesado" if geojson_str else "pendiente",
+        bbox         = bbox_list,
+        leyenda      = leyenda or None,
+        estadisticas = estadisticas or None,
+    )
+
+    if geojson_str and png_bytes and png_name:
+        registro.imagen_png.save(png_name, ContentFile(png_bytes), save=True)
+
+    if not registro.imagen_png and geojson_str:
+        # Lanzar regeneración en background si la rasterización falló
+        threading.Thread(target=_regenerar_png_bg, args=(registro.id,), daemon=True).start()
+
+    respuesta = {"ok": True, "id": registro.id, "msg": "Archivo de cosecha procesado correctamente."}
+    if registro.imagen_png:
+        respuesta["imagen_url"]   = registro.imagen_png.url
+        respuesta["bbox"]         = bbox_list
+        respuesta["leyenda"]      = leyenda
+        respuesta["estadisticas"] = estadisticas
+    return JsonResponse(respuesta)
+
+
+@login_required
+def ajax_cosecha_archivos(request, campo_id):
+    """Lista los ArchivoAnalitico de cosecha para un campo."""
+    empresa  = request.user.profile.empresa
+    campo    = get_object_or_404(Campo, id=campo_id, empresa=empresa)
+    archivos = (
+        ArchivoAnalitico.objects
+        .filter(campo=campo, variable__tipo="cosecha")
+        .select_related("variable")
+        .order_by("-fecha_carga")
+    )
+    return JsonResponse({
+        "ok": True,
+        "archivos": [
+            {
+                "id":           a.id,
+                "nombre":       a.archivo.name.split("/")[-1],
+                "variable":     a.variable.nombre if a.variable else "Rendimiento",
+                "unidad":       a.variable.unidad if a.variable else "kg/ha",
+                "tipo":         a.tipo_archivo,
+                "estado":       a.estado,
+                "fecha":        a.fecha_carga.strftime("%d/%m/%Y"),
+                "imagen_url":   a.imagen_png.url if a.imagen_png else None,
+                "bbox":         a.bbox,
+                "leyenda":      a.leyenda,
+                "estadisticas": a.estadisticas,
+                "mapeable":     bool(a.imagen_png),
+            }
+            for a in archivos
+        ],
+    })
+
+
+@login_required
+@require_POST
+def ajax_cosecha_simular(request, campo_id):
+    """
+    Endpoint de prueba: registra el GeoJSON simulado de cosecha de IBICUI
+    como un ArchivoAnalitico y dispara la generación del PNG.
+    Solo para desarrollo.
+    """
+    empresa = request.user.profile.empresa
+    campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
+
+    ruta_sim = os.path.join(
+        settings.BASE_DIR, "staticfiles", "media",
+        "archivos_analiticos", "cosecha_simulada_IBICUI.geojson",
+    )
+    if not os.path.exists(ruta_sim):
+        return JsonResponse({"ok": False, "error": f"Archivo simulado no encontrado: {ruta_sim}"}, status=404)
+
+    variable = _get_or_create_variable_cosecha(empresa)
+
+    with open(ruta_sim, "r", encoding="utf-8") as fh:
+        geojson_str = fh.read()
+
+    gj        = json.loads(geojson_str)
+    features  = gj.get("features", [])
+    bbox_list = calcular_bbox(features)
+
+    try:
+        gj_col, leyenda, estadisticas = colorear_geojson(gj)
+        png_bytes = rasterizar_a_png(gj_col, bbox_list)
+        png_ok    = True
+    except Exception as e:
+        print(f"    ERROR rasterizando simulacion: {e}")
+        png_ok    = False
+        leyenda   = []
+        estadisticas = {}
+
+    archivo_content = ContentFile(geojson_str.encode("utf-8"), name="cosecha_simulada_IBICUI.geojson")
+    registro = ArchivoAnalitico.objects.create(
+        campo        = campo,
+        variable     = variable,
+        archivo      = archivo_content,
+        tipo_archivo = "geojson",
+        cargado_por  = request.user,
+        estado       = "procesado" if png_ok else "pendiente",
+        bbox         = bbox_list,
+        leyenda      = leyenda or None,
+        estadisticas = estadisticas or None,
+    )
+
+    if png_ok and png_bytes:
+        registro.imagen_png.save(f"cosecha_sim_{registro.id}.png", ContentFile(png_bytes), save=True)
+    else:
+        threading.Thread(target=_regenerar_png_bg, args=(registro.id,), daemon=True).start()
+
+    return JsonResponse({
+        "ok":          True,
+        "id":          registro.id,
+        "estado":      registro.estado,
+        "imagen_url":  registro.imagen_png.url if registro.imagen_png else None,
+        "bbox":        bbox_list,
+        "estadisticas": estadisticas,
+    })
+
+
+# =====================================================
+# AJAX — COMPARACIÓN (suelo + cosecha)
+# =====================================================
+
+def _archivo_a_dict_capa(a):
+    """Convierte un ArchivoAnalitico en el dict de capa para la vista de comparación."""
+    nombre_archivo  = a.archivo.name.split("/")[-1] if a.archivo else f"Archivo {a.id}"
+    variable_nombre = a.variable.nombre if a.variable else nombre_archivo
+    # archivos sin variable asignada provienen del flujo de suelo
+    variable_tipo   = a.variable.tipo if a.variable else "suelo"
+    return {
+        "id":             a.id,
+        "nombre":         variable_nombre,
+        "nombre_archivo": nombre_archivo,
+        "tipo":           variable_tipo,
+        "estado":         a.estado,
+        "fecha":          a.fecha_carga.strftime("%d/%m/%Y"),
+        "imagen_url":     a.imagen_png.url if a.imagen_png else None,
+        "bbox":           a.bbox,
+        "leyenda":        a.leyenda,
+        "estadisticas":   a.estadisticas,
+        "mapeable":       bool(a.imagen_png and a.bbox),
+    }
+
+
+def _ndvi_a_dict_capa(idx, campo):
+    """Convierte un IndiceVegetacion en el dict de capa para la vista de comparación."""
+    cap  = idx.captura
+    bbox = None
+    if campo.contorno:
+        try:
+            cont   = json.loads(campo.contorno) if isinstance(campo.contorno, str) else campo.contorno
+            coords = cont.get("coordinates", [[]])[0]
+            if coords:
+                lngs = [c[0] for c in coords]
+                lats = [c[1] for c in coords]
+                bbox = [min(lngs), min(lats), max(lngs), max(lats)]
+        except Exception:
+            pass
+    return {
+        "id":             f"ndvi_{idx.id}",
+        "nombre":         f"NDVI {cap.fecha}",
+        "nombre_archivo": f"Sentinel-2 {cap.fecha}",
+        "tipo":           "satelite",
+        "estado":         "procesado",
+        "fecha":          str(cap.fecha),
+        "imagen_url":     idx.imagen_png.url if idx.imagen_png else None,
+        "bbox":           bbox,
+        "leyenda":        None,
+        "estadisticas":   {"min": idx.minimo, "max": idx.maximo, "prom": idx.promedio},
+        "mapeable":       bool(idx.imagen_png and bbox),
+    }
+
+
+@login_required
+def vista_comparacion(request):
+    """Vista de comparación de capas — el campo se selecciona dinámicamente vía AJAX."""
+    empresa = request.user.profile.empresa
+    campos  = Campo.objects.filter(empresa=empresa).order_by("nombre")
+    return render(request, "temp_mapas/vista_comparacion.html", {
+        "campos": campos,
+    })
+
+
+@login_required
+def ajax_comparacion_capas(request, campo_id):
+    """GET — devuelve las capas disponibles (suelo + cosecha + NDVI) para un campo."""
+    empresa = request.user.profile.empresa
+    campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
+
+    archivos = (
+        ArchivoAnalitico.objects
+        .filter(campo=campo)
+        .select_related("variable")
+        .order_by("-fecha_carga")
+    )
+    indices_ndvi = (
+        IndiceVegetacion.objects
+        .filter(captura__campo=campo)
+        .exclude(imagen_png="")
+        .select_related("captura")
+        .order_by("-captura__fecha")
+    )
+    capas = (
+        [_archivo_a_dict_capa(a) for a in archivos] +
+        [_ndvi_a_dict_capa(idx, campo) for idx in indices_ndvi]
+    )
+
+    # El botón "simular cosecha" solo aparece si existe el archivo de demo para este campo
+    nombre_campo_slug = campo.nombre.upper().replace(" ", "_")
+    ruta_sim = os.path.join(
+        settings.BASE_DIR, "staticfiles", "media",
+        "archivos_analiticos", f"cosecha_simulada_{nombre_campo_slug}.geojson",
+    )
+    tiene_simulacion = os.path.exists(ruta_sim)
+
+    return JsonResponse({"ok": True, "capas": capas, "tiene_simulacion": tiene_simulacion})
+
+
+@login_required
+def ajax_comparacion_punto(request, campo_id):
+    """
+    GET ?lat=&lng=
+    Consulta TODOS los ArchivoAnalitico procesados de un campo en un punto
+    y devuelve {archivo_id: {nombre, variable, tipo, valor, props}} para cada uno.
+    """
+    empresa = request.user.profile.empresa
+    campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
+
+    try:
+        lat = float(request.GET.get("lat"))
+        lng = float(request.GET.get("lng"))
+    except (TypeError, ValueError):
+        return JsonResponse({"ok": False, "error": "lat/lng inválidos"}, status=400)
+
+    archivos = (
+        ArchivoAnalitico.objects
+        .filter(campo=campo, estado="procesado")
+        .select_related("variable")
+    )
+
+    resultados = {}
+    for a in archivos:
+        try:
+            if a.tipo_archivo == "shapefile":
+                contenido = a.archivo.read()
+                with zipfile.ZipFile(_io.BytesIO(contenido)) as z:
+                    nombres = z.namelist()
+                    shp_n   = next((n for n in nombres if n.lower().endswith(".shp")), None)
+                    shx_n   = next((n for n in nombres if n.lower().endswith(".shx")), None)
+                    dbf_n   = next((n for n in nombres if n.lower().endswith(".dbf")), None)
+                    if not all([shp_n, shx_n, dbf_n]):
+                        continue
+
+                    def _buf(name):
+                        data = z.read(name)
+                        b = _io.BytesIO(data); b.name = name; b.chunks = lambda: [data]; return b
+
+                    geojson_str, _ = procesar_shapefile_a_geojson(
+                        {"shp": _buf(shp_n), "shx": _buf(shx_n), "dbf": _buf(dbf_n)}
+                    )
+            elif a.tipo_archivo == "geojson":
+                geojson_str = a.archivo.read().decode("utf-8")
+            else:
+                continue
+
+            gj    = json.loads(geojson_str)
+            props = buscar_feature_en_punto(gj, lng, lat)
+            if props is None:
+                continue
+
+            props_clean = {k: v for k, v in props.items() if k not in ("color",)}
+
+            # Intentar extraer el valor numérico principal
+            valor = None
+            for key in ("v", "valor", "rendimiento", "value"):
+                if key in props_clean and isinstance(props_clean[key], (int, float)):
+                    valor = props_clean[key]
+                    break
+            if valor is None:
+                for v in props_clean.values():
+                    if isinstance(v, (int, float)):
+                        valor = v
+                        break
+
+            resultados[str(a.id)] = {
+                "nombre":   a.variable.nombre if a.variable else a.archivo.name.split("/")[-1],
+                "variable": a.variable.nombre if a.variable else None,
+                "tipo":     a.variable.tipo   if a.variable else "otro",
+                "valor":    valor,
+                "props":    props_clean,
+                "estadisticas": a.estadisticas,
+            }
+
+        except Exception as e:
+            print(f"    ajax_comparacion_punto: error en archivo {a.id}: {e}")
+            continue
+
+    return JsonResponse({
+        "ok":         True,
+        "lat":        lat,
+        "lng":        lng,
+        "resultados": resultados,
+    })

@@ -20,16 +20,19 @@ def _stooq_price(url):
         import requests, json
         r = requests.get(url, timeout=5)
         if r.status_code != 200:
-            return None
+            return None, None
         raw  = r.text.replace('"volume":}', '"volume": null}')
         data = json.loads(raw)
         syms = data.get("symbols", [])
         if not syms:
-            return None
-        close = syms[0].get("close")
-        return float(close) if close is not None else None
+            return None, None
+        sym   = syms[0]
+        close = sym.get("close")
+        open_ = sym.get("open")
+        return (float(close) if close is not None else None,
+                float(open_) if open_ is not None else None)
     except Exception:
-        return None
+        return None, None
 
 def _usd_brl():
     try:
@@ -44,43 +47,242 @@ def _usd_brl():
             timeout=5,
         )
         if r.status_code != 200:
-            return None, None
+            return None, None, None
         meta  = r.json()["chart"]["result"][0]["meta"]
         price = meta.get("regularMarketPrice")
-        ts    = meta.get("regularMarketTime")  # unix timestamp
+        prev  = meta.get("chartPreviousClose")
+        ts    = meta.get("regularMarketTime")
         fecha = None
         if ts:
             fecha = datetime.datetime.utcfromtimestamp(ts).strftime("%d/%m %H:%Mz")
-        return (round(float(price), 4) if price is not None else None), fecha
+        return (round(float(price), 4) if price is not None else None), prev, fecha
     except Exception:
-        return None, None
+        return None, None, None
 
-def _cents_to_usd_ton(cents):
-    if cents is None:
-        return None
-    return round(cents / 100 * 36.744, 2)  # 1 bushel soja ≈ 27.2155 kg → 1000/27.2155 ≈ 36.74
+def _trend(close, ref):
+    if close is None or ref is None or ref == 0:
+        return None, None
+    pct = (close - ref) / ref * 100
+    direction = "up" if pct > 0.01 else ("down" if pct < -0.01 else "flat")
+    return direction, round(abs(pct), 2)
 
 def ajax_cotizaciones(request):
-    soja_c  = _stooq_price(_STOOQ["soja"])
-    maiz_c  = _stooq_price(_STOOQ["maiz"])
-    trigo_c = _stooq_price(_STOOQ["trigo"])
-    usd, usd_fecha = _usd_brl()
+    soja_c,  soja_o  = _stooq_price(_STOOQ["soja"])
+    maiz_c,  maiz_o  = _stooq_price(_STOOQ["maiz"])
+    trigo_c, trigo_o = _stooq_price(_STOOQ["trigo"])
+    usd, usd_prev, usd_fecha = _usd_brl()
 
-    def fmt(cents, kg_bushel):
+    def fmt(cents, ref_cents, kg_bushel):
         if cents is None:
             return None
         usd_bushel = cents / 100
         usd_ton    = round(usd_bushel / kg_bushel * 1000, 2)
         brl_saca   = round(usd_bushel * (60 / kg_bushel) * usd, 2) if usd else None
-        return {"usd_ton": usd_ton, "brl_saca": brl_saca}
+        direction, pct = _trend(cents, ref_cents)
+        return {"usd_ton": usd_ton, "brl_saca": brl_saca, "trend": direction, "pct": pct}
 
+    usd_direction, usd_pct = _trend(usd, usd_prev)
     return JsonResponse({
-        "soja":      fmt(soja_c,  27.2155),
-        "maiz":      fmt(maiz_c,  25.4012),
-        "trigo":     fmt(trigo_c, 27.2155),
+        "soja":      fmt(soja_c,  soja_o,  27.2155),
+        "maiz":      fmt(maiz_c,  maiz_o,  25.4012),
+        "trigo":     fmt(trigo_c, trigo_o, 27.2155),
         "usd_brl":   usd,
+        "usd_trend": usd_direction,
+        "usd_pct":   usd_pct,
         "usd_fecha": usd_fecha,
     })
+
+
+@login_required
+def ajax_dashboard_resumen(request):
+    import datetime
+    from decimal import Decimal
+    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+    from django.db.models.functions import Coalesce
+    from gestion_agro.models import FacturaCompra
+    from administracion.models import FacturaVenta, AplicacionRecibo
+
+    empresa = getattr(request.user.profile, "empresa", None)
+    if not empresa:
+        return JsonResponse({"ok": False})
+
+    hoy  = datetime.date.today()
+    en30 = hoy + datetime.timedelta(days=30)
+
+    a_pagar     = Decimal("0")
+    pagar_30d   = Decimal("0")
+    for f in FacturaCompra.objects.filter(empresa=empresa).prefetch_related("aplicaciones"):
+        pagado = f.aplicaciones.aggregate(t=Coalesce(Sum("monto_aplicado"), Decimal("0")))["t"]
+        saldo  = f.total - pagado
+        if saldo <= 0:
+            continue
+        a_pagar += saldo
+        if f.fecha_vencimiento and hoy <= f.fecha_vencimiento <= en30:
+            pagar_30d += saldo
+
+    a_cobrar    = Decimal("0")
+    cobrar_30d  = Decimal("0")
+    expr = ExpressionWrapper(F("cantidad") * F("precio_unitario"), output_field=DecimalField())
+    for fv in FacturaVenta.objects.filter(empresa=empresa).prefetch_related("items", "aplicaciones"):
+        total_fv = fv.items.aggregate(t=Coalesce(Sum(expr), Decimal("0")))["t"]
+        cobrado  = fv.aplicaciones.aggregate(t=Coalesce(Sum("monto_aplicado"), Decimal("0")))["t"]
+        saldo    = total_fv - cobrado
+        if saldo <= 0:
+            continue
+        a_cobrar += saldo
+        if fv.fecha_vencimiento and hoy <= fv.fecha_vencimiento <= en30:
+            cobrar_30d += saldo
+
+    return JsonResponse({
+        "ok":         True,
+        "a_cobrar":   float(a_cobrar),
+        "a_pagar":    float(a_pagar),
+        "saldo_neto": float(a_cobrar - a_pagar),
+        "proyeccion": float(cobrar_30d - pagar_30d),
+    })
+
+
+@login_required
+def ajax_dashboard_calendario(request):
+    import datetime
+    from decimal import Decimal
+    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+    from django.db.models.functions import Coalesce, TruncMonth, TruncWeek
+    from gestion_agro.models import FacturaCompra
+    from administracion.models import FacturaVentaItem
+
+    empresa = getattr(request.user.profile, "empresa", None)
+    if not empresa:
+        return JsonResponse({"ok": False})
+
+    hoy  = datetime.date.today()
+    modo = request.GET.get("modo", "mensual")
+    expr = ExpressionWrapper(F("cantidad") * F("precio_unitario"), output_field=DecimalField())
+
+    if modo == "semanal":
+        year  = int(request.GET.get("year",  hoy.year))
+        month = int(request.GET.get("month", hoy.month))
+        inicio = datetime.date(year, month, 1)
+        if month == 12:
+            fim = datetime.date(year + 1, 1, 1) - datetime.timedelta(days=1)
+        else:
+            fim = datetime.date(year, month + 1, 1) - datetime.timedelta(days=1)
+
+        pagos_qs = (
+            FacturaCompra.objects
+            .filter(empresa=empresa, fecha__gte=inicio, fecha__lte=fim)
+            .annotate(semana=TruncWeek("fecha"))
+            .values("semana")
+            .annotate(total=Coalesce(Sum("total"), Decimal("0")))
+            .order_by("semana")
+        )
+        cobros_qs = (
+            FacturaVentaItem.objects
+            .filter(factura__empresa=empresa, factura__fecha__gte=inicio, factura__fecha__lte=fim)
+            .annotate(semana=TruncWeek("factura__fecha"))
+            .values("semana")
+            .annotate(total=Coalesce(Sum(expr), Decimal("0")))
+            .order_by("semana")
+        )
+        pagos_dict  = {r["semana"].strftime("%d/%m"): float(r["total"]) for r in pagos_qs  if r["semana"]}
+        cobros_dict = {r["semana"].strftime("%d/%m"): float(r["total"]) for r in cobros_qs if r["semana"]}
+        labels = sorted(set(list(pagos_dict) + list(cobros_dict)))
+        return JsonResponse({
+            "ok": True, "modo": "semanal", "labels": labels,
+            "pagos":  [pagos_dict.get(l, 0)  for l in labels],
+            "cobros": [cobros_dict.get(l, 0) for l in labels],
+        })
+
+    # ── mensual: últimos 12 meses ─────────────────────────────
+    inicio = (hoy - datetime.timedelta(days=365)).replace(day=1)
+    pagos_qs = (
+        FacturaCompra.objects
+        .filter(empresa=empresa, fecha__gte=inicio)
+        .annotate(mes=TruncMonth("fecha"))
+        .values("mes")
+        .annotate(total=Coalesce(Sum("total"), Decimal("0")))
+        .order_by("mes")
+    )
+    cobros_qs = (
+        FacturaVentaItem.objects
+        .filter(factura__empresa=empresa, factura__fecha__gte=inicio)
+        .annotate(mes=TruncMonth("factura__fecha"))
+        .values("mes")
+        .annotate(total=Coalesce(Sum(expr), Decimal("0")))
+        .order_by("mes")
+    )
+    pagos_dict  = {r["mes"].strftime("%m/%Y"): float(r["total"]) for r in pagos_qs  if r["mes"]}
+    cobros_dict = {r["mes"].strftime("%m/%Y"): float(r["total"]) for r in cobros_qs if r["mes"]}
+
+    labels = []
+    cur = inicio
+    while cur <= hoy:
+        labels.append(cur.strftime("%m/%Y"))
+        cur = cur.replace(month=cur.month % 12 + 1, year=cur.year + (1 if cur.month == 12 else 0))
+
+    return JsonResponse({
+        "ok": True, "modo": "mensual", "labels": labels,
+        "pagos":  [pagos_dict.get(l, 0)  for l in labels],
+        "cobros": [cobros_dict.get(l, 0) for l in labels],
+    })
+
+
+@login_required
+def ajax_dashboard_vencimientos(request):
+    import datetime
+    from decimal import Decimal
+    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+    from django.db.models.functions import Coalesce
+    from gestion_agro.models import FacturaCompra
+    from administracion.models import FacturaVenta
+
+    empresa = getattr(request.user.profile, "empresa", None)
+    if not empresa:
+        return JsonResponse({"ok": False})
+
+    hoy  = datetime.date.today()
+    dias = int(request.GET.get("dias", 30))
+    fin  = hoy + datetime.timedelta(days=dias)
+    expr = ExpressionWrapper(F("cantidad") * F("precio_unitario"), output_field=DecimalField())
+
+    items = []
+    for f in (FacturaCompra.objects
+              .filter(empresa=empresa, fecha_vencimiento__gte=hoy, fecha_vencimiento__lte=fin)
+              .prefetch_related("aplicaciones")
+              .select_related("proveedor")):
+        pagado = f.aplicaciones.aggregate(t=Coalesce(Sum("monto_aplicado"), Decimal("0")))["t"]
+        saldo  = f.total - pagado
+        if saldo <= 0:
+            continue
+        items.append({
+            "tipo":    "pagar",
+            "entidad": str(f.proveedor),
+            "numero":  f.numero,
+            "fecha":   f.fecha_vencimiento.strftime("%d/%m/%Y"),
+            "dias":    (f.fecha_vencimiento - hoy).days,
+            "monto":   float(saldo),
+        })
+
+    for fv in (FacturaVenta.objects
+               .filter(empresa=empresa, fecha_vencimiento__gte=hoy, fecha_vencimiento__lte=fin)
+               .prefetch_related("items", "aplicaciones")
+               .select_related("cliente")):
+        total_fv = fv.items.aggregate(t=Coalesce(Sum(expr), Decimal("0")))["t"]
+        cobrado  = fv.aplicaciones.aggregate(t=Coalesce(Sum("monto_aplicado"), Decimal("0")))["t"]
+        saldo    = total_fv - cobrado
+        if saldo <= 0:
+            continue
+        items.append({
+            "tipo":    "cobrar",
+            "entidad": str(fv.cliente),
+            "numero":  fv.numero,
+            "fecha":   fv.fecha_vencimiento.strftime("%d/%m/%Y"),
+            "dias":    (fv.fecha_vencimiento - hoy).days,
+            "monto":   float(saldo),
+        })
+
+    items.sort(key=lambda x: x["dias"])
+    return JsonResponse({"ok": True, "items": items})
 
 
 def login_page(request):

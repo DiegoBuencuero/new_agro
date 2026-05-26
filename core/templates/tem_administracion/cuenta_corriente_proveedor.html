@@ -3,360 +3,555 @@
 
 {% block plugin_css %}
 <style>
-/* ── Stat cards — neutras ── */
-.cc-stat {
-    border-radius:.75rem; padding:1.1rem 1.4rem;
-    background:#fff; border:1px solid #e9ecef;
-    box-shadow:none;
-}
-.cc-stat .cc-lbl {
-    font-size:.68rem; font-weight:600; text-transform:uppercase;
-    letter-spacing:.06em; color:#9ca3af; margin-bottom:.4rem;
-}
+.cc-stat { border-radius:.75rem; padding:1.1rem 1.4rem; background:#fff; border:1px solid #e9ecef; }
+.cc-stat .cc-lbl { font-size:.68rem; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:#9ca3af; margin-bottom:.4rem; }
 .cc-stat .cc-val { font-size:1.5rem; font-weight:700; color:#111827; line-height:1.1; }
 .cc-stat .cc-val.muted { color:#6b7280; font-size:1.15rem; }
 
-/* ── Filtros / tabla ── */
-.cc-filtros { border-radius:.75rem; border:1px solid #e9ecef; box-shadow:none; }
-
+.cc-filtros { border-radius:.75rem; border:1px solid #e9ecef; }
 .cc-table thead th {
     font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
     color:#9ca3af; background:#fafafa; border-bottom:1px solid #e9ecef;
     padding:.7rem 1rem; white-space:nowrap;
 }
-.cc-table tbody tr.fila-principal { border-bottom:1px solid #f3f4f6; cursor:pointer; transition:background .1s; }
+.cc-table tbody tr.fila-principal { border-bottom:1px solid #f3f4f6; cursor:pointer; }
 .cc-table tbody tr.fila-principal:hover { background:#fafafa; }
-.cc-table tbody td { font-size:.83rem; color:#374151; padding:.75rem 1rem; vertical-align:middle; }
-
-/* ── Expandible ── */
+.cc-table tbody td { font-size:.83rem; color:#374151; padding:.7rem 1rem; vertical-align:middle; }
 tr.fila-detalle td { padding:0 !important; border-bottom:1px solid #e9ecef; }
-.detalle-inner { background:#fafafa; border-top:1px solid #e9ecef; padding:.65rem 1rem .65rem 3.2rem; }
+.detalle-inner { background:#fafafa; border-top:1px solid #e9ecef; padding:.65rem 1rem .65rem 3rem; }
 .detalle-inner .tbl-comp { width:100%; border-collapse:collapse; }
-.detalle-inner .tbl-comp th {
-    font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
-    color:#b0b8c1; padding:.35rem .7rem; border-bottom:1px solid #e9ecef; background:transparent;
-}
+.detalle-inner .tbl-comp th { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#b0b8c1; padding:.35rem .7rem; border-bottom:1px solid #e9ecef; }
 .detalle-inner .tbl-comp td { font-size:.8rem; padding:.4rem .7rem; color:#6b7280; border-bottom:1px solid #f3f4f6; }
-.detalle-inner .tbl-comp tr:last-child td { border-bottom:none; }
-.detalle-inner .sin-comp { font-size:.78rem; color:#b0b8c1; font-style:italic; padding:.4rem 0; }
+.detalle-inner .sin-comp { font-size:.78rem; color:#b0b8c1; font-style:italic; }
 
-/* ── Badges ── */
-.est-badge { display:inline-block; font-size:.69rem; font-weight:600; padding:.22rem .6rem; border-radius:2rem; letter-spacing:.02em; }
+.est-badge { display:inline-block; font-size:.69rem; font-weight:600; padding:.22rem .6rem; border-radius:2rem; }
 .est-pagada    { background:#f0fdf4; color:#4b7a60; border:1px solid #d1e7dd; }
 .est-pendiente { background:#fafafa; color:#8a6d3b; border:1px solid #e9ecef; }
 .est-vencida   { background:#fff5f5; color:#9b4545; border:1px solid #f5c6cb; }
 
-/* ── Botones ── */
-.chevron-icon { transition:transform .2s; color:#ced4da; }
-.chevron-icon.open { transform:rotate(180deg); }
+.cc-chk { width:16px; height:16px; accent-color:#16a34a; cursor:pointer; }
+tr.seleccionada td { background:#f0fdf4 !important; }
 
-.btn-pagar {
-    font-size:.73rem; font-weight:600; padding:.24rem .75rem; border-radius:2rem;
-    border:1px solid #ced4da; color:#6b7280; background:#fff;
-    transition:all .15s; white-space:nowrap; cursor:pointer;
+/* Barra de acción — sticky sobre la tabla */
+#barra-accion {
+    position: sticky; top: 0; z-index: 200;
+    display: flex; align-items: center; gap: .75rem;
+    padding: .6rem 1rem;
+    border-radius: .75rem .75rem 0 0;
+    background: #f8fafc;
+    border-bottom: 1px solid #e9ecef;
+    transition: background .2s, box-shadow .2s;
+    min-height: 48px;
 }
-.btn-pagar:hover { border-color:#198754; color:#198754; background:#f0fdf4; }
+#barra-accion.tiene-seleccion {
+    background: #f0fdf4;
+    border-bottom-color: #bbf7d0;
+    box-shadow: 0 2px 12px rgba(22,163,74,.08);
+}
+#barra-accion .accion-default { display:flex; align-items:center; gap:.5rem; }
+#barra-accion .accion-pago    { display:none; align-items:center; gap:.75rem; width:100%; }
+#barra-accion.tiene-seleccion .accion-default { display:none; }
+#barra-accion.tiene-seleccion .accion-pago    { display:flex; }
+
+/* Modal factura row */
+.modal-fila-fc { padding: .5rem 0; border-bottom: 1px solid #f3f4f6; }
+.modal-fila-fc:last-child { border-bottom: none; }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid pb-5">
+<div class="container-fluid pb-4">
 
-    <div class="d-flex align-items-center justify-content-between mb-4 pt-2">
-        <div>
-            <h4 class="mb-0 fw-bold" style="color:#111827">
-                <i class="mdi mdi-account-cash me-2 text-muted"></i>
-                {% translate "Cuenta corriente — Proveedores" %}
-            </h4>
-            <div class="text-muted small mt-1">{% translate "Seguimiento de facturas y pagos por proveedor" %}</div>
+  <div class="d-flex align-items-center justify-content-between mb-4 pt-2">
+    <div>
+      <h4 class="mb-0 fw-bold" style="color:#111827">
+        <i class="mdi mdi-account-cash me-2 text-muted"></i>
+        {% translate "Cuenta corriente — Proveedores" %}
+      </h4>
+      <div class="text-muted small mt-1">{% translate "Seguimiento de facturas y pagos por proveedor" %}</div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card cc-filtros mb-4">
+    <div class="card-body">
+      <form method="get">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold" style="font-size:.78rem;color:#374151">{% translate "Proveedor" %}</label>
+            <select name="proveedor" class="form-select form-select-sm">
+              <option value="">{% translate "Todos" %}</option>
+              {% for p in proveedores %}
+              <option value="{{ p.id }}" {% if proveedor_id == p.id|stringformat:'s' %}selected{% endif %}>{{ p.razon_social }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold" style="font-size:.78rem;color:#374151">{% translate "Desde" %}</label>
+            <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold" style="font-size:.78rem;color:#374151">{% translate "Hasta" %}</label>
+            <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold" style="font-size:.78rem;color:#374151">{% translate "Estado" %}</label>
+            <select name="estado" class="form-select form-select-sm">
+              <option value="">{% translate "Todos" %}</option>
+              <option value="pendiente" {% if estado_filtro == 'pendiente' %}selected{% endif %}>{% translate "Pendiente" %}</option>
+              <option value="vencida"   {% if estado_filtro == 'vencida'   %}selected{% endif %}>{% translate "Vencida" %}</option>
+              <option value="pagada"    {% if estado_filtro == 'pagada'    %}selected{% endif %}>{% translate "Pagada" %}</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-success btn-sm flex-fill">
+              <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
+            </button>
+            <a href="{% url 'vista_cuenta_corriente_proveedor' %}" class="btn btn-outline-secondary btn-sm px-3">{% translate "Limpiar" %}</a>
+          </div>
         </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="cc-stat">
+        <div class="cc-lbl">{% translate "Deuda total pendiente" %}</div>
+        <div class="cc-val">R$ {{ total_deuda|floatformat:2 }}</div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="cc-stat">
+        <div class="cc-lbl">{% translate "Facturas por pagar" %}</div>
+        <div class="cc-val">
+          {{ cant_pendientes }}
+          {% if cant_vencidas > 0 %}
+          <span style="font-size:.75rem;font-weight:600;color:#dc2626;margin-left:.4rem">
+            <i class="mdi mdi-alert-circle" style="font-size:.85rem"></i>
+            {{ cant_vencidas }} {% translate "vencida(s)" %}
+          </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="cc-stat">
+        <div class="cc-lbl">{% translate "Próximo vencimiento" %}</div>
+        <div class="cc-val muted">{% if prox_vencimiento %}{{ prox_vencimiento|date:"d/m/Y" }}{% else %}—{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla + barra de acción integrada -->
+  <div class="card" style="border-radius:.875rem;border:none;box-shadow:0 1px 6px rgba(0,0,0,.07)">
+
+    <!-- Barra de acción sticky -->
+    <div id="barra-accion">
+      <!-- Estado: sin selección -->
+      <div class="accion-default">
+        {% if filas %}
+        <button class="btn btn-outline-success btn-sm" onclick="seleccionarPendientes()">
+          <i class="mdi mdi-checkbox-multiple-marked-outline me-1"></i>{% translate "Seleccionar pendientes" %}
+        </button>
+        {% endif %}
+      </div>
+      <!-- Estado: con selección -->
+      <div class="accion-pago">
+        <div style="display:flex;flex-direction:column;line-height:1.2">
+          <span id="barra-texto" style="font-size:.72rem;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.04em"></span>
+          <span id="barra-total" style="font-size:1.05rem;font-weight:700;color:#15803d"></span>
+        </div>
+        <button class="btn btn-success btn-sm px-4 ms-auto" style="font-weight:600;border-radius:.5rem" onclick="abrirModalPago()">
+          <i class="mdi mdi-cash-check me-1"></i>{% translate "Pagar" %}
+        </button>
+        <button class="btn btn-sm" style="color:#9ca3af;background:none;border:1px solid #e5e7eb;border-radius:.4rem;padding:.3rem .5rem" onclick="deseleccionarTodo()" title="{% translate "Cancelar selección" %}">
+          <i class="mdi mdi-close"></i>
+        </button>
+      </div>
     </div>
 
-    {# ── Filtros ── #}
-    <div class="card cc-filtros mb-4">
-        <div class="card-body">
-            <form method="get">
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold" style="font-size:.78rem;color:#374151">{% translate "Proveedor" %}</label>
-                        <select name="proveedor" class="form-select form-select-sm">
-                            <option value="">{% translate "Todos" %}</option>
-                            {% for p in proveedores %}
-                            <option value="{{ p.id }}" {% if proveedor_id == p.id|stringformat:'s' %}selected{% endif %}>{{ p.razon_social }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold" style="font-size:.78rem;color:#374151">{% translate "Desde" %}</label>
-                        <input type="date" name="fecha_desde" value="{{ fecha_desde }}" class="form-control form-control-sm">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold" style="font-size:.78rem;color:#374151">{% translate "Hasta" %}</label>
-                        <input type="date" name="fecha_hasta" value="{{ fecha_hasta }}" class="form-control form-control-sm">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label fw-semibold" style="font-size:.78rem;color:#374151">{% translate "Estado" %}</label>
-                        <select name="estado" class="form-select form-select-sm">
-                            <option value="">{% translate "Todos" %}</option>
-                            <option value="pendiente" {% if estado_filtro == 'pendiente' %}selected{% endif %}>{% translate "Pendiente" %}</option>
-                            <option value="vencida"   {% if estado_filtro == 'vencida'   %}selected{% endif %}>{% translate "Vencida" %}</option>
-                            <option value="pagada"    {% if estado_filtro == 'pagada'    %}selected{% endif %}>{% translate "Pagada" %}</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3 d-flex gap-2">
-                        <button type="submit" class="btn btn-success btn-sm flex-fill">
-                            <i class="mdi mdi-filter me-1"></i>{% translate "Filtrar" %}
-                        </button>
-                        <a href="{% url 'vista_cuenta_corriente_proveedor' %}" class="btn btn-outline-secondary btn-sm px-3">{% translate "Limpiar" %}</a>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
+    <div class="card-body p-0">
+      {% if filas %}
+      <div class="table-responsive">
+      <table class="table cc-table mb-0">
+        <thead>
+          <tr>
+            <th style="width:2.5rem"></th>
+            <th style="width:2.5rem">
+              <input type="checkbox" class="cc-chk" id="chk-todos" onchange="toggleTodos(this)" title="{% translate "Seleccionar todos" %}">
+            </th>
+            <th>{% translate "Proveedor" %}</th>
+            <th>{% translate "N° Factura" %}</th>
+            <th>{% translate "Fecha" %}</th>
+            <th>{% translate "Vencimiento" %}</th>
+            <th class="text-end">{% translate "Total" %}</th>
+            <th class="text-end">{% translate "Pagado" %}</th>
+            <th class="text-end">{% translate "Saldo" %}</th>
+            <th class="text-center">{% translate "Estado" %}</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for f in filas %}
+        <tr class="fila-principal" id="fila-{{ f.obj.id }}"
+            onclick="toggleDetalle('det-{{ f.obj.id }}', this)">
+          <td class="text-center ps-3">
+            <i class="mdi mdi-chevron-down" id="chev-{{ f.obj.id }}"
+               style="transition:transform .2s;color:#ced4da;font-size:1rem"></i>
+          </td>
+          <td onclick="event.stopPropagation()">
+            {% if f.estado != 'pagada' %}
+            <input type="checkbox" class="cc-chk chk-factura"
+                   id="chk-{{ f.obj.id }}"
+                   data-id="{{ f.obj.id }}"
+                   data-saldo="{{ f.saldo }}"
+                   data-numero="{{ f.obj.numero }}"
+                   data-proveedor-id="{{ f.obj.proveedor.id }}"
+                   data-proveedor="{{ f.obj.proveedor.razon_social }}"
+                   data-estado="{{ f.estado }}"
+                   onchange="actualizarBarra()">
+            {% endif %}
+          </td>
+          <td class="fw-semibold" style="color:#111827">{{ f.obj.proveedor.razon_social }}</td>
+          <td style="font-family:monospace;color:#4b5563">{{ f.obj.numero }}</td>
+          <td style="color:#6b7280">{{ f.obj.fecha|date:"d/m/Y" }}</td>
+          <td>
+            {% if f.obj.fecha_vencimiento %}
+              <span style="color:{% if f.estado == 'vencida' %}#dc2626;font-weight:600{% else %}#6b7280{% endif %}">
+                {% if f.estado == 'vencida' %}<i class="mdi mdi-alert" style="font-size:.8rem"></i> {% endif %}
+                {{ f.obj.fecha_vencimiento|date:"d/m/Y" }}
+              </span>
+            {% else %}<span style="color:#d1d5db">—</span>{% endif %}
+          </td>
+          <td class="text-end fw-semibold">R$ {{ f.total|floatformat:2 }}</td>
+          <td class="text-end text-muted">R$ {{ f.pagado|floatformat:2 }}</td>
+          <td class="text-end fw-semibold {% if f.saldo > 0 %}text-danger{% endif %}">
+            R$ {{ f.saldo|floatformat:2 }}
+          </td>
+          <td class="text-center">
+            {% if f.estado == 'pagada' %}
+              <span class="est-badge est-pagada">{% translate "Pagada" %}</span>
+            {% elif f.estado == 'vencida' %}
+              <span class="est-badge est-vencida">{% translate "Vencida" %}</span>
+            {% else %}
+              <span class="est-badge est-pendiente">{% translate "Pendiente" %}</span>
+            {% endif %}
+          </td>
+        </tr>
 
-    {# ── Cards resumen ── #}
-    <div class="row g-3 mb-4">
-        <div class="col-md-4">
-            <div class="cc-stat">
-                <div class="cc-lbl">{% translate "Deuda total pendiente" %}</div>
-                <div class="cc-val">${{ total_deuda|floatformat:2 }}</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="cc-stat">
-                <div class="cc-lbl">{% translate "Facturas vencidas" %}</div>
-                <div class="cc-val {% if cant_vencidas > 0 %}text-danger{% endif %}">{{ cant_vencidas }}</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="cc-stat">
-                <div class="cc-lbl">{% translate "Próximo vencimiento" %}</div>
-                <div class="cc-val muted">{% if prox_vencimiento %}{{ prox_vencimiento|date:"d/m/Y" }}{% else %}—{% endif %}</div>
-            </div>
-        </div>
-    </div>
-
-    {# ── Tabla ── #}
-    <div class="card" style="border-radius:.875rem;border:none;box-shadow:0 1px 6px rgba(0,0,0,.07)">
-        <div class="card-body p-0">
-            {% if filas %}
-            <div class="table-responsive">
-            <table class="table cc-table mb-0">
+        <!-- Detalle pagos anteriores -->
+        <tr class="fila-detalle" id="det-{{ f.obj.id }}" style="display:none">
+          <td colspan="10">
+            <div class="detalle-inner">
+              {% if f.comprobantes %}
+              <table class="tbl-comp">
                 <thead>
-                    <tr>
-                        <th style="width:2.5rem"></th>
-                        <th style="width:30%">{% translate "Proveedor" %}</th>
-                        <th>{% translate "N° Factura" %}</th>
-                        <th>{% translate "Fecha" %}</th>
-                        <th>{% translate "Vencimiento" %}</th>
-                        <th class="text-end">{% translate "Total" %}</th>
-                        <th class="text-end">{% translate "Pagado" %}</th>
-                        <th class="text-end">{% translate "Saldo" %}</th>
-                        <th class="text-center">{% translate "Estado" %}</th>
-                        <th class="text-center" style="width:110px">{% translate "Acción" %}</th>
-                    </tr>
+                  <tr>
+                    <th>{% translate "Comprobante" %}</th>
+                    <th>{% translate "Fecha" %}</th>
+                    <th class="text-end">{% translate "Monto aplicado" %}</th>
+                    <th></th>
+                  </tr>
                 </thead>
                 <tbody>
-                {% for f in filas %}
-
-                {# ── Fila principal ── #}
-                <tr class="fila-principal" onclick="toggleDetalle('det-{{ f.obj.id }}', this)">
-                    <td class="text-center ps-3">
-                        <i class="mdi mdi-chevron-down chevron-icon" id="chev-det-{{ f.obj.id }}"></i>
-                    </td>
-                    <td class="fw-semibold" style="color:#111827">{{ f.obj.proveedor.razon_social }}</td>
-                    <td style="font-family:monospace;color:#4b5563">{{ f.obj.numero }}</td>
-                    <td style="color:#6b7280">{{ f.obj.fecha|date:"d/m/Y" }}</td>
-                    <td>
-                        {% if f.obj.fecha_vencimiento %}
-                            <span style="color:{% if f.estado == 'vencida' %}#dc2626;font-weight:600{% else %}#6b7280{% endif %}">
-                                {% if f.estado == 'vencida' %}<i class="mdi mdi-alert" style="font-size:.8rem"></i> {% endif %}
-                                {{ f.obj.fecha_vencimiento|date:"d/m/Y" }}
-                            </span>
-                        {% else %}<span style="color:#d1d5db">—</span>{% endif %}
-                    </td>
-                    <td class="text-end fw-semibold">${{ f.total|floatformat:2 }}</td>
-                    <td class="text-end text-muted">${{ f.pagado|floatformat:2 }}</td>
-                    <td class="text-end fw-semibold {% if f.saldo > 0 %}text-danger{% endif %}">
-                        ${{ f.saldo|floatformat:2 }}
-                    </td>
-                    <td class="text-center">
-                        {% if f.estado == 'pagada' %}
-                            <span class="est-badge est-pagada">{% translate "Pagada" %}</span>
-                        {% elif f.estado == 'vencida' %}
-                            <span class="est-badge est-vencida">{% translate "Vencida" %}</span>
-                        {% else %}
-                            <span class="est-badge est-pendiente">{% translate "Pendiente" %}</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center" onclick="event.stopPropagation()">
-                        {% if f.estado != 'pagada' %}
-                        <button class="btn-pagar {% if f.estado == 'vencida' %}vencida{% endif %}"
-                            onclick="abrirPago({{ f.obj.id }}, {{ f.obj.proveedor.id }}, '{{ f.obj.proveedor.razon_social }}', '{{ f.obj.numero }}', {{ f.saldo }})">
-                            <i class="mdi mdi-cash me-1"></i>{% translate "Pagar" %}
-                        </button>
-                        {% endif %}
-                    </td>
+                {% for comp in f.comprobantes %}
+                <tr>
+                  <td><i class="mdi mdi-receipt me-1" style="color:#9ca3af"></i>OP-{{ comp.numero|stringformat:"05d" }}</td>
+                  <td>{{ comp.fecha|date:"d/m/Y" }}</td>
+                  <td class="text-end fw-semibold" style="color:#059669">R$ {{ comp.monto|floatformat:2 }}</td>
+                  <td>
+                    <a href="{% url 'vista_comprobante_pago' comp.pago_id %}"
+                       class="btn btn-link btn-sm p-0" style="font-size:.78rem"
+                       title="{% translate "Ver comprobante" %}">
+                      <i class="mdi mdi-printer-outline"></i>
+                    </a>
+                  </td>
                 </tr>
-
-                {# ── Fila detalle (oculta) ── #}
-                <tr class="fila-detalle" id="det-{{ f.obj.id }}" style="display:none">
-                    <td colspan="10">
-                        <div class="detalle-inner">
-                            {% if f.comprobantes %}
-                            <table class="tbl-comp">
-                                <thead>
-                                    <tr>
-                                        <th>{% translate "Comprobante #" %}</th>
-                                        <th>{% translate "Fecha de pago" %}</th>
-                                        <th class="text-end">{% translate "Monto aplicado" %}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                {% for comp in f.comprobantes %}
-                                <tr>
-                                    <td><i class="mdi mdi-receipt me-1" style="color:#9ca3af"></i>Pago #{{ comp.numero }}</td>
-                                    <td style="color:#6b7280">{{ comp.fecha|date:"d/m/Y H:i" }}</td>
-                                    <td class="text-end fw-semibold" style="color:#059669">${{ comp.monto|floatformat:2 }}</td>
-                                </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
-                            {% else %}
-                            <div class="sin-comp">
-                                <i class="mdi mdi-information-outline me-1"></i>{% translate "Sin pagos registrados aún." %}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </td>
-                </tr>
-
                 {% endfor %}
                 </tbody>
-            </table>
+              </table>
+              {% else %}
+              <div class="sin-comp">
+                <i class="mdi mdi-information-outline me-1"></i>{% translate "Sin pagos registrados aún." %}
+              </div>
+              {% endif %}
             </div>
-            {% else %}
-            <div class="text-center py-5" style="color:#9ca3af">
-                <i class="mdi mdi-file-search-outline" style="font-size:3rem;display:block;margin-bottom:.75rem"></i>
-                <div class="fw-semibold">{% translate "Sin resultados" %}</div>
-                <div class="small mt-1">{% translate "No hay facturas con los filtros aplicados." %}</div>
-            </div>
-            {% endif %}
-        </div>
+          </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5" style="color:#9ca3af">
+        <i class="mdi mdi-file-search-outline" style="font-size:3rem;display:block;margin-bottom:.75rem"></i>
+        <div class="fw-semibold">{% translate "Sin resultados" %}</div>
+        <div class="small mt-1">{% translate "No hay facturas con los filtros aplicados." %}</div>
+      </div>
+      {% endif %}
     </div>
+  </div>
+
 </div>
 
-{# ── Toast ── #}
-<div class="position-fixed top-0 end-0 p-3" style="z-index:9999">
-    <div id="toast-pago" class="toast align-items-center border-0 text-white" data-bs-autohide="true" data-bs-delay="3000">
-        <div class="d-flex">
-            <div class="toast-body fw-semibold" id="toast-pago-msg"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    </div>
-</div>
-
-{# ── Modal pago ── #}
+<!-- ═══ Modal pago ═══ -->
 <div class="modal fade" id="modalPago" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content" style="border-radius:.875rem;border:none;box-shadow:0 8px 32px rgba(0,0,0,.15)">
-            <div class="modal-header" style="border-bottom:1px solid #f3f4f6">
-                <h5 class="modal-title fw-bold" style="color:#111827">
-                    <i class="mdi mdi-cash me-2" style="color:#f59e0b"></i>{% translate "Registrar pago" %}
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="pago-error" class="alert alert-danger d-none py-2" style="font-size:.85rem"></div>
-                <input type="hidden" id="pago-factura-id">
-                <input type="hidden" id="pago-proveedor-id">
-                <div class="p-3 rounded mb-3" style="background:#f9fafb;border:1px solid #e5e7eb">
-                    <div class="row g-2">
-                        <div class="col-7">
-                            <div class="small text-muted mb-1">{% translate "Proveedor" %}</div>
-                            <div class="fw-semibold" id="pago-proveedor" style="color:#111827;font-size:.9rem"></div>
-                        </div>
-                        <div class="col-5">
-                            <div class="small text-muted mb-1">{% translate "Factura" %}</div>
-                            <div class="fw-semibold" id="pago-numero" style="color:#4b5563;font-family:monospace"></div>
-                        </div>
-                        <div class="col-12 mt-2">
-                            <div class="small text-muted mb-1">{% translate "Saldo pendiente" %}</div>
-                            <div class="fw-bold" id="pago-saldo" style="color:#dc2626;font-size:1.15rem"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold" style="font-size:.85rem">
-                        {% translate "Monto a pagar" %} <span class="text-danger">*</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text fw-semibold">$</span>
-                        <input type="number" id="pago-monto" class="form-control" step="0.01" min="0.01">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer" style="border-top:1px solid #f3f4f6">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
-                <button type="button" id="btn-confirmar-pago" class="btn btn-success btn-sm px-4">
-                    <i class="mdi mdi-check me-1"></i>{% translate "Confirmar pago" %}
-                </button>
-            </div>
+  <div class="modal-dialog modal-dialog-centered" style="max-width:640px">
+    <div class="modal-content" style="border-radius:.875rem;border:none;box-shadow:0 8px 40px rgba(0,0,0,.18)">
+
+      <div class="modal-header" style="border-bottom:1px solid #f3f4f6">
+        <div>
+          <h5 class="modal-title fw-bold mb-0" style="color:#111827">
+            <i class="mdi mdi-cash me-2" style="color:#16a34a"></i>{% translate "Registrar orden de pago" %}
+          </h5>
+          <div class="text-muted small mt-1" id="modal-proveedor-nombre"></div>
         </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="modal-error" class="alert alert-danger py-2 d-none" style="font-size:.84rem"></div>
+
+        <!-- Facturas a pagar -->
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="fw-semibold" style="font-size:.85rem;color:#374151">{% translate "Facturas seleccionadas" %}</label>
+            <span class="text-muted small">{% translate "Podés ajustar el monto para pago parcial" %}</span>
+          </div>
+          <div style="border:1px solid #e5e7eb;border-radius:.5rem;overflow:hidden">
+            <table class="table table-sm mb-0" id="modal-tabla-facturas">
+              <thead style="background:#f9fafb">
+                <tr>
+                  <th class="px-3 py-2" style="font-size:.72rem;color:#6b7280;font-weight:600;text-transform:uppercase">{% translate "N° Factura" %}</th>
+                  <th class="px-3 py-2 text-end" style="font-size:.72rem;color:#6b7280;font-weight:600;text-transform:uppercase">{% translate "Saldo" %}</th>
+                  <th class="px-3 py-2 text-end" style="font-size:.72rem;color:#6b7280;font-weight:600;text-transform:uppercase">{% translate "A pagar" %}</th>
+                </tr>
+              </thead>
+              <tbody id="modal-body-facturas"></tbody>
+              <tfoot style="background:#f9fafb;border-top:2px solid #e5e7eb">
+                <tr>
+                  <td class="px-3 py-2 fw-bold" style="font-size:.85rem" colspan="2">{% translate "Total a pagar" %}</td>
+                  <td class="px-3 py-2 text-end fw-bold" style="font-size:1rem;color:#16a34a" id="modal-total">R$ 0</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Datos del pago -->
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:.83rem">{% translate "Fecha" %} <span class="text-danger">*</span></label>
+            <input type="date" id="modal-fecha" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:.83rem">{% translate "Medio de pago" %}</label>
+            <select id="modal-medio" class="form-select form-select-sm">
+              <option value="TRF">{% translate "Transferencia" %}</option>
+              <option value="CHQ">{% translate "Cheque" %}</option>
+              <option value="EFE">{% translate "Efectivo" %}</option>
+              <option value="DEB">{% translate "Débito automático" %}</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold" style="font-size:.83rem">{% translate "Referencia" %}</label>
+            <input type="text" id="modal-referencia" class="form-control form-control-sm"
+                   placeholder="{% translate "Nro. operación, cheque, etc." %}">
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="border-top:1px solid #f3f4f6">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+        <button type="button" id="btn-confirmar-pago" class="btn btn-success btn-sm px-4">
+          <i class="mdi mdi-check me-1"></i>{% translate "Confirmar pago" %}
+        </button>
+      </div>
+
     </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:9999">
+  <div id="toast-ok" class="toast align-items-center text-white bg-success border-0"
+       data-bs-autohide="true" data-bs-delay="4000">
+    <div class="d-flex">
+      <div class="toast-body fw-semibold" id="toast-msg"></div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
 </div>
 
 {% block custom_js %}
 <script>
+var CSRF = '{{ csrf_token }}';
+
+// Fecha hoy por defecto
+document.getElementById('modal-fecha').value = new Date().toISOString().slice(0, 10);
+
+// ─── Expandir detalle ────────────────────────────────────────────────────────
 function toggleDetalle(id, row) {
     var det  = document.getElementById(id);
-    var chev = document.getElementById('chev-' + id);
+    var chev = document.getElementById('chev-' + id.replace('det-',''));
     var open = det.style.display !== 'none';
-    det.style.display  = open ? 'none' : 'table-row';
-    chev.classList.toggle('open', !open);
+    det.style.display = open ? 'none' : 'table-row';
+    if (chev) chev.style.transform = open ? '' : 'rotate(180deg)';
     row.style.background = open ? '' : '#fffbeb';
 }
 
-function abrirPago(facturaId, proveedorId, proveedor, numero, saldo) {
-    document.getElementById('pago-factura-id').value   = facturaId;
-    document.getElementById('pago-proveedor-id').value = proveedorId;
-    document.getElementById('pago-proveedor').textContent = proveedor;
-    document.getElementById('pago-numero').textContent  = numero;
-    document.getElementById('pago-saldo').textContent   = '$' + parseFloat(saldo).toFixed(2);
-    document.getElementById('pago-monto').value         = parseFloat(saldo).toFixed(2);
-    document.getElementById('pago-error').classList.add('d-none');
+// ─── Selección ───────────────────────────────────────────────────────────────
+function getSeleccionados() {
+    return Array.from(document.querySelectorAll('.chk-factura:checked'));
+}
+
+function toggleTodos(master) {
+    document.querySelectorAll('.chk-factura').forEach(c => c.checked = master.checked);
+    actualizarBarra();
+}
+
+function seleccionarPendientes() {
+    document.querySelectorAll('.chk-factura').forEach(c => {
+        c.checked = (c.dataset.estado === 'pendiente' || c.dataset.estado === 'vencida');
+    });
+    actualizarBarra();
+}
+
+function deseleccionarTodo() {
+    document.querySelectorAll('.chk-factura, #chk-todos').forEach(c => c.checked = false);
+    actualizarBarra();
+}
+
+// ─── Barra de acción ─────────────────────────────────────────────────────────
+function actualizarBarra() {
+    var sel   = getSeleccionados();
+    var barra = document.getElementById('barra-accion');
+
+    // Resaltar filas
+    document.querySelectorAll('.fila-principal').forEach(r => r.classList.remove('seleccionada'));
+    sel.forEach(c => {
+        var fila = document.getElementById('fila-' + c.dataset.id);
+        if (fila) fila.classList.add('seleccionada');
+    });
+
+    if (!sel.length) {
+        barra.classList.remove('tiene-seleccion');
+        return;
+    }
+
+    var total = sel.reduce((s, c) => s + parseFloat(c.dataset.saldo), 0);
+    var provs = [...new Set(sel.map(c => c.dataset.proveedor))];
+
+    document.getElementById('barra-texto').textContent =
+        sel.length + ' {% translate "factura(s) seleccionada(s)" %}' +
+        (provs.length === 1 ? ' · ' + provs[0] : '');
+    document.getElementById('barra-total').textContent =
+        'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+    barra.classList.add('tiene-seleccion');
+}
+
+// ─── Abrir modal ─────────────────────────────────────────────────────────────
+function abrirModalPago() {
+    var sel = getSeleccionados();
+    if (!sel.length) return;
+
+    var provIds = [...new Set(sel.map(c => c.dataset.proveedorId))];
+    var errEl   = document.getElementById('modal-error');
+
+    if (provIds.length > 1) {
+        errEl.textContent = '{% translate "Seleccioná facturas de un solo proveedor a la vez." %}';
+        errEl.classList.remove('d-none');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPago')).show();
+        return;
+    }
+    errEl.classList.add('d-none');
+
+    document.getElementById('modal-proveedor-nombre').textContent = sel[0].dataset.proveedor;
+    document.getElementById('modal-referencia').value = '';
     document.getElementById('btn-confirmar-pago').disabled = false;
+
+    // Construir tabla facturas
+    var tbody = document.getElementById('modal-body-facturas');
+    tbody.innerHTML = '';
+    sel.forEach(function(chk) {
+        var saldo = parseFloat(chk.dataset.saldo);
+        var tr = document.createElement('tr');
+        tr.innerHTML =
+            '<td class="px-3 py-2" style="font-family:monospace;font-size:.85rem">' + chk.dataset.numero + '</td>' +
+            '<td class="px-3 py-2 text-end text-muted" style="font-size:.85rem">R$ ' + saldo.toFixed(2) + '</td>' +
+            '<td class="px-3 py-2">' +
+            '<div class="input-group input-group-sm justify-content-end" style="max-width:140px;margin-left:auto">' +
+            '<span class="input-group-text" style="font-size:.78rem">R$</span>' +
+            '<input type="number" class="form-control monto-input text-end" style="font-size:.85rem"' +
+            '       step="0.01" min="0.01" max="' + saldo.toFixed(2) + '"' +
+            '       value="' + saldo.toFixed(2) + '"' +
+            '       data-id="' + chk.dataset.id + '"' +
+            '       onchange="recalcularTotal()">' +
+            '</div>' +
+            '</td>';
+        tbody.appendChild(tr);
+    });
+
+    recalcularTotal();
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPago')).show();
 }
 
+function recalcularTotal() {
+    var t = Array.from(document.querySelectorAll('.monto-input'))
+                 .reduce((s, i) => s + (parseFloat(i.value) || 0), 0);
+    document.getElementById('modal-total').textContent =
+        'R$ ' + t.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+// ─── Confirmar pago ───────────────────────────────────────────────────────────
 document.getElementById('btn-confirmar-pago').addEventListener('click', function() {
-    var btn = this; btn.disabled = true;
+    var btn    = this;
+    var errEl  = document.getElementById('modal-error');
+    var sel    = getSeleccionados();
+    var montos = document.querySelectorAll('.monto-input');
+    btn.disabled = true;
+
     var data = new FormData();
-    data.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    data.append('proveedor_id',   document.getElementById('pago-proveedor-id').value);
-    data.append('factura_id[]',   document.getElementById('pago-factura-id').value);
-    data.append('monto[]',        document.getElementById('pago-monto').value);
+    data.append('csrfmiddlewaretoken', CSRF);
+    data.append('proveedor_id', sel[0].dataset.proveedorId);
+    data.append('fecha',        document.getElementById('modal-fecha').value);
+    data.append('medio_pago',   document.getElementById('modal-medio').value);
+    data.append('referencia',   document.getElementById('modal-referencia').value);
+    montos.forEach(inp => {
+        data.append('factura_id[]', inp.dataset.id);
+        data.append('monto[]',      inp.value);
+    });
 
     fetch("{% url 'ajax_registrar_pago' %}", {
-        method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}, body:data,
-    }).then(r=>r.json()).then(resp=>{
+        method: 'POST',
+        headers: {'X-Requested-With': 'XMLHttpRequest'},
+        body: data,
+    }).then(r => r.json()).then(function(resp) {
         btn.disabled = false;
         if (resp.ok) {
             bootstrap.Modal.getInstance(document.getElementById('modalPago')).hide();
-            var t = document.getElementById('toast-pago');
-            t.className = 'toast align-items-center border-0 text-white bg-success';
-            document.getElementById('toast-pago-msg').textContent = '{% translate "Pago registrado correctamente." %}';
-            bootstrap.Toast.getOrCreateInstance(t).show();
-            setTimeout(()=>location.reload(), 1500);
+            deseleccionarTodo();
+            var num = String(resp.numero).padStart(5, '0');
+            document.getElementById('toast-msg').innerHTML =
+                '{% translate "Pago registrado" %} OP-' + num +
+                ' &nbsp;<a href="/administracion/comprobante-pago/' + resp.pago_id + '/" ' +
+                'class="text-white fw-bold text-decoration-underline">{% translate "Ver comprobante" %} ↗</a>';
+            bootstrap.Toast.getOrCreateInstance(document.getElementById('toast-ok')).show();
+            setTimeout(() => location.reload(), 2500);
         } else {
-            document.getElementById('pago-error').textContent = resp.error || resp.message || 'Error';
-            document.getElementById('pago-error').classList.remove('d-none');
+            errEl.textContent = resp.error || '{% translate "Error al registrar el pago." %}';
+            errEl.classList.remove('d-none');
         }
-    }).catch(()=>{ btn.disabled=false; });
+    }).catch(function() {
+        btn.disabled = false;
+        errEl.textContent = '{% translate "Error de conexión." %}';
+        errEl.classList.remove('d-none');
+    });
 });
 </script>
 {% endblock %}
 
 {% endblock %}
-
 {% block nav %}{% include 'nav_home.html' %}{% endblock %}

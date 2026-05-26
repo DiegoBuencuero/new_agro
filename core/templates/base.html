@@ -260,7 +260,7 @@
 
       <div class="container-fluid page-body-wrapper">
         <!-- sidebar -->
-        <nav class="sidebar sidebar-offcanvas" id="sidebar">
+        {% block sidebar %}<nav class="sidebar sidebar-offcanvas" id="sidebar">{% endblock %}
           <ul class="nav">
 
             <!-- Dashboard -->
@@ -384,7 +384,7 @@
             </li>
 
           </ul>
-        </nav>
+        </nav>{% block sidebar_end %}{% endblock %}
 
 
         <!-- main-panel -->

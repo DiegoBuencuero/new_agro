@@ -7,18 +7,29 @@ from gestion_agro.models import Producto
 
 
 class Pago(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
-    proveedor = models.ForeignKey(Proveedor, on_delete=models.CASCADE, verbose_name=_("Proveedor"))
-    fecha = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha"))
+    MEDIO_PAGO = [
+        ("TRF", _("Transferencia")),
+        ("CHQ", _("Cheque")),
+        ("EFE", _("Efectivo")),
+        ("DEB", _("Débito automático")),
+    ]
+
+    empresa       = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
+    proveedor     = models.ForeignKey(Proveedor, on_delete=models.CASCADE, verbose_name=_("Proveedor"))
+    numero        = models.PositiveIntegerField(default=0, verbose_name=_("N° orden"))
+    fecha         = models.DateField(verbose_name=_("Fecha"))
+    medio_pago    = models.CharField(max_length=3, choices=MEDIO_PAGO, default="TRF", verbose_name=_("Medio de pago"))
+    referencia    = models.CharField(max_length=100, blank=True, default="", verbose_name=_("Referencia"))
     observaciones = models.TextField(blank=True, null=True, verbose_name=_("Observaciones"))
+    creado        = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = _("Pago")
         verbose_name_plural = _("Pagos")
-        ordering = ["-fecha"]
+        ordering = ["-fecha", "-numero"]
 
     def __str__(self):
-        return f"Pago {self.id} – {self.proveedor} – ${self.monto_total}"
+        return f"OP-{self.numero:05d} – {self.proveedor} – ${self.monto_total}"
 
     @property
     def monto_total(self):
@@ -84,18 +95,29 @@ class FacturaVentaItem(models.Model):
 
 
 class Recibo(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, verbose_name=_("Cliente"))
-    fecha = models.DateTimeField(auto_now_add=True, verbose_name=_("Fecha"))
+    MEDIO_COBRO = [
+        ("TRF", _("Transferencia")),
+        ("CHQ", _("Cheque")),
+        ("EFE", _("Efectivo")),
+        ("DEB", _("Débito automático")),
+    ]
+
+    empresa       = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
+    cliente       = models.ForeignKey(Cliente, on_delete=models.CASCADE, verbose_name=_("Cliente"))
+    numero        = models.PositiveIntegerField(default=0, verbose_name=_("N° recibo"))
+    fecha         = models.DateField(default=__import__('datetime').date.today, verbose_name=_("Fecha"))
+    medio_cobro   = models.CharField(max_length=3, choices=MEDIO_COBRO, default="TRF", verbose_name=_("Medio de cobro"))
+    referencia    = models.CharField(max_length=100, blank=True, default="", verbose_name=_("Referencia"))
     observaciones = models.TextField(blank=True, null=True, verbose_name=_("Observaciones"))
+    creado        = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = _("Recibo")
         verbose_name_plural = _("Recibos")
-        ordering = ["-fecha"]
+        ordering = ["-fecha", "-numero"]
 
     def __str__(self):
-        return f"Recibo {self.id} – {self.cliente} – ${self.monto_total}"
+        return f"RC-{self.numero:05d} – {self.cliente} – ${self.monto_total}"
 
     @property
     def monto_total(self):

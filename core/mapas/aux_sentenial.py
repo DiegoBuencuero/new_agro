@@ -191,17 +191,17 @@ def _procesar_ndvi_array(ndvi_raw, bbox, area_geojson_str, ciclo_geojson_str=Non
     img  = Image.fromarray(rgb, mode="RGBA")
     draw = ImageDraw.Draw(img)
 
-    ancho_borde = max(2, w // 200)
+    ancho_borde = max(1, w // 400)   # fino — ~5px a 2048px de ancho
 
-    # Borde blanco del campo/áreas
+    # Borde blanco semitransparente del campo/áreas
     _dibujar_borde(draw, _extraer_rings(area_geojson_str), bbox, h, w,
-                   color=(255, 255, 255, 255), ancho=ancho_borde)
+                   color=(255, 255, 255, 120), ancho=ancho_borde)
 
-    # Borde amarillo del ciclo activo (siempre visible si existe)
+    # Borde amarillo semitransparente del ciclo activo
     if ciclo_geojson_str:
         try:
             _dibujar_borde(draw, _extraer_rings(ciclo_geojson_str), bbox, h, w,
-                           color=(255, 220, 0, 255), ancho=max(3, w // 150))
+                           color=(255, 220, 0, 150), ancho=max(1, w // 350))
         except Exception:
             logger.warning("No se pudo dibujar el contorno del ciclo")
 

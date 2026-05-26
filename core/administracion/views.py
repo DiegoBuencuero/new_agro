@@ -109,39 +109,61 @@ def ajax_registrar_cobro(request):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
 
+    import datetime
+    from django.db.models import Max
+
     empresa      = request.user.profile.empresa
-    factura_id   = request.POST.get("factura_id")
-    monto_raw    = request.POST.get("monto")
-    observaciones = request.POST.get("observaciones", "").strip()
+    cliente_id   = request.POST.get("cliente_id")
+    factura_ids  = request.POST.getlist("factura_id[]")
+    montos_raw   = request.POST.getlist("monto[]")
+    fecha_raw    = request.POST.get("fecha") or datetime.date.today().isoformat()
+    medio_cobro  = request.POST.get("medio_cobro", "TRF")
+    referencia   = request.POST.get("referencia", "").strip()
+
+    if not cliente_id or not factura_ids:
+        return JsonResponse({"ok": False, "error": str(_("Seleccione al menos una factura"))})
 
     try:
-        factura = FacturaVenta.objects.get(id=factura_id, empresa=empresa)
-    except FacturaVenta.DoesNotExist:
-        return JsonResponse({"ok": False, "error": "Factura no encontrada."}, status=404)
+        cliente = Cliente.objects.get(id=cliente_id, empresa=empresa)
+        fecha = datetime.date.fromisoformat(fecha_raw)
+    except (Cliente.DoesNotExist, ValueError):
+        return JsonResponse({"ok": False, "error": str(_("Datos inválidos"))})
 
-    form = AplicacionReciboForm(empresa=empresa, data={"factura": factura_id, "monto_aplicado": monto_raw})
-    if not form.is_valid():
-        errores = [e for errs in form.errors.values() for e in errs]
-        return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
+    forms_validos = []
+    errores = []
+    for factura_id, monto_raw in zip(factura_ids, montos_raw):
+        form = AplicacionReciboForm(empresa=empresa, data={"factura": factura_id, "monto_aplicado": monto_raw})
+        if form.is_valid():
+            forms_validos.append(form)
+        else:
+            for field_errors in form.errors.values():
+                errores.extend(field_errors)
+
+    if errores:
+        return JsonResponse({"ok": False, "error": "\n".join(errores)})
+    if not forms_validos:
+        return JsonResponse({"ok": False, "error": str(_("No hay cobros válidos para registrar"))})
 
     with transaction.atomic():
+        ultimo_numero = Recibo.objects.filter(empresa=empresa).aggregate(m=Max("numero"))["m"] or 0
         recibo = Recibo.objects.create(
             empresa=empresa,
-            cliente=factura.cliente,
-            observaciones=observaciones,
+            cliente=cliente,
+            numero=ultimo_numero + 1,
+            fecha=fecha,
+            medio_cobro=medio_cobro,
+            referencia=referencia,
         )
-        aplicacion = form.save(commit=False)
-        aplicacion.recibo = recibo
-        aplicacion.save()
-
-    total   = sum(i.cantidad * i.precio_unitario for i in factura.items.all())
-    cobrado = factura.aplicaciones.aggregate(t=Coalesce(Sum("monto_aplicado"), _Decimal("0")))["t"]
-    saldo   = total - cobrado
+        for form in forms_validos:
+            ap = form.save(commit=False)
+            ap.recibo = recibo
+            ap.save()
 
     return JsonResponse({
-        "ok":     True,
-        "saldo":  float(saldo),
-        "estado": "cobrada" if saldo <= 0 else "pendiente",
+        "ok":       True,
+        "recibo_id": recibo.id,
+        "numero":   recibo.numero,
+        "message":  str(_("Cobro registrado correctamente")),
     })
 
 
@@ -356,23 +378,28 @@ def ajax_registrar_pago(request):
     if request.method != "POST":
         return JsonResponse({"error": "method not allowed"}, status=405)
 
-    empresa = request.user.profile.empresa
+    import datetime
+    from django.db.models import Max
+
+    empresa      = request.user.profile.empresa
     proveedor_id = request.POST.get("proveedor_id")
-    factura_ids = request.POST.getlist("factura_id[]")
-    montos_raw = request.POST.getlist("monto[]")
+    factura_ids  = request.POST.getlist("factura_id[]")
+    montos_raw   = request.POST.getlist("monto[]")
+    fecha_raw    = request.POST.get("fecha") or datetime.date.today().isoformat()
+    medio_pago   = request.POST.get("medio_pago", "TRF")
+    referencia   = request.POST.get("referencia", "").strip()
 
     if not proveedor_id or not factura_ids:
         return JsonResponse({"ok": False, "error": str(_("Seleccione al menos una factura"))})
 
     try:
         proveedor = Proveedor.objects.get(id=proveedor_id, empresa=empresa)
-    except Proveedor.DoesNotExist:
-        return JsonResponse({"ok": False, "error": str(_("Proveedor inválido"))})
+        fecha = datetime.date.fromisoformat(fecha_raw)
+    except (Proveedor.DoesNotExist, ValueError):
+        return JsonResponse({"ok": False, "error": str(_("Datos inválidos"))})
 
-    # Validar cada ítem con AplicacionPagoForm — la lógica de saldo vive en el form
     forms_validos = []
     errores = []
-
     for factura_id, monto_raw in zip(factura_ids, montos_raw):
         form = AplicacionPagoForm(empresa=empresa, data={"factura": factura_id, "monto_aplicado": monto_raw})
         if form.is_valid():
@@ -383,20 +410,27 @@ def ajax_registrar_pago(request):
 
     if errores:
         return JsonResponse({"ok": False, "error": "\n".join(errores)})
-
     if not forms_validos:
         return JsonResponse({"ok": False, "error": str(_("No hay pagos válidos para registrar"))})
 
     with transaction.atomic():
-        pago = Pago.objects.create(empresa=empresa, proveedor=proveedor)
+        ultimo_numero = Pago.objects.filter(empresa=empresa).aggregate(m=Max("numero"))["m"] or 0
+        pago = Pago.objects.create(
+            empresa=empresa, proveedor=proveedor,
+            numero=ultimo_numero + 1,
+            fecha=fecha,
+            medio_pago=medio_pago,
+            referencia=referencia,
+        )
         for form in forms_validos:
-            aplicacion = form.save(commit=False)
-            aplicacion.pago = pago
-            aplicacion.save()
+            ap = form.save(commit=False)
+            ap.pago = pago
+            ap.save()
 
     return JsonResponse({
-        "ok": True,
+        "ok":      True,
         "pago_id": pago.id,
+        "numero":  pago.numero,
         "message": str(_("Pago registrado correctamente")),
     })
 
@@ -426,9 +460,9 @@ def ajax_buscar_pagos(request):
     if proveedor:
         qs = qs.filter(proveedor=proveedor)
     if fecha_desde:
-        qs = qs.filter(fecha__date__gte=fecha_desde)
+        qs = qs.filter(fecha__gte=fecha_desde)
     if fecha_hasta:
-        qs = qs.filter(fecha__date__lte=fecha_hasta)
+        qs = qs.filter(fecha__lte=fecha_hasta)
 
     html = render_to_string(
         "tem_administracion/_tabla_pagos.html",
@@ -436,6 +470,16 @@ def ajax_buscar_pagos(request):
         request=request,
     )
     return JsonResponse({"html": html})
+
+@login_required
+def vista_comprobante_pago(request, pago_id):
+    empresa = request.user.profile.empresa
+    pago = get_object_or_404(
+        Pago.objects.prefetch_related("aplicaciones__factura").select_related("proveedor"),
+        id=pago_id, empresa=empresa,
+    )
+    return render(request, "tem_administracion/comprobante_pago.html", {"pago": pago})
+
 
 @login_required
 def ajax_detalle_pago(request, pago_id):
@@ -714,6 +758,7 @@ def vista_cuenta_corriente_proveedor(request):
     filas = []
     total_deuda = Decimal("0")
     cant_vencidas = 0
+    cant_pendientes = 0
     prox_vencimiento = None
 
     for f in qs:
@@ -730,17 +775,19 @@ def vista_cuenta_corriente_proveedor(request):
 
         if saldo > 0:
             total_deuda += saldo
+            cant_pendientes += 1
         if estado == "vencida":
             cant_vencidas += 1
-        if estado == "pendiente" and f.fecha_vencimiento:
+        if estado in ("pendiente", "vencida") and f.fecha_vencimiento:
             if prox_vencimiento is None or f.fecha_vencimiento < prox_vencimiento:
                 prox_vencimiento = f.fecha_vencimiento
 
         comprobantes = [
             {
-                "numero": ap.pago_id,
-                "fecha":  ap.pago.fecha,
-                "monto":  ap.monto_aplicado,
+                "pago_id": ap.pago_id,
+                "numero":  ap.pago.numero,
+                "fecha":   ap.pago.fecha,
+                "monto":   ap.monto_aplicado,
             }
             for ap in f.aplicaciones.all()
         ]
@@ -763,8 +810,20 @@ def vista_cuenta_corriente_proveedor(request):
         "estado_filtro":    estado_filtro,
         "total_deuda":      total_deuda,
         "cant_vencidas":    cant_vencidas,
+        "cant_pendientes":  cant_pendientes,
         "prox_vencimiento": prox_vencimiento,
     })
+
+
+@login_required
+@login_required
+def vista_comprobante_recibo(request, recibo_id):
+    empresa = request.user.profile.empresa
+    recibo = get_object_or_404(
+        Recibo.objects.prefetch_related("aplicaciones__factura").select_related("cliente"),
+        id=recibo_id, empresa=empresa,
+    )
+    return render(request, "tem_administracion/comprobante_recibo.html", {"recibo": recibo})
 
 
 @login_required
@@ -798,6 +857,7 @@ def vista_cuenta_corriente_cliente(request):
     filas = []
     total_por_cobrar = Decimal("0")
     cant_vencidas = 0
+    cant_pendientes = 0
     prox_vencimiento = None
 
     for f in qs:
@@ -815,17 +875,19 @@ def vista_cuenta_corriente_cliente(request):
 
         if saldo > 0:
             total_por_cobrar += saldo
+            cant_pendientes += 1
         if estado == "vencida":
             cant_vencidas += 1
-        if estado == "pendiente" and f.fecha_vencimiento:
+        if estado in ("pendiente", "vencida") and f.fecha_vencimiento:
             if prox_vencimiento is None or f.fecha_vencimiento < prox_vencimiento:
                 prox_vencimiento = f.fecha_vencimiento
 
         comprobantes = [
             {
-                "numero": ar.recibo_id,
-                "fecha":  ar.recibo.fecha,
-                "monto":  ar.monto_aplicado,
+                "recibo_id": ar.recibo_id,
+                "numero":    ar.recibo.numero,
+                "fecha":     ar.recibo.fecha,
+                "monto":     ar.monto_aplicado,
             }
             for ar in f.aplicaciones.all()
         ]
@@ -848,5 +910,6 @@ def vista_cuenta_corriente_cliente(request):
         "estado_filtro":     estado_filtro,
         "total_por_cobrar":  total_por_cobrar,
         "cant_vencidas":     cant_vencidas,
+        "cant_pendientes":   cant_pendientes,
         "prox_vencimiento":  prox_vencimiento,
     })

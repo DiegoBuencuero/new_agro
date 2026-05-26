@@ -1,0 +1,127 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RC-{{ recibo.numero|stringformat:"05d" }} — {% translate "Recibo de cobro" %}</title>
+  <link rel="stylesheet" href="{% static 'vendors/mdi/css/materialdesignicons.min.css' %}">
+  <link rel="stylesheet" href="{% static 'vendors/css/vendor.bundle.base.css' %}">
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #f3f4f6; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    @media print {
+      body { background: #fff; }
+      .no-print { display: none !important; }
+      .card { box-shadow: none !important; }
+    }
+    .page { max-width: 760px; margin: 2rem auto; padding: 0 1rem 3rem; }
+    .actions { display: flex; gap: .5rem; margin-bottom: 1.25rem; }
+    .btn { display:inline-flex; align-items:center; gap:.35rem; padding:.45rem 1rem; border-radius:.5rem; font-size:.85rem; font-weight:600; cursor:pointer; text-decoration:none; border:1px solid transparent; }
+    .btn-primary { background:#2563eb; color:#fff; }
+    .btn-secondary { background:#fff; color:#374151; border-color:#d1d5db; }
+    .btn:hover { opacity:.88; }
+    .card { background:#fff; border-radius:1rem; box-shadow:0 2px 16px rgba(0,0,0,.08); padding:2rem 2.5rem; }
+    .comp-header { border-bottom:2px solid #2563eb; padding-bottom:1.25rem; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:flex-start; }
+    .comp-title { font-size:1.2rem; font-weight:800; color:#111827; margin:0 0 .2rem; }
+    .comp-subtitle { font-size:.83rem; color:#6b7280; }
+    .comp-num { font-size:1.8rem; font-weight:800; color:#2563eb; letter-spacing:-.02em; line-height:1; }
+    .comp-date { font-size:.82rem; color:#6b7280; text-align:right; margin-top:.25rem; }
+    .info-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; margin-bottom:1.5rem; }
+    .info-lbl { font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#9ca3af; margin-bottom:.2rem; }
+    .info-val { font-size:.95rem; color:#111827; font-weight:600; }
+    table { width:100%; border-collapse:collapse; margin-bottom:1.25rem; }
+    thead th { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; background:#f9fafb; padding:.6rem 1rem; border-bottom:1px solid #e5e7eb; }
+    tbody td { padding:.65rem 1rem; font-size:.88rem; border-bottom:1px solid #f3f4f6; color:#374151; }
+    tfoot td { padding:.65rem 1rem; font-size:.9rem; background:#f9fafb; border-top:2px solid #e5e7eb; font-weight:700; }
+    .text-end { text-align:right; }
+    .text-blue { color:#2563eb; }
+    .obs-lbl { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:#9ca3af; margin-bottom:.3rem; }
+    .obs-val { font-size:.88rem; color:#374151; }
+    .firmas { display:grid; grid-template-columns:1fr 1fr; gap:2rem; margin-top:3rem; }
+    .firma-line { border-top:1px solid #d1d5db; padding-top:.5rem; font-size:.75rem; color:#9ca3af; text-align:center; }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="actions no-print">
+    <button onclick="window.print()" class="btn btn-primary">
+      <i class="mdi mdi-printer"></i> {% translate "Imprimir" %}
+    </button>
+    <a href="{% url 'vista_cuenta_corriente_cliente' %}?cliente={{ recibo.cliente.id }}" class="btn btn-secondary">
+      <i class="mdi mdi-arrow-left"></i> {% translate "Volver" %}
+    </a>
+  </div>
+
+  <div class="card">
+
+    <div class="comp-header">
+      <div>
+        <div class="comp-title">{% translate "Recibo de cobro" %}</div>
+        <div class="comp-subtitle">{{ recibo.cliente.empresa }}</div>
+      </div>
+      <div>
+        <div class="comp-num">RC-{{ recibo.numero|stringformat:"05d" }}</div>
+        <div class="comp-date">{{ recibo.fecha|date:"d/m/Y" }}</div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div>
+        <div class="info-lbl">{% translate "Cliente" %}</div>
+        <div class="info-val">{{ recibo.cliente.razon_social }}</div>
+      </div>
+      <div>
+        <div class="info-lbl">{% translate "Medio de cobro" %}</div>
+        <div class="info-val">{{ recibo.get_medio_cobro_display }}</div>
+      </div>
+      <div>
+        <div class="info-lbl">{% translate "Referencia" %}</div>
+        <div class="info-val">{% if recibo.referencia %}{{ recibo.referencia }}{% else %}—{% endif %}</div>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>{% translate "N° Factura" %}</th>
+          <th>{% translate "Fecha" %}</th>
+          <th class="text-end">{% translate "Total factura" %}</th>
+          <th class="text-end">{% translate "Monto cobrado" %}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ap in recibo.aplicaciones.all %}
+        <tr>
+          <td style="font-family:monospace">{{ ap.factura.numero }}</td>
+          <td>{{ ap.factura.fecha|date:"d/m/Y" }}</td>
+          <td class="text-end">R$ {{ ap.factura.total|floatformat:2 }}</td>
+          <td class="text-end text-blue" style="font-weight:700">R$ {{ ap.monto_aplicado|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" class="text-end">{% translate "TOTAL COBRADO" %}</td>
+          <td class="text-end text-blue" style="font-size:1.05rem">R$ {{ recibo.monto_total|floatformat:2 }}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    {% if recibo.observaciones %}
+    <div style="margin-bottom:1rem">
+      <div class="obs-lbl">{% translate "Observaciones" %}</div>
+      <div class="obs-val">{{ recibo.observaciones }}</div>
+    </div>
+    {% endif %}
+
+    <div class="firmas">
+      <div class="firma-line">{% translate "Firma autorizada" %}</div>
+      <div class="firma-line">{% translate "Sello / Conformidad" %}</div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>

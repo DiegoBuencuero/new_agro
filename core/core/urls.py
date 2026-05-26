@@ -2,12 +2,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from agro.views import index, login_page, vista_configuracion, vista_registro, vista_cuenta_suspendida, ajax_cotizaciones
+from agro.views import (index, login_page, vista_configuracion, vista_registro, vista_cuenta_suspendida,
+    ajax_cotizaciones, ajax_dashboard_resumen, ajax_dashboard_calendario, ajax_dashboard_vencimientos)
 from administracion.views import (vista_registrar_venta, vista_lista_ventas, ajax_registrar_cobro,
     vista_gestion_facturas, ajax_indicadores_proveedor,
     ajax_buscar_facturas, ajax_registrar_pago, ajax_buscar_pagos, ajax_detalle_pago,
     vista_cargar_factura_venta_manual, ajax_info_producto_venta, ajax_depositos_producto_destino,
-    vista_cuenta_corriente_proveedor, vista_cuenta_corriente_cliente)
+    vista_cuenta_corriente_proveedor, vista_cuenta_corriente_cliente,
+    vista_comprobante_pago, vista_comprobante_recibo)
 from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_areas_por_campo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo,
 vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
 vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo, ajax_get_ciclos_data, vista_agregar_actividad,
@@ -22,6 +24,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),
     path('ajax/cotizaciones/', ajax_cotizaciones, name='ajax_cotizaciones'),
+    path('ajax/dashboard/resumen/', ajax_dashboard_resumen, name='ajax_dashboard_resumen'),
+    path('ajax/dashboard/calendario/', ajax_dashboard_calendario, name='ajax_dashboard_calendario'),
+    path('ajax/dashboard/vencimientos/', ajax_dashboard_vencimientos, name='ajax_dashboard_vencimientos'),
     path('i18n/', include('django.conf.urls.i18n')), 
 
     path('accounts/', include('django.contrib.auth.urls')),
@@ -91,6 +96,8 @@ urlpatterns = [
     path('administracion/ajax/registrar-pago/', ajax_registrar_pago, name='ajax_registrar_pago'),
     path('administracion/ajax/buscar-pagos/', ajax_buscar_pagos, name='ajax_buscar_pagos'),
     path('administracion/ajax/detalle-pago/<int:pago_id>/', ajax_detalle_pago, name='ajax_detalle_pago'),
+    path('administracion/comprobante-pago/<int:pago_id>/', vista_comprobante_pago, name='vista_comprobante_pago'),
+    path('administracion/comprobante-recibo/<int:recibo_id>/', vista_comprobante_recibo, name='vista_comprobante_recibo'),
 ]
 
 if settings.DEBUG:

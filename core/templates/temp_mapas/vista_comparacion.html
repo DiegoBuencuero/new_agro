@@ -1,0 +1,570 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load i18n %}
+
+{% block content %}
+<div class="content-wrapper">
+<div class="row">
+<div class="col-sm-12">
+
+{# ── HEADER ── #}
+<div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+    <div>
+        <h5 class="mb-0 fw-semibold">
+            <i class="mdi mdi-layers-triple me-2 text-success"></i>
+            {% translate "Comparación de capas" %}
+        </h5>
+        <span class="text-muted small">{% translate "Seleccioná un campo para cargar sus capas" %}</span>
+    </div>
+    <a href="{% url 'vista_mapas' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="mdi mdi-arrow-left me-1"></i>{% translate "Volver" %}
+    </a>
+</div>
+
+{# ── LAYOUT ── #}
+<div style="display:flex;gap:14px;height:calc(100vh - 180px);min-height:520px">
+
+    {# ── SIDEBAR ── #}
+    <div id="comp-sidebar" style="width:280px;min-width:280px;display:flex;flex-direction:column;gap:10px;overflow-y:auto">
+
+        {# ── Selector de campo ── #}
+        <div class="card border-0 shadow-sm">
+            <div class="card-body py-2 px-3">
+                <label class="form-label mb-1" style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af">
+                    {% translate "Campo" %}
+                </label>
+                <select id="sel-campo" class="form-select form-select-sm">
+                    <option value="">— {% translate "Seleccioná un campo" %} —</option>
+                    {% for c in campos %}
+                    <option value="{{ c.id }}">{{ c.nombre }}</option>
+                    {% endfor %}
+                </select>
+                <button id="btn-simular-cosecha" class="btn btn-outline-success btn-sm w-100 mt-2 d-none" style="font-size:.75rem">
+                    <i class="mdi mdi-sprout me-1"></i>{% translate "Cargar cosecha simulada (demo)" %}
+                </button>
+            </div>
+        </div>
+
+        {# ── Lista de capas ── #}
+        <div class="card border-0 shadow-sm flex-fill" style="min-height:0">
+            <div class="card-body p-0 d-flex flex-column" style="height:100%">
+                <div class="px-3 py-2 border-bottom" style="background:#fafafa">
+                    <span style="font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af">
+                        {% translate "Capas disponibles" %}
+                    </span>
+                    <span id="comp-capas-count" class="badge bg-secondary ms-1" style="font-size:.62rem">0</span>
+                </div>
+                <div id="comp-lista-capas" style="flex:1;overflow-y:auto;padding:8px">
+                    <p class="text-muted small ps-1 mb-0">{% translate "Seleccioná un campo para ver sus capas." %}</p>
+                </div>
+            </div>
+        </div>
+
+    </div>{# /sidebar #}
+
+    {# ── GRID DE MAPAS ── #}
+    <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;min-width:0">
+
+        {% for panel_idx in "0123" %}
+        <div class="comp-panel" data-panel="{{ forloop.counter0 }}"
+             style="position:relative;background:#1a1a1a;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.15)">
+
+            {# Dropdown selector de capa #}
+            <div style="position:absolute;top:8px;left:8px;right:8px;z-index:1000;display:flex;gap:6px;align-items:center">
+                <select class="panel-select form-select form-select-sm"
+                        data-panel="{{ forloop.counter0 }}"
+                        style="font-size:.72rem;background:rgba(255,255,255,.93);max-width:220px">
+                    <option value="">— {% translate "Seleccioná una capa" %} —</option>
+                </select>
+                <span class="panel-loading d-none" data-panel="{{ forloop.counter0 }}">
+                    <span class="spinner-border spinner-border-sm text-light" style="width:.9rem;height:.9rem"></span>
+                </span>
+            </div>
+
+            {# Mapa Leaflet #}
+            <div class="panel-map" id="panel-map-{{ forloop.counter0 }}"
+                 style="position:absolute;top:0;left:0;right:0;bottom:36px"></div>
+
+            {# Estado vacío #}
+            <div class="panel-empty" data-panel="{{ forloop.counter0 }}"
+                 style="position:absolute;top:0;left:0;right:0;bottom:36px;display:flex;flex-direction:column;
+                        align-items:center;justify-content:center;color:#6b7280;pointer-events:none;z-index:500">
+                <i class="mdi mdi-layers-off" style="font-size:2.2rem;opacity:.35"></i>
+                <div class="small mt-1" style="font-size:.72rem">{% translate "Seleccioná una capa" %}</div>
+            </div>
+
+            {# Barra inferior de stats #}
+            <div class="panel-stats" data-panel="{{ forloop.counter0 }}"
+                 style="position:absolute;bottom:0;left:0;right:0;height:36px;background:rgba(0,0,0,.72);
+                        display:flex;align-items:center;gap:12px;padding:0 10px;font-size:.68rem;color:#e5e7eb">
+                <span class="stat-min"    data-panel="{{ forloop.counter0 }}">MIN —</span>
+                <span class="stat-max"    data-panel="{{ forloop.counter0 }}">MAX —</span>
+                <span class="stat-prom"   data-panel="{{ forloop.counter0 }}">PROM —</span>
+                <span class="stat-nombre ms-auto" data-panel="{{ forloop.counter0 }}"
+                      style="opacity:.6;font-size:.64rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px"></span>
+            </div>
+
+        </div>
+        {% endfor %}
+
+    </div>{# /grid #}
+
+</div>{# /layout #}
+
+</div>
+</div>
+</div>
+
+{# ── MODAL: resultado de click en mapa ── #}
+<div class="modal fade" id="modalPunto" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title mb-0">
+                    <i class="mdi mdi-crosshairs-gps me-1 text-success"></i>
+                    {% translate "Valores en el punto" %}
+                </h6>
+                <button type="button" class="btn-close btn-sm" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <p id="modal-coords" class="text-muted small mb-2"></p>
+                <div id="modal-tabla-wrapper">
+                    <table class="table table-sm table-bordered mb-0" style="font-size:.8rem">
+                        <thead class="table-light">
+                            <tr>
+                                <th>{% translate "Capa" %}</th>
+                                <th>{% translate "Tipo" %}</th>
+                                <th class="text-end">{% translate "Valor" %}</th>
+                                <th class="text-end">{% translate "Máx. capa" %}</th>
+                                <th class="text-end">{% translate "Dif. %" %}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-tabla-body"></tbody>
+                    </table>
+                </div>
+                <p id="modal-sin-datos" class="text-muted text-center py-3 d-none">{% translate "No se encontraron datos en este punto." %}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block plugin_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+{% endblock %}
+
+{% block custom_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════════════════════════════════
+let campoId  = null;
+let capas    = [];
+let maps     = [];
+let overlays = [null, null, null, null];
+let syncLock = false;
+
+// URLs base — generadas por Django con ID=0 como placeholder
+const _URL_CAPAS   = "{% url 'ajax_comparacion_capas'       campo_id=0 %}";
+const _URL_PUNTO   = "{% url 'ajax_comparacion_punto'       campo_id=0 %}";
+const _URL_SIMULAR = "{% url 'ajax_cosecha_simular'         campo_id=0 %}";
+const _URL_ESTADO  = "{% url 'ajax_suelo_archivo_estado' archivo_id=0 %}";
+
+function urlCapas(id)   { return _URL_CAPAS.replace("/0/",   `/${id}/`); }
+function urlPunto(id)   { return _URL_PUNTO.replace("/0/",   `/${id}/`); }
+function urlSimular(id) { return _URL_SIMULAR.replace("/0/", `/${id}/`); }
+function urlEstado(id)  { return _URL_ESTADO.replace("/0/",  `/${id}/`); }
+
+// ═══════════════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════════════
+function getCookie(name) {
+    const m = document.cookie.match(new RegExp("(?:^|; )" + name + "=([^;]*)"));
+    return m ? decodeURIComponent(m[1]) : "";
+}
+function csrfFetch(url, opts = {}) {
+    opts.headers = Object.assign({ "X-CSRFToken": getCookie("csrftoken") }, opts.headers || {});
+    return fetch(url, opts);
+}
+function tipoBadge(tipo) {
+    const MAP = {
+        suelo:    ["badge bg-warning text-dark", "Suelo"],
+        cosecha:  ["badge bg-success",           "Cosecha"],
+        satelite: ["badge bg-info text-dark",    "Satélite"],
+        otro:     ["badge bg-secondary",         "Otro"],
+    };
+    const [cls, txt] = MAP[tipo] || MAP["otro"];
+    return `<span class="${cls}" style="font-size:.6rem">${txt}</span>`;
+}
+function fmtNum(v, dec = 1) {
+    return (v !== null && v !== undefined) ? Number(v).toFixed(dec) : "—";
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// INICIALIZAR MAPAS LEAFLET
+// ═══════════════════════════════════════════════════════════════════════
+function initMaps() {
+    for (let i = 0; i < 4; i++) {
+        const m = L.map(`panel-map-${i}`, {
+            center: [-32, -57],
+            zoom: 10,
+            minZoom: 6,
+            maxZoom: 17,
+            zoomControl: i === 0,
+            attributionControl: false,
+        });
+        L.tileLayer(
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+            { attribution: "", maxZoom: 19 }
+        ).addTo(m);
+        m.on("moveend zoomend", () => syncMaps(i, m));
+        m.on("click", (e) => onMapClick(e.latlng));
+        maps.push(m);
+    }
+}
+
+function syncMaps(srcIdx, srcMap) {
+    if (syncLock) return;
+    syncLock = true;
+    const c = srcMap.getCenter(), z = srcMap.getZoom();
+    maps.forEach((m, i) => { if (i !== srcIdx) m.setView(c, z, { animate: false }); });
+    syncLock = false;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CARGAR CAPAS DEL CAMPO (AJAX)
+// ═══════════════════════════════════════════════════════════════════════
+function cargarCampo(id) {
+    campoId = id;
+
+    // Limpiar paneles
+    overlays.forEach((ov, i) => {
+        if (ov) { maps[i].removeLayer(ov); overlays[i] = null; }
+    });
+    document.querySelectorAll(".panel-select").forEach(s => {
+        s.innerHTML = `<option value="">— Seleccioná una capa —</option>`;
+    });
+    document.querySelectorAll(".panel-empty").forEach(e => e.style.display = "flex");
+    for (let i = 0; i < 4; i++) renderStats(i, null);
+
+    // Spinner en sidebar
+    const cont = document.getElementById("comp-lista-capas");
+    cont.innerHTML = `<div class="text-center py-3"><span class="spinner-border spinner-border-sm text-success"></span></div>`;
+    document.getElementById("comp-capas-count").textContent = "…";
+
+    fetch(urlCapas(id))
+        .then(r => r.json())
+        .then(data => {
+            if (!data.ok) { cont.innerHTML = `<p class="text-danger small ps-1">${data.error || "Error"}</p>`; return; }
+            capas = data.capas;
+            const btnSim = document.getElementById("btn-simular-cosecha");
+            if (data.tiene_simulacion) {
+                btnSim.classList.remove("d-none");
+            } else {
+                btnSim.classList.add("d-none");
+            }
+            renderSidebar();
+            renderSelects();
+        })
+        .catch(e => {
+            cont.innerHTML = `<p class="text-danger small ps-1">Error de red: ${e.message}</p>`;
+        });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER SIDEBAR
+// ═══════════════════════════════════════════════════════════════════════
+function renderSidebar() {
+    const cont = document.getElementById("comp-lista-capas");
+    document.getElementById("comp-capas-count").textContent = capas.length;
+
+    if (!capas.length) {
+        cont.innerHTML = `<p class="text-muted small ps-1 mb-0">No hay capas para este campo.</p>`;
+        return;
+    }
+
+    cont.innerHTML = capas.map(c => {
+        const st = c.estadisticas || {};
+        const leyChip = (c.leyenda && c.leyenda.length)
+            ? c.leyenda.slice(0, 5).map(l =>
+                `<span title="${l.rango||''}" style="display:inline-block;width:12px;height:12px;border-radius:2px;background:${l.color};margin-right:2px"></span>`
+              ).join("") : "";
+
+        return `
+        <div class="comp-capa-item p-2 mb-1 rounded" data-id="${c.id}"
+             style="border:1px solid #e5e7eb;cursor:pointer;font-size:.76rem;transition:background .15s"
+             onclick="asignarCapaAlPanelActivo('${c.id}')"
+             onmouseenter="this.style.background='#f0fdf4'" onmouseleave="this.style.background=''">
+            <div class="d-flex justify-content-between align-items-start">
+                <span class="fw-semibold" style="line-height:1.2">${c.nombre}</span>
+                ${tipoBadge(c.tipo)}
+            </div>
+            <div class="text-muted mt-1" style="font-size:.68rem">${c.nombre_archivo}</div>
+            ${(st.min !== undefined) ? `
+            <div class="d-flex gap-2 mt-1" style="font-size:.65rem;color:#6b7280">
+                <span>MIN ${fmtNum(st.min)}</span>
+                <span>MAX ${fmtNum(st.max)}</span>
+                <span>PROM ${fmtNum(st.prom)}</span>
+            </div>` : ""}
+            ${leyChip ? `<div class="mt-1">${leyChip}</div>` : ""}
+            ${!c.mapeable ? `<div class="text-danger mt-1" style="font-size:.65rem"><i class="mdi mdi-alert-circle-outline me-1"></i>Sin imagen generada</div>` : ""}
+        </div>`;
+    }).join("");
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// SELECTS DE PANELES
+// ═══════════════════════════════════════════════════════════════════════
+function renderSelects() {
+    document.querySelectorAll(".panel-select").forEach(sel => {
+        const panelIdx = parseInt(sel.dataset.panel);
+        const current  = sel.value;
+        sel.innerHTML  = `<option value="">— Seleccioná una capa —</option>`;
+        capas.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.id;
+            opt.textContent = `${c.nombre} (${c.tipo})`;
+            if (!c.mapeable) opt.textContent += " ⚠";
+            sel.appendChild(opt);
+        });
+        if (current) sel.value = current;
+        sel.onchange = () => cargarCapaEnPanel(panelIdx, sel.value || null);
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CARGAR CAPA EN PANEL
+// ═══════════════════════════════════════════════════════════════════════
+let panelActivo    = 0;
+let clickMarkers   = [];   // marcadores de click activos
+
+document.addEventListener("click", (e) => {
+    const panel = e.target.closest(".comp-panel");
+    if (panel) panelActivo = parseInt(panel.dataset.panel);
+});
+
+function asignarCapaAlPanelActivo(capaId) {
+    const sel = document.querySelector(`.panel-select[data-panel="${panelActivo}"]`);
+    if (sel) {
+        sel.value = capaId;
+        cargarCapaEnPanel(panelActivo, capaId);
+    }
+}
+
+function cargarCapaEnPanel(panelIdx, capaId) {
+    const m         = maps[panelIdx];
+    const emptyEl   = document.querySelector(`.panel-empty[data-panel="${panelIdx}"]`);
+    const loadingEl = document.querySelector(`.panel-loading[data-panel="${panelIdx}"]`);
+
+    if (overlays[panelIdx]) { m.removeLayer(overlays[panelIdx]); overlays[panelIdx] = null; }
+
+    if (!capaId) {
+        emptyEl.style.display = "flex";
+        renderStats(panelIdx, null);
+        return;
+    }
+
+    const capa = capas.find(c => c.id == capaId);
+    if (!capa || !capa.mapeable) {
+        emptyEl.style.display = "flex";
+        renderStats(panelIdx, capa);
+        return;
+    }
+
+    emptyEl.style.display = "none";
+    loadingEl.classList.remove("d-none");
+
+    const [minLng, minLat, maxLng, maxLat] = capa.bbox;
+    const bounds = [[minLat, minLng], [maxLat, maxLng]];
+
+    const img = new Image();
+    img.onload = () => {
+        loadingEl.classList.add("d-none");
+        overlays[panelIdx] = L.imageOverlay(capa.imagen_url, bounds, { opacity: 0.85 }).addTo(m);
+        m.fitBounds(bounds, { padding: [20, 20] });
+        renderStats(panelIdx, capa);
+    };
+    img.onerror = () => { loadingEl.classList.add("d-none"); emptyEl.style.display = "flex"; };
+    img.src = capa.imagen_url;
+}
+
+function renderStats(panelIdx, capa) {
+    const st = capa && capa.estadisticas ? capa.estadisticas : {};
+    document.querySelector(`.stat-min[data-panel="${panelIdx}"]`).textContent  = `MIN ${fmtNum(st.min)}`;
+    document.querySelector(`.stat-max[data-panel="${panelIdx}"]`).textContent  = `MAX ${fmtNum(st.max)}`;
+    document.querySelector(`.stat-prom[data-panel="${panelIdx}"]`).textContent = `PROM ${fmtNum(st.prom)}`;
+    document.querySelector(`.stat-nombre[data-panel="${panelIdx}"]`).textContent = capa ? capa.nombre : "";
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// CLICK EN MAPA
+// ═══════════════════════════════════════════════════════════════════════
+function onMapClick(latlng) {
+    if (!campoId) return;
+    const { lat, lng } = latlng;
+
+    // Limpiar marcadores anteriores
+    clickMarkers.forEach(mk => mk.remove());
+    clickMarkers = [];
+
+    const crossIcon = L.divIcon({
+        className: "",
+        html: `<div style="width:20px;height:20px;transform:translate(-50%,-50%);color:#ef4444;font-size:20px;line-height:1">✛</div>`,
+        iconSize: [0, 0],
+    });
+    maps.forEach(m => {
+        const mk = L.marker([lat, lng], { icon: crossIcon, pane: "overlayPane" }).addTo(m);
+        clickMarkers.push(mk);
+    });
+
+    document.getElementById("modal-coords").textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+    document.getElementById("modal-tabla-body").innerHTML =
+        `<tr><td colspan="5" class="text-center text-muted py-3">Consultando...</td></tr>`;
+    document.getElementById("modal-sin-datos").classList.add("d-none");
+    document.getElementById("modal-tabla-wrapper").style.display = "";
+
+    new bootstrap.Modal(document.getElementById("modalPunto")).show();
+
+    fetch(`${urlPunto(campoId)}?lat=${lat}&lng=${lng}`, {
+        headers: { "X-CSRFToken": getCookie("csrftoken") }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.ok) {
+            document.getElementById("modal-tabla-body").innerHTML =
+                `<tr><td colspan="5" class="text-center text-danger">${data.error || "Error"}</td></tr>`;
+            return;
+        }
+        const res = data.resultados;
+        const ids = Object.keys(res);
+        if (!ids.length) {
+            document.getElementById("modal-tabla-wrapper").style.display = "none";
+            document.getElementById("modal-sin-datos").classList.remove("d-none");
+            return;
+        }
+        const rows = ids.map(id => {
+            const r = res[id], st = r.estadisticas || {};
+            const maxCapa = st.max !== undefined ? Number(st.max).toFixed(1) : "—";
+            const val     = r.valor !== null && r.valor !== undefined ? Number(r.valor).toFixed(1) : "—";
+            let difCell   = "<td>—</td>";
+            if (r.valor !== null && r.valor !== undefined && st.max) {
+                const pct = (r.valor / st.max) * 100;
+                const clr = pct >= 75 ? "#16a34a" : pct >= 40 ? "#ca8a04" : "#dc2626";
+                difCell = `<td class="text-end" style="color:${clr};font-weight:600">${pct.toFixed(0)}%</td>`;
+            }
+            return `<tr>
+                <td>${r.nombre || "—"}</td>
+                <td>${tipoBadge(r.tipo)}</td>
+                <td class="text-end fw-semibold">${val}</td>
+                <td class="text-end">${maxCapa}</td>
+                ${difCell}
+            </tr>`;
+        }).join("");
+        document.getElementById("modal-tabla-body").innerHTML = rows;
+    })
+    .catch(e => {
+        document.getElementById("modal-tabla-body").innerHTML =
+            `<tr><td colspan="5" class="text-center text-danger">Error de red: ${e.message}</td></tr>`;
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// COSECHA SIMULADA
+// ═══════════════════════════════════════════════════════════════════════
+document.getElementById("btn-simular-cosecha").addEventListener("click", () => {
+    if (!campoId) return;
+    const btn = document.getElementById("btn-simular-cosecha");
+    btn.disabled = true;
+    btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Procesando...`;
+
+    csrfFetch(urlSimular(campoId), { method: "POST" })
+    .then(r => r.json())
+    .then(data => {
+        if (!data.ok) { alert("Error: " + (data.error || "desconocido")); resetBtnSimular(btn); return; }
+        if (data.estado === "pendiente") {
+            btn.innerHTML = `<span class="spinner-border spinner-border-sm me-1"></span>Generando PNG...`;
+            pollEstado(data.id, btn);
+        } else {
+            agregarCapa(data.id, () => resetBtnSimular(btn));
+        }
+    })
+    .catch(e => { alert("Error de red: " + e.message); resetBtnSimular(btn); });
+});
+
+function resetBtnSimular(btn) {
+    btn.disabled = false;
+    btn.innerHTML = `<i class="mdi mdi-sprout me-1"></i>Cargar cosecha simulada (demo)`;
+}
+
+function pollEstado(archivoId, btn) {
+    const timer = setInterval(() => {
+        fetch(urlEstado(archivoId))
+        .then(r => r.json())
+        .then(d => {
+            if (d.estado === "procesado") {
+                clearInterval(timer);
+                agregarCapa(archivoId, () => resetBtnSimular(btn));
+            } else if (d.estado === "error") {
+                clearInterval(timer);
+                alert("Error al generar el PNG.");
+                resetBtnSimular(btn);
+            }
+        })
+        .catch(() => clearInterval(timer));
+    }, 2000);
+}
+
+function agregarCapa(archivoId, callback) {
+    fetch(urlEstado(archivoId))
+    .then(r => r.json())
+    .then(d => {
+        const nuevaCapa = {
+            id: archivoId, nombre: "Rendimiento",
+            nombre_archivo: d.nombre || `archivo_${archivoId}`,
+            tipo: "cosecha", estado: d.estado, fecha: d.fecha,
+            imagen_url: d.imagen_url, bbox: d.bbox,
+            leyenda: d.leyenda, estadisticas: d.estadisticas,
+            mapeable: !!(d.imagen_url && d.bbox),
+        };
+        if (!capas.find(c => c.id === archivoId)) capas.unshift(nuevaCapa);
+        renderSidebar();
+        renderSelects();
+        callback && callback();
+    })
+    .catch(e => { console.error("agregarCapa:", e); callback && callback(); });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// BOOTSTRAP
+// ═══════════════════════════════════════════════════════════════════════
+document.addEventListener("DOMContentLoaded", () => {
+    initMaps();
+    setTimeout(() => maps.forEach(m => m.invalidateSize()), 200);
+
+    document.getElementById("sel-campo").addEventListener("change", function () {
+        const id = this.value;
+        if (!id) {
+            campoId = null;
+            capas = [];
+            renderSidebar();
+            renderSelects();
+            document.getElementById("btn-simular-cosecha").classList.add("d-none");
+            document.getElementById("comp-lista-capas").innerHTML =
+                `<p class="text-muted small ps-1 mb-0">Seleccioná un campo para ver sus capas.</p>`;
+            document.getElementById("comp-capas-count").textContent = "0";
+            return;
+        }
+        cargarCampo(id);
+    });
+});
+</script>
+
+<style>
+.comp-capa-item:hover { background: #f0fdf4 !important; }
+.comp-panel { cursor: crosshair; }
+.comp-panel .leaflet-control-container { cursor: default; }
+</style>
+{% endblock %}

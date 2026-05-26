@@ -36,4 +36,14 @@ urlpatterns = [
 
     # Capas analíticas
     path("ajax/capa/procesar/", views.ajax_capa_procesar, name="ajax_capa_procesar"),
+
+    # Cosecha
+    path("ajax/cosecha/<int:campo_id>/cargar/",  views.ajax_cosecha_cargar,  name="ajax_cosecha_cargar"),
+    path("ajax/cosecha/<int:campo_id>/archivos/", views.ajax_cosecha_archivos, name="ajax_cosecha_archivos"),
+    path("ajax/cosecha/<int:campo_id>/simular/", views.ajax_cosecha_simular,  name="ajax_cosecha_simular"),
+
+    # Comparación
+    path("ajax/comparacion/<int:campo_id>/capas/", views.ajax_comparacion_capas, name="ajax_comparacion_capas"),
+    path("ajax/comparacion/<int:campo_id>/punto/", views.ajax_comparacion_punto, name="ajax_comparacion_punto"),
+    path("comparacion/",                           views.vista_comparacion,      name="vista_comparacion"),
 ]

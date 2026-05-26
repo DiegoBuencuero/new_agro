@@ -1652,7 +1652,7 @@ msgstr "Depósitos"
 
 #: templates/base.html:311
 msgid "Compras"
-msgstr "Comparativas"
+msgstr "Compras"
 
 #: templates/base.html:317 templates/base.html:332
 msgid "Cuenta corriente"
@@ -1991,7 +1991,7 @@ msgstr "Factura"
 
 #: templates/tem_administracion/_tabla_pagos.html:29
 msgid "Comprobante"
-msgstr "Comparativas"
+msgstr "Comprobante"
 
 #: templates/tem_administracion/cargar_factura_venta.html:56
 msgid "Cargar factura de venta"
