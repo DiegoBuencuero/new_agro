@@ -628,9 +628,12 @@ class StockFiltroForm(BaseSimpleForm):
 class FacturaCompraForm(BaseForm):
     class Meta:
         model = FacturaCompra
-        fields = ["numero", "fecha"]
-        widgets = {"fecha": forms.DateInput(attrs={"type": "date"})}
-        labels = {"numero": "Número factura", "fecha": "Fecha"}
+        fields = ["numero", "fecha", "fecha_vencimiento"]
+        widgets = {
+            "fecha":             forms.DateInput(attrs={"type": "date"}),
+            "fecha_vencimiento": forms.DateInput(attrs={"type": "date"}),
+        }
+        labels = {"numero": "Número factura", "fecha": "Fecha", "fecha_vencimiento": "Vencimiento"}
 
 class FacturaCompraItemForm(forms.Form):
 

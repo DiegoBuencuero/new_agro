@@ -50,6 +50,7 @@
               <th>{% trans "Número" %}</th>
               <th>{% trans "Proveedor" %}</th>
               <th>{% trans "Fecha" %}</th>
+              <th>{% trans "Vencimiento" %}</th>
               <th>{% trans "Total" %}</th>
               <th>{% trans "Ítems" %}</th>
               <th>{% trans "Creada" %}</th>
@@ -62,6 +63,7 @@
               <td>{{ factura.numero }}</td>
               <td>{{ factura.proveedor.razon_social }}</td>
               <td>{{ factura.fecha|date:"d/m/Y" }}</td>
+              <td>{% if factura.fecha_vencimiento %}{{ factura.fecha_vencimiento|date:"d/m/Y" }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
               <td>${{ factura.total|floatformat:2 }}</td>
               <td>{{ factura.items.count }}</td>
               <td>{{ factura.creada|date:"d/m/Y H:i" }}</td>
@@ -77,7 +79,7 @@
             </tr>
             {% empty %}
             <tr>
-              <td colspan="7" class="text-center">
+              <td colspan="8" class="text-center">
                 {% trans "No hay facturas cargadas" %}
               </td>
             </tr>

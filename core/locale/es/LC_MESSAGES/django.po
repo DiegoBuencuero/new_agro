@@ -202,7 +202,7 @@ msgstr "Aplicaciones de pago"
 #: templates/tem_administracion/lista_ventas.html:138
 #: templates/vista_lista_stock.html:532
 msgid "Cliente"
-msgstr "Ambientes"
+msgstr "Cliente"
 
 #: administracion/models.py:44
 msgid "NF-e número"
@@ -211,7 +211,7 @@ msgstr "Número"
 #: administracion/models.py:46 gestion_agro/models.py:534
 #: templates/tem_administracion/cargar_factura_venta.html:91
 msgid "Fecha vencimiento"
-msgstr "Fecha de inicio"
+msgstr "Fecha de vencimiento"
 
 #: administracion/models.py:47
 #: templates/tem_facturas/vista_lista_facturas.html:56
@@ -1171,7 +1171,7 @@ msgstr "Proveedores"
 
 #: gestion_agro/models.py:593
 msgid "Clientes"
-msgstr "Ambientes"
+msgstr "Clientes"
 
 #: gestion_agro/models.py:613
 msgid "Descripción original"
@@ -1928,7 +1928,7 @@ msgstr "Número"
 #: templates/tem_administracion/cuenta_corriente_proveedor.html:151
 #: templates/vista_lista_stock.html:566
 msgid "Vencimiento"
-msgstr "Rendimiento"
+msgstr "Vencimiento"
 
 #: templates/tem_administracion/_tabla_facturas.html:20
 #: templates/tem_administracion/cuenta_corriente_proveedor.html:153

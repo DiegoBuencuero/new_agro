@@ -638,15 +638,21 @@ def vista_detalle_ciclo(request, id_ciclo):
         .order_by("fecha", "id")
     )
 
-    # solo leemos no calculamos nada
-    costo_total_ciclo = sum(
-        act.total or Decimal("0")
-        for act in actividades
-    )
+    # desglose de costos
+    from django.db.models import Sum as _Sum
+    from gestion_agro.models import ActividadInsumo as _AI
+    costo_mo_ciclo  = sum(act.total_mo  or Decimal("0") for act in actividades)
+    costo_maq_ciclo = sum(act.total_maq or Decimal("0") for act in actividades)
+    costo_ins_ciclo = _AI.objects.filter(
+        actividad__fase__ciclo=ciclo
+    ).aggregate(t=Coalesce(_Sum("costo_total"), Decimal("0")))["t"]
+    costo_total_ciclo = costo_mo_ciclo + costo_maq_ciclo + costo_ins_ciclo
 
-    costo_ha_ciclo = Decimal("0")
-    if ciclo.superficie_ha:
-        costo_ha_ciclo = costo_total_ciclo / ciclo.superficie_ha
+    ha = ciclo.superficie_ha or Decimal("1")
+    costo_ha_ciclo  = costo_total_ciclo / ha
+    costo_mo_ha     = costo_mo_ciclo    / ha
+    costo_maq_ha    = costo_maq_ciclo   / ha
+    costo_ins_ha    = costo_ins_ciclo   / ha
 
     fecha_fin_real = (
         fases.filter(estado="cerrado")
@@ -655,7 +661,27 @@ def vista_detalle_ciclo(request, id_ciclo):
         .first()
     )
 
-    precio_saco = getattr(ciclo, 'precio_saco', Decimal("0")) or Decimal("0")
+    # precio de mercado en tiempo real (misma lógica que el dashboard)
+    from agro.views import _stooq_price, _usd_brl, _STOOQ
+    precio_saco = Decimal("0")
+    try:
+        nom = (ciclo.cultivo.nombre or "").lower() if ciclo.cultivo else ""
+        if "soja" in nom:
+            key, kg_bushel = "soja", 27.2155
+        elif "maíz" in nom or "maiz" in nom:
+            key, kg_bushel = "maiz", 25.4012
+        elif "trigo" in nom:
+            key, kg_bushel = "trigo", 27.2155
+        else:
+            key = None
+        if key:
+            cents, _ = _stooq_price(_STOOQ[key])
+            usd, _, _ = _usd_brl()
+            if cents and usd:
+                usd_bushel = cents / 100
+                precio_saco = Decimal(str(round(usd_bushel * (60 / kg_bushel) * usd, 2)))
+    except Exception:
+        pass
 
     sacos_equilibrio_ha = Decimal("0")
     if precio_saco and costo_ha_ciclo:
@@ -668,7 +694,10 @@ def vista_detalle_ciclo(request, id_ciclo):
         "fases": fases,
         "actividades": actividades,
         "costo_total_ciclo": costo_total_ciclo,
-        "costo_ha_ciclo": costo_ha_ciclo,
+        "costo_ha_ciclo":    costo_ha_ciclo,
+        "costo_mo_ha":       costo_mo_ha,
+        "costo_maq_ha":      costo_maq_ha,
+        "costo_ins_ha":      costo_ins_ha,
         "precio_saco": precio_saco,
         "sacos_equilibrio_ha": sacos_equilibrio_ha,
         "rendimiento_esperado_sacos": rendimiento_esperado_sacos,

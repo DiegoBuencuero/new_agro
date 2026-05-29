@@ -117,6 +117,13 @@
                                         <div class="text-danger" style="font-size:.75rem">{{ factura_form.fecha.errors.0 }}</div>
                                     {% endif %}
                                 </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">{% translate "Vencimiento" %}</label>
+                                    {{ factura_form.fecha_vencimiento }}
+                                    {% if factura_form.fecha_vencimiento.errors %}
+                                        <div class="text-danger" style="font-size:.75rem">{{ factura_form.fecha_vencimiento.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
                                 <div class="col-md-4">
                                     <label class="form-label">{% translate "Depósito destino" %}</label>
                                     <select name="deposito_destino" id="id_deposito_destino" class="form-select form-select-sm">

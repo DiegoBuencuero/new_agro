@@ -170,16 +170,19 @@ def ajax_dashboard_calendario(request):
 
         pagos_qs = (
             FacturaCompra.objects
-            .filter(empresa=empresa, fecha__gte=inicio, fecha__lte=fim)
-            .annotate(semana=TruncWeek("fecha"))
+            .filter(empresa=empresa, fecha_vencimiento__gte=inicio, fecha_vencimiento__lte=fim)
+            .annotate(semana=TruncWeek("fecha_vencimiento"))
             .values("semana")
             .annotate(total=Coalesce(Sum("total"), Decimal("0")))
             .order_by("semana")
         )
+        from django.db.models import DateField
         cobros_qs = (
             FacturaVentaItem.objects
-            .filter(factura__empresa=empresa, factura__fecha__gte=inicio, factura__fecha__lte=fim)
-            .annotate(semana=TruncWeek("factura__fecha"))
+            .filter(factura__empresa=empresa)
+            .annotate(fecha_ef=Coalesce("factura__fecha_vencimiento", "factura__fecha", output_field=DateField()))
+            .filter(fecha_ef__gte=inicio, fecha_ef__lte=fim)
+            .annotate(semana=TruncWeek("fecha_ef"))
             .values("semana")
             .annotate(total=Coalesce(Sum(expr), Decimal("0")))
             .order_by("semana")
@@ -197,16 +200,19 @@ def ajax_dashboard_calendario(request):
     inicio = (hoy - datetime.timedelta(days=365)).replace(day=1)
     pagos_qs = (
         FacturaCompra.objects
-        .filter(empresa=empresa, fecha__gte=inicio)
-        .annotate(mes=TruncMonth("fecha"))
+        .filter(empresa=empresa, fecha_vencimiento__gte=inicio)
+        .annotate(mes=TruncMonth("fecha_vencimiento"))
         .values("mes")
         .annotate(total=Coalesce(Sum("total"), Decimal("0")))
         .order_by("mes")
     )
+    from django.db.models import DateField
     cobros_qs = (
         FacturaVentaItem.objects
-        .filter(factura__empresa=empresa, factura__fecha__gte=inicio)
-        .annotate(mes=TruncMonth("factura__fecha"))
+        .filter(factura__empresa=empresa)
+        .annotate(fecha_ef=Coalesce("factura__fecha_vencimiento", "factura__fecha", output_field=DateField()))
+        .filter(fecha_ef__gte=inicio)
+        .annotate(mes=TruncMonth("fecha_ef"))
         .values("mes")
         .annotate(total=Coalesce(Sum(expr), Decimal("0")))
         .order_by("mes")
@@ -214,11 +220,13 @@ def ajax_dashboard_calendario(request):
     pagos_dict  = {r["mes"].strftime("%m/%Y"): float(r["total"]) for r in pagos_qs  if r["mes"]}
     cobros_dict = {r["mes"].strftime("%m/%Y"): float(r["total"]) for r in cobros_qs if r["mes"]}
 
-    labels = []
+    labels_set = set()
     cur = inicio
     while cur <= hoy:
-        labels.append(cur.strftime("%m/%Y"))
+        labels_set.add(cur.strftime("%m/%Y"))
         cur = cur.replace(month=cur.month % 12 + 1, year=cur.year + (1 if cur.month == 12 else 0))
+    labels_set |= set(cobros_dict.keys()) | set(pagos_dict.keys())
+    labels = sorted(labels_set, key=lambda s: (int(s.split('/')[1]), int(s.split('/')[0])))
 
     return JsonResponse({
         "ok": True, "modo": "mensual", "labels": labels,
@@ -350,16 +358,21 @@ def index(request):
     # ── Costo por ciclo abierto ───────────────────────────────────────
     ciclos_data = []
     for ciclo in ciclos_abiertos:
-        costo_act = ActividadProductiva.objects.filter(
+        agg = ActividadProductiva.objects.filter(
             fase__ciclo=ciclo
-        ).aggregate(t=Coalesce(Sum("total"), Decimal("0")))["t"]
-
+        ).aggregate(
+            mo=Coalesce(Sum("total_mo"),  Decimal("0")),
+            maq=Coalesce(Sum("total_maq"), Decimal("0")),
+        )
+        costo_mo  = agg["mo"]
+        costo_maq = agg["maq"]
         costo_ins = ActividadInsumo.objects.filter(
             actividad__fase__ciclo=ciclo
         ).aggregate(t=Coalesce(Sum("costo_total"), Decimal("0")))["t"]
 
         ha = ciclo.superficie_ha or Decimal("1")
-        costo_ha = round(float((costo_act + costo_ins) / ha), 2)
+        costo_total = costo_mo + costo_maq + costo_ins
+        costo_ha = round(float(costo_total / ha), 2)
 
         nom = (ciclo.cultivo.nombre or "").lower()
         if "soja" in nom:
@@ -377,6 +390,9 @@ def index(request):
             "cultivo":   ciclo.cultivo.nombre if ciclo.cultivo else "—",
             "ha":        float(ha),
             "costo_ha":  costo_ha,
+            "mo_ha":     round(float(costo_mo  / ha), 2),
+            "maq_ha":    round(float(costo_maq / ha), 2),
+            "ins_ha":    round(float(costo_ins / ha), 2),
             "commodity": commodity,
         })
 

@@ -362,7 +362,7 @@
                                                 </a>
                                                 {% if item.restante > 0 %}
                                                 <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                    onclick="abrirModalVenta({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ item.destino }}', '{{ item.destino_label|escapejs }}')"
+                                                    onclick="abrirModalVenta({{ prod.id }}, '{{ prod.nombre|escapejs }}', '{{ item.destino }}', '{{ item.destino_label|escapejs }}', {{ prod.unidad_base.id }}, '{{ prod.unidad_base|escapejs }}')"
                                                     data-bs-toggle="tooltip"
                                                     data-bs-title="{% translate 'Registrar venta' %}">
                                                     <i class="mdi mdi-cart-outline"></i>
@@ -550,6 +550,12 @@
                             <input type="number" name="cantidad" class="form-control" step="0.001" min="0.001" required>
                         </div>
                         <div class="col-md-3">
+                            <label class="form-label">{% translate "Unidad" %} <span class="text-danger">*</span></label>
+                            <select name="um" id="venta-um" class="form-select" required>
+                                <option value="">---------</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label">{% translate "Precio unitario" %} <span class="text-danger">*</span></label>
                             <input type="number" name="precio_unitario" class="form-control" step="0.01" min="0" required>
                         </div>
@@ -607,11 +613,12 @@ function limpiarModalVenta() {
     document.getElementById('venta-fecha').value = new Date().toISOString().split('T')[0];
     document.getElementById('venta-error').classList.add('d-none');
     document.getElementById('form-venta').querySelector('[type=submit]').disabled = false;
+    document.getElementById('venta-um').innerHTML = '<option value="">---------</option>';
 }
 
 document.getElementById('modalVenta').addEventListener('hidden.bs.modal', limpiarModalVenta);
 
-function abrirModalVenta(productoId, productoNombre, destino, destinoLabel) {
+function abrirModalVenta(productoId, productoNombre, destino, destinoLabel, unidadBaseId, unidadAbrev) {
     limpiarModalVenta();
 
     document.getElementById('venta-producto-id').value = productoId;
@@ -628,6 +635,25 @@ function abrirModalVenta(productoId, productoNombre, destino, destinoLabel) {
     var deps = depositosPorProducto[productoId + '-' + destino] || [];
     var sel = document.getElementById('venta-deposito');
     sel.value = deps.length === 1 ? deps[0].id : '';
+
+    // poblar select unidad
+    var selUm = document.getElementById('venta-um');
+    selUm.innerHTML = '<option value="' + unidadBaseId + '">' + unidadAbrev + ' (base)</option>';
+    $.ajax({
+        url: "{% url 'ajax_unidades_por_base' %}",
+        method: "GET",
+        data: { unidad_base_id: unidadBaseId },
+        success: function(r) {
+            if (r.ok && r.unidades.length > 0) {
+                r.unidades.forEach(function(u) {
+                    var opt = document.createElement('option');
+                    opt.value = u.id;
+                    opt.textContent = u.abreviatura;
+                    selUm.appendChild(opt);
+                });
+            }
+        }
+    });
 
     bootstrap.Modal.getOrCreateInstance(document.getElementById('modalVenta')).show();
 }

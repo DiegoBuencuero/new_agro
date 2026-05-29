@@ -60,12 +60,24 @@ def vista_registrar_venta(request):
     except ValueError as e:
         return JsonResponse({"ok": False, "error": str(e)}, status=400)
 
-    # — stock disponible para ese producto + destino + depósito —
-    filtro_dep = {"deposito_destino": deposito_origen} if deposito_origen else {}
-    filtro_dst = {"destino": destino} if destino else {}
-    entradas = MovimientoStock.objects.filter(producto=producto, tipo="ENTRADA", **filtro_dep, **filtro_dst)
-    ventas   = MovimientoStock.objects.filter(producto=producto, tipo="VENTA",   deposito_origen=deposito_origen, **filtro_dst)
-    stock    = sum(m.cantidad for m in entradas) - sum(m.cantidad for m in ventas)
+    # — stock disponible para ese producto + destino (total, sin filtrar por depósito) —
+    from decimal import Decimal as _D
+    unidad_base = producto.unidad_base
+    movs = MovimientoStock.objects.filter(producto=producto).select_related("um", "cosecha")
+    ing = _D("0")
+    con = _D("0")
+    for mov in movs:
+        cant = convertir_unidad(mov.cantidad, mov.um, unidad_base)
+        if mov.tipo == "ENTRADA":
+            if mov.cosecha_id:
+                if mov.destino == destino or (not mov.destino and not destino):
+                    ing += cant
+            elif not mov.destino and (destino == "C" or not destino):
+                ing += cant
+        elif mov.tipo == "VENTA":
+            if mov.destino == destino or (not mov.destino and not destino):
+                con += cant
+    stock = ing - con
 
     if cantidad_base > stock:
         return JsonResponse({
@@ -183,6 +195,8 @@ def vista_lista_ventas(request):
     cliente_id  = request.GET.get("cliente")
     fecha_desde = request.GET.get("fecha_desde")
     fecha_hasta = request.GET.get("fecha_hasta")
+    venc_desde  = request.GET.get("venc_desde")
+    venc_hasta  = request.GET.get("venc_hasta")
 
     from gestion_agro.models import Cliente
     clientes = Cliente.objects.filter(empresa=empresa).order_by("razon_social")
@@ -193,6 +207,14 @@ def vista_lista_ventas(request):
         qs = qs.filter(fecha__gte=fecha_desde)
     if fecha_hasta:
         qs = qs.filter(fecha__lte=fecha_hasta)
+    if venc_desde or venc_hasta:
+        from django.db.models.functions import Coalesce as _Coalesce
+        from django.db.models import DateField as _DateField
+        qs = qs.annotate(_fecha_ef=_Coalesce("fecha_vencimiento", "fecha", output_field=_DateField()))
+        if venc_desde:
+            qs = qs.filter(_fecha_ef__gte=venc_desde)
+        if venc_hasta:
+            qs = qs.filter(_fecha_ef__lte=venc_hasta)
 
     facturas = []
     for f in qs:
@@ -213,6 +235,8 @@ def vista_lista_ventas(request):
         "cliente_id":  cliente_id or "",
         "fecha_desde": fecha_desde or "",
         "fecha_hasta": fecha_hasta or "",
+        "venc_desde":  venc_desde or "",
+        "venc_hasta":  venc_hasta or "",
     })
 
 
@@ -735,9 +759,11 @@ def vista_cuenta_corriente_proveedor(request):
 
     proveedores = Proveedor.objects.filter(empresa=empresa).order_by("razon_social")
 
-    proveedor_id = request.GET.get("proveedor") or ""
-    fecha_desde  = request.GET.get("fecha_desde") or ""
-    fecha_hasta  = request.GET.get("fecha_hasta") or ""
+    proveedor_id  = request.GET.get("proveedor") or ""
+    fecha_desde   = request.GET.get("fecha_desde") or ""
+    fecha_hasta   = request.GET.get("fecha_hasta") or ""
+    venc_desde    = request.GET.get("venc_desde") or ""
+    venc_hasta    = request.GET.get("venc_hasta") or ""
     estado_filtro = request.GET.get("estado") or ""
 
     qs = (
@@ -746,7 +772,7 @@ def vista_cuenta_corriente_proveedor(request):
         .annotate(pagado=Coalesce(Sum("aplicaciones__monto_aplicado"), Decimal("0")))
         .select_related("proveedor")
         .prefetch_related("aplicaciones__pago")
-        .order_by("fecha")
+        .order_by("fecha_vencimiento", "fecha")
     )
     if proveedor_id:
         qs = qs.filter(proveedor_id=proveedor_id)
@@ -754,6 +780,10 @@ def vista_cuenta_corriente_proveedor(request):
         qs = qs.filter(fecha__gte=fecha_desde)
     if fecha_hasta:
         qs = qs.filter(fecha__lte=fecha_hasta)
+    if venc_desde:
+        qs = qs.filter(fecha_vencimiento__gte=venc_desde)
+    if venc_hasta:
+        qs = qs.filter(fecha_vencimiento__lte=venc_hasta)
 
     filas = []
     total_deuda = Decimal("0")
@@ -807,6 +837,8 @@ def vista_cuenta_corriente_proveedor(request):
         "proveedor_id":     proveedor_id,
         "fecha_desde":      fecha_desde,
         "fecha_hasta":      fecha_hasta,
+        "venc_desde":       venc_desde,
+        "venc_hasta":       venc_hasta,
         "estado_filtro":    estado_filtro,
         "total_deuda":      total_deuda,
         "cant_vencidas":    cant_vencidas,
@@ -837,6 +869,8 @@ def vista_cuenta_corriente_cliente(request):
     cliente_id    = request.GET.get("cliente") or ""
     fecha_desde   = request.GET.get("fecha_desde") or ""
     fecha_hasta   = request.GET.get("fecha_hasta") or ""
+    venc_desde    = request.GET.get("venc_desde") or ""
+    venc_hasta    = request.GET.get("venc_hasta") or ""
     estado_filtro = request.GET.get("estado") or ""
 
     qs = (
@@ -845,7 +879,7 @@ def vista_cuenta_corriente_cliente(request):
         .annotate(cobrado=Coalesce(Sum("aplicaciones__monto_aplicado"), Decimal("0")))
         .select_related("cliente")
         .prefetch_related("aplicaciones__recibo", "items")
-        .order_by("fecha")
+        .order_by("fecha_vencimiento", "fecha")
     )
     if cliente_id:
         qs = qs.filter(cliente_id=cliente_id)
@@ -853,6 +887,10 @@ def vista_cuenta_corriente_cliente(request):
         qs = qs.filter(fecha__gte=fecha_desde)
     if fecha_hasta:
         qs = qs.filter(fecha__lte=fecha_hasta)
+    if venc_desde:
+        qs = qs.filter(fecha_vencimiento__gte=venc_desde)
+    if venc_hasta:
+        qs = qs.filter(fecha_vencimiento__lte=venc_hasta)
 
     filas = []
     total_por_cobrar = Decimal("0")
@@ -907,6 +945,8 @@ def vista_cuenta_corriente_cliente(request):
         "cliente_id":        cliente_id,
         "fecha_desde":       fecha_desde,
         "fecha_hasta":       fecha_hasta,
+        "venc_desde":        venc_desde,
+        "venc_hasta":        venc_hasta,
         "estado_filtro":     estado_filtro,
         "total_por_cobrar":  total_por_cobrar,
         "cant_vencidas":     cant_vencidas,

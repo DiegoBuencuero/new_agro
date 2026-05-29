@@ -17,6 +17,17 @@
     {% endfor %}
     {% endif %}
 
+    {% if venc_desde or venc_hasta %}
+    <div class="alert alert-info d-flex align-items-center gap-2 mb-3">
+        <i class="mdi mdi-calendar-filter me-1"></i>
+        {% translate "Mostrando ventas con vencimiento" %}
+        {% if venc_desde %} {% translate "desde" %} <strong>{{ venc_desde }}</strong>{% endif %}
+        {% if venc_hasta %} {% translate "hasta" %} <strong>{{ venc_hasta }}</strong>{% endif %}
+        &nbsp;—&nbsp;
+        <a href="{% url 'vista_lista_ventas' %}" class="alert-link">{% translate "Ver todas" %}</a>
+    </div>
+    {% endif %}
+
     <!-- Filtros -->
     <form method="get" class="card shadow-sm mb-4">
         <div class="card-body">
@@ -57,6 +68,7 @@
                         <th class="px-4 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "N° Factura" %}</th>
                         <th class="px-3 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Cliente" %}</th>
                         <th class="px-3 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Fecha" %}</th>
+                        <th class="px-3 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Vencimiento" %}</th>
                         <th class="px-3 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Producto" %}</th>
                         <th class="px-3 py-3 text-end" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Total" %}</th>
                         <th class="px-3 py-3 text-end" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Cobrado" %}</th>
@@ -70,6 +82,7 @@
                     <td class="px-4 py-3 fw-semibold">{{ f.obj.numero|default:"—" }}</td>
                     <td class="px-3 py-3">{{ f.obj.cliente }}</td>
                     <td class="px-3 py-3 text-muted small">{{ f.obj.fecha|date:"d/m/Y" }}</td>
+                    <td class="px-3 py-3 text-muted small">{{ f.obj.fecha_vencimiento|date:"d/m/Y"|default:"—" }}</td>
                     <td class="px-3 py-3">
                         {% for item in f.obj.items.all %}
                         <div class="small">

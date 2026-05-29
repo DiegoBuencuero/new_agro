@@ -68,6 +68,17 @@ tr.seleccionada td { background:#eff6ff !important; }
     </div>
   </div>
 
+  {% if venc_desde or venc_hasta %}
+  <div class="alert alert-info d-flex align-items-center gap-2 py-2 mb-3" style="font-size:.84rem">
+    <i class="mdi mdi-filter-outline"></i>
+    <span>{% translate "Mostrando facturas con vencimiento" %}
+      {% if venc_desde %} {% translate "desde" %} <strong>{{ venc_desde }}</strong>{% endif %}
+      {% if venc_hasta %} {% translate "hasta" %} <strong>{{ venc_hasta }}</strong>{% endif %}
+    </span>
+    <a href="{% url 'vista_cuenta_corriente_cliente' %}" class="ms-auto btn btn-sm btn-outline-secondary py-0" style="font-size:.75rem">{% translate "Ver todas" %}</a>
+  </div>
+  {% endif %}
+
   <!-- Filtros -->
   <div class="card cc-filtros mb-4">
     <div class="card-body">

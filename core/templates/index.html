@@ -42,7 +42,7 @@
           <div id="kpi-cobrar" class="fw-bold mt-1" style="font-size:1.3rem;color:#15803d">
             <span class="spinner-border spinner-border-sm text-success"></span>
           </div>
-          <div class="text-muted" style="font-size:.68rem">{% translate "cuentas pendientes" %}</div>
+          <div class="text-muted" style="font-size:.68rem">{% translate "ventas sin cobrar" %}</div>
         </div>
       </div>
     </div>
@@ -57,7 +57,7 @@
           <div id="kpi-pagar" class="fw-bold mt-1" style="font-size:1.3rem;color:#dc2626">
             <span class="spinner-border spinner-border-sm text-danger"></span>
           </div>
-          <div class="text-muted" style="font-size:.68rem">{% translate "proveedores" %}</div>
+          <div class="text-muted" style="font-size:.68rem">{% translate "compras sin pagar" %}</div>
         </div>
       </div>
     </div>
@@ -72,7 +72,7 @@
           <div id="kpi-neto" class="fw-bold mt-1" style="font-size:1.3rem">
             <span class="spinner-border spinner-border-sm text-primary"></span>
           </div>
-          <div class="text-muted" style="font-size:.68rem">{% translate "cobrar − pagar" %}</div>
+          <div class="text-muted" style="font-size:.68rem">{% translate "total cobrar − total pagar" %}</div>
         </div>
       </div>
     </div>
@@ -83,11 +83,11 @@
                style="width:38px;height:38px;background:#fef3c7">
             <i class="mdi mdi-trending-up" style="font-size:1.15rem;color:#d97706"></i>
           </div>
-          <div class="text-muted fw-semibold text-uppercase" style="font-size:.68rem;letter-spacing:.06em">{% translate "Proyección 30d" %}</div>
+          <div class="text-muted fw-semibold text-uppercase" style="font-size:.68rem;letter-spacing:.06em">{% translate "Próx. 30 días" %}</div>
           <div id="kpi-proy" class="fw-bold mt-1" style="font-size:1.3rem;color:#d97706">
             <span class="spinner-border spinner-border-sm text-warning"></span>
           </div>
-          <div class="text-muted" style="font-size:.68rem">{% translate "flujo próx. 30 días" %}</div>
+          <div class="text-muted" style="font-size:.68rem">{% translate "cobros − pagos vencen en 30d" %}</div>
         </div>
       </div>
     </div>
@@ -157,7 +157,12 @@
         </div>
         <div class="card-body">
           {% if ciclos_count %}
-          <div class="d-flex align-items-center justify-content-between mb-3">
+          <div id="ciclo-content">
+            <div class="text-center py-2">
+              <span class="spinner-border spinner-border-sm text-success"></span>
+            </div>
+          </div>
+          <div class="d-flex align-items-center justify-content-between mt-3 pt-2" style="border-top:1px solid #f1f3f5">
             <button class="btn btn-sm btn-outline-secondary border-0 py-0 px-2"
                     id="ciclo-prev" onclick="navCiclo(-1)">
               <i class="mdi mdi-chevron-left" style="font-size:1.1rem"></i>
@@ -167,11 +172,6 @@
                     id="ciclo-next" onclick="navCiclo(1)">
               <i class="mdi mdi-chevron-right" style="font-size:1.1rem"></i>
             </button>
-          </div>
-          <div id="ciclo-content">
-            <div class="text-center py-2">
-              <span class="spinner-border spinner-border-sm text-success"></span>
-            </div>
           </div>
           {% else %}
           <div class="text-center py-3 text-muted small">{% translate "Sin ciclos activos" %}</div>
@@ -348,7 +348,7 @@ fetch("{% url 'ajax_dashboard_resumen' %}")
     document.getElementById('kpi-cobrar').textContent = fmtR(d.a_cobrar);
     document.getElementById('kpi-pagar').textContent  = fmtR(d.a_pagar);
     var neto = document.getElementById('kpi-neto');
-    neto.textContent = fmtR(d.saldo_neto);
+    neto.textContent = (d.saldo_neto >= 0 ? '+' : '−') + fmtR(d.saldo_neto);
     neto.style.color = d.saldo_neto >= 0 ? '#15803d' : '#dc2626';
     var proy = document.getElementById('kpi-proy');
     proy.textContent = (d.proyeccion >= 0 ? '+' : '−') + fmtR(d.proyeccion);
@@ -407,6 +407,9 @@ function renderCalChart(d) {
     },
     options: {
       responsive: true,
+      onHover: function(event, elements) {
+        event.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+      },
       plugins: {
         legend: {
           position: 'top',
@@ -436,14 +439,32 @@ function renderCalChart(d) {
         }
       },
       onClick: function(event, elements) {
-        if (calModo !== 'mensual' || !elements.length) return;
+        if (!elements.length) return;
         var lbl   = labels[elements[0].index];
-        var parts = lbl.split('/');
-        document.getElementById('cal-titulo').textContent = '{% translate "Semanas de" %} ' + lbl;
-        document.getElementById('btn-volver-mes').classList.remove('d-none');
-        document.getElementById('cal-loading').style.display = '';
-        canvas.style.display = 'none';
-        cargarCalendario('semanal', parseInt(parts[1]), parseInt(parts[0]));
+        var dsIdx = elements[0].datasetIndex;
+        var isPago = (dsIdx === 1);
+        var desde, hasta;
+
+        if (calModo === 'mensual') {
+          // label formato MM/YYYY
+          var parts = lbl.split('/');
+          var m = parseInt(parts[0]), y = parseInt(parts[1]);
+          var lastDay = new Date(y, m, 0).getDate();
+          desde = y + '-' + String(m).padStart(2,'0') + '-01';
+          hasta = y + '-' + String(m).padStart(2,'0') + '-' + String(lastDay).padStart(2,'0');
+        } else {
+          // label formato DD/MM — semana iniciando ese lunes
+          var parts = lbl.split('/');
+          var weekStart = new Date(new Date().getFullYear(), parseInt(parts[1])-1, parseInt(parts[0]));
+          var weekEnd   = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 6);
+          var fmt = function(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+          desde = fmt(weekStart); hasta = fmt(weekEnd);
+        }
+
+        var base = isPago
+          ? "{% url 'vista_cuenta_corriente_proveedor' %}"
+          : "{% url 'vista_lista_ventas' %}";
+        window.location.href = base + '?venc_desde=' + desde + '&venc_hasta=' + hasta;
       }
     }
   });
@@ -505,22 +526,39 @@ function renderCiclo() {
   var p = precios[c.commodity];
   if (p && p.brl_saca) {
     var sacas = (c.costo_ha / p.brl_saca).toFixed(2);
-    sacasHtml = `<div class="mt-2 px-2 py-1 rounded" style="background:#f0fdf4;font-size:.78rem">
-      <span class="text-muted">{% translate "Necesitás" %} </span>
-      <strong style="color:#15803d">${sacas} sc/ha</strong>
-      <span class="text-muted"> @ R$${p.brl_saca.toFixed(2)}</span>
+    sacasHtml = `<div class="mt-2 px-2 py-1 rounded" style="background:#f1f3f5;font-size:.78rem">
+      <span style="color:#6c757d">{% translate "Necesitás" %} </span>
+      <strong style="color:#212529">${sacas} sc/ha</strong>
+      <span style="color:#6c757d"> @ R$${p.brl_saca.toFixed(2)}</span>
     </div>`;
   }
+
+  var fmtH = v => 'R$ ' + v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+  var rowStyle = 'display:flex;justify-content:space-between;align-items:center;padding:2px 0';
+  var lblStyle = 'font-size:.75rem;color:#6c757d';
+  var valStyle = 'font-size:.78rem;color:#374151';
 
   panel.innerHTML = `
     <div style="padding:4px 0">
       <div class="fw-semibold" style="font-size:1rem">${c.cultivo}</div>
       <div class="text-muted" style="font-size:.82rem">${c.campo} &nbsp;·&nbsp; ${c.ha.toFixed(1)} ha</div>
-      <div class="d-flex justify-content-between align-items-center mt-2">
-        <span class="text-muted small">{% translate "Costo/ha" %}</span>
-        <span class="fw-bold" style="font-size:1.05rem;color:#374151">
-          R$ ${c.costo_ha.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}
-        </span>
+      <div style="margin-top:10px;border-top:1px solid #e9ecef;padding-top:8px">
+        <div style="${rowStyle}">
+          <span style="${lblStyle}"><i class="mdi mdi-account-hard-hat-outline me-1"></i>{% translate "Mano de obra" %}/ha</span>
+          <span style="${valStyle}">${fmtH(c.mo_ha)}</span>
+        </div>
+        <div style="${rowStyle}">
+          <span style="${lblStyle}"><i class="mdi mdi-tractor me-1"></i>{% translate "Maquinaria" %}/ha</span>
+          <span style="${valStyle}">${fmtH(c.maq_ha)}</span>
+        </div>
+        <div style="${rowStyle}">
+          <span style="${lblStyle}"><i class="mdi mdi-flask-outline me-1"></i>{% translate "Insumos" %}/ha</span>
+          <span style="${valStyle}">${fmtH(c.ins_ha)}</span>
+        </div>
+        <div style="${rowStyle};border-top:1px solid #e9ecef;margin-top:4px;padding-top:4px">
+          <span style="font-size:.78rem;font-weight:600;color:#374151">{% translate "Total" %}/ha</span>
+          <span style="font-size:1.05rem;font-weight:700;color:#374151">${fmtH(c.costo_ha)}</span>
+        </div>
       </div>
       ${sacasHtml}
     </div>`;

@@ -25,167 +25,100 @@
     </div>
     {% endif %}
     <div class="upload-card">
-        <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
-            <div>
-                <h3 class="mb-1">
-                    <i class="mdi mdi-map icon-agro"></i>
-                    {{ ciclo.nombre_lote }}
-                </h3>
-                <div class="text-muted small">
-                    {{ ciclo.campo.nombre }} · {{ ciclo.campana }} · {{ ciclo.superficie_ha }} ha
-                </div>
-            </div>
+        <!-- ── TÍTULO ── -->
+        <div class="mb-3">
+            <h3 class="mb-1 fw-bold">
+                <i class="mdi mdi-map icon-agro me-1"></i>{{ ciclo.nombre_lote }}
+            </h3>
+            <div class="text-muted small">{{ ciclo.campo.nombre }} · {{ ciclo.campana }}</div>
         </div>
 
+        <!-- ── 3 CARDS ── -->
         <div class="row g-3 mb-4">
+
+            <!-- Card 1: Cultivo + datos del ciclo -->
             <div class="col-lg-4">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h6 class="text-muted mb-2">
-                            {% translate "Cultivo" %}
-                        </h6>
-                        <div class="fw-semibold">
-                            {{ ciclo.cultivo.nombre }}
-                            {% if ciclo.cultivo.variedad %}
-                                - {{ ciclo.cultivo.variedad }}
-                            {% endif %}
+                        <div class="d-flex align-items-baseline gap-2 mb-1">
+                            <h6 class="text-muted mb-0">{% translate "Cultivo" %}</h6>
+                            <span class="fw-bold fs-5">{{ ciclo.cultivo.nombre }}</span>
                         </div>
-
-                        {% if ciclo.cultivo.requerimiento_hidrico %}
-                            <div class="small text-muted mt-2">
-                                {% translate "Requerimiento hídrico" %}
-                            </div>
-                            <div>
-                                {{ ciclo.cultivo.requerimiento_hidrico }} mm
-                            </div>
+                        {% if ciclo.cultivo.variedad %}
+                            <div class="small text-muted mb-3">{{ ciclo.cultivo.variedad }}</div>
+                        {% else %}
+                            <div class="mb-3"></div>
                         {% endif %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h6 class="text-muted mb-3">
-                            {% translate "Economía" %}
-                        </h6>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">
-                                {% translate "Costo total" %}
-                            </span>
-                            <span class="fw-semibold">
-                                R$ {{ costo_total_ciclo|floatformat:2 }}
-                            </span>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted"><i class="mdi mdi-vector-square me-1"></i>{% translate "Superficie" %}</span>
+                            <span class="small fw-semibold">{{ ciclo.superficie_ha }} ha</span>
                         </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">
-                                {% translate "Costo/ha" %}
-                            </span>
-                            <span>
-                                R$ {{ costo_ha_ciclo|floatformat:2 }}
-                            </span>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted"><i class="mdi mdi-calendar-plus me-1"></i>{% translate "Inicio" %}</span>
+                            <span class="small fw-semibold">{{ ciclo.fecha_inicio|date:"d/m/Y" }}</span>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <span class="text-muted">
-                                {% translate "Precio mercado" %}
-                            </span>
-                            <span class="fw-semibold text-success">
-                                R$ {{ precio_saco|floatformat:2 }}
+                            <span class="small text-muted"><i class="mdi mdi-calendar-check me-1"></i>{% translate "Fin" %}</span>
+                            <span class="small fw-semibold">
+                                {% if fecha_fin_real %}{{ fecha_fin_real|date:"d/m/Y" }}{% else %}<span class="text-success">{% translate "En curso" %}</span>{% endif %}
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Card 2: Costos -->
             <div class="col-lg-4">
                 <div class="card h-100">
                     <div class="card-body">
-                        <h6 class="text-muted mb-3">
-                            {% translate "Objetivos" %}
-                        </h6>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">
-                                {% translate "Equilibrio" %}
-                            </span>
-                            <span class="fw-semibold">
-                                {{ sacos_equilibrio_ha|floatformat:2 }} sc/ha
-                            </span>
+                        <h6 class="text-muted mb-3">{% translate "Costos" %}</h6>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted"><i class="mdi mdi-account-hard-hat-outline me-1"></i>{% translate "Mano de obra" %}/ha</span>
+                            <span class="small fw-semibold">R$ {{ costo_mo_ha|floatformat:0 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted"><i class="mdi mdi-tractor me-1"></i>{% translate "Maquinaria" %}/ha</span>
+                            <span class="small fw-semibold">R$ {{ costo_maq_ha|floatformat:0 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-2" style="border-bottom:1px solid #e9ecef">
+                            <span class="small text-muted"><i class="mdi mdi-flask-outline me-1"></i>{% translate "Insumos" %}/ha</span>
+                            <span class="small fw-semibold">R$ {{ costo_ins_ha|floatformat:0 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted">{% translate "Costo/ha" %}</span>
+                            <span class="fw-bold" style="color:#374151">R$ {{ costo_ha_ciclo|floatformat:0 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="small text-muted">{% translate "Costo total" %}</span>
+                            <span class="small fw-semibold">R$ {{ costo_total_ciclo|floatformat:0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 3: Economía / objetivos -->
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="text-muted mb-3">{% translate "Economía" %}</h6>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted">{% translate "Precio mercado" %}</span>
+                            <span class="small fw-semibold text-success">R$ {{ precio_saco|floatformat:0 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-2" style="border-bottom:1px solid #e9ecef">
+                            <span class="small text-muted">{% translate "Punto de equilibrio" %}</span>
+                            <span class="small fw-semibold">{{ sacos_equilibrio_ha|floatformat:2 }} sc/ha</span>
                         </div>
                         {% if rendimiento_esperado_sacos %}
-                            <div class="d-flex justify-content-between">
-                                <span class="text-muted">
-                                    {% translate "Rendimiento esperado" %}
-                                </span>
-                                <span class="fw-semibold text-success">
-                                    {{ rendimiento_esperado_sacos|floatformat:1 }} sc/ha
-                                </span>
-                            </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="small text-muted">{% translate "Rend. esperado" %}</span>
+                            <span class="small fw-semibold text-success">{{ rendimiento_esperado_sacos|floatformat:1 }} sc/ha</span>
+                        </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="mdi mdi-vector-square fs-4 text-muted"></i>
-                        <div class="mt-2 small text-muted">
-                            {% translate "Superficie" %}
-                        </div>
-                        <div class="fw-semibold">
-                            {{ ciclo.superficie_ha }} ha
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="mdi mdi-calendar-plus fs-4 text-muted"></i>
-                        <div class="mt-2 small text-muted">
-                            {% translate "Inicio" %}
-                        </div>
-                        <div class="fw-semibold">
-                            {{ ciclo.fecha_inicio|date:"d/m/Y" }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="mdi mdi-calendar-check fs-4 text-muted"></i>
-                        <div class="mt-2 small text-muted">
-                            {% translate "Fin" %}
-                        </div>
-                        <div class="fw-semibold">
-                            {% if fecha_fin_real %}
-                                {{ fecha_fin_real|date:"d/m/Y" }}
-                            {% else %}
-                                {% translate "En curso" %}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="mdi mdi-chart-line fs-4 text-muted"></i>
-                        <div class="mt-2 small text-muted">
-                            {% translate "Actividades" %}
-                        </div>
-                        <div class="fw-semibold">
-                            {{ actividades|length }}
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -378,7 +311,7 @@
                                                                                                 </td>
                                                                                                 <td class="text-end">{{ act.cantidad_h_maq|floatformat:2 }} hs</td>
                                                                                                 <td class="text-end">R$ {{ act.valor_h_maq|floatformat:2 }}</td>
-                                                                                                <td class="text-end">R$ {{ act.total_mq|floatformat:2 }}</td>
+                                                                                                <td class="text-end">R$ {{ act.total_maq|floatformat:2 }}</td>
                                                                                             </tr>
                                                                                         </tbody>
                                                                                     </table>

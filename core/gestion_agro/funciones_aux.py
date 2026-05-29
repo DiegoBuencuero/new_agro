@@ -33,6 +33,8 @@ def obtener_valores_costos(tipo, subtipo, empresa):
             c_mq = subtipo.valor_maquina
 
     # despues tipo
+    if v_mo is None:
+        v_mo = tipo.valor_x_ha_mo
     if v_mq is None:
         v_mq = tipo.valor_x_ha_mq
 
@@ -568,10 +570,10 @@ def registrar_actividad_aux(
     actividad.cantidad_h_maq = horas_maquina
     actividad.valor_h_maq = c_mq_unit or 0
     actividad.save()
-    # agregue total de mo y maq para historicos
+    costo_insumos_real = sum(i.costo_total or Decimal("0") for i in (insumos or []))
     actividad.total_mo  = horas_hombre  * (c_mo_unit  or Decimal("0"))
     actividad.total_maq = horas_maquina * (c_mq_unit  or Decimal("0"))
-    actividad.total     = actividad.total_mo + actividad.total_maq
+    actividad.total     = costo_insumos_real + actividad.total_mo + actividad.total_maq
     actividad.save()
 
     # 13. guardar extras
