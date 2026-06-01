@@ -674,7 +674,11 @@ document.addEventListener("DOMContentLoaded", () => {
     initMaps();
     setTimeout(() => maps.forEach(m => m.invalidateSize()), 200);
 
-    document.getElementById("sel-campo").addEventListener("change", function () {
+    // Auto-cargar si el browser recuerda un campo seleccionado
+    const selCampo = document.getElementById("sel-campo");
+    if (selCampo.value) cargarCampo(selCampo.value);
+
+    selCampo.addEventListener("change", function () {
         const id = this.value;
         if (!id) {
             campoId = null;
