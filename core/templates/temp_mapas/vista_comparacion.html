@@ -546,7 +546,7 @@ function onMapClick(latlng) {
             document.getElementById("modal-tabla-body").innerHTML = rows;
             document.getElementById("modal-tabla").style.display = "";
         }
-    })
+
         // ── Chuvas (demo con datos históricos del campo si existen, sino ocultar)
         const chuvaData = d.chuvas || null;
         if (chuvaData && chuvaData.labels && chuvaData.este_ano) {
