@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import ContentFile
 from django.http import JsonResponse
@@ -1678,8 +1679,7 @@ def vista_registros_lluvia(request):
             medicion.minimo   = None
             medicion.maximo   = None
             medicion.save()
-            from django.contrib import messages
-            messages.success(request, _("Registro guardado."))
+            messages.success(request, "Registro guardado.")
             form = LluviaForm(empresa)
     else:
         form = LluviaForm(empresa)
