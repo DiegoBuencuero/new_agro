@@ -1604,6 +1604,30 @@ def ajax_analisis_punto(request, campo_id):
         except Exception as e:
             continue
 
+    # ── Chuvas: buscar mediciones tipo "clima" para el campo ────
+    chuvas = None
+    try:
+        from mapas.models import MedicionCampo as _MC
+        import datetime as _dt
+        hoy = _dt.date.today()
+        meses_labels = [(hoy.replace(day=1) - _dt.timedelta(days=30*i)) for i in range(5, -1, -1)]
+        lluvia_var = VariableAnalitica.objects.filter(campo__isnull=True, tipo="otro", nombre__icontains="lluv").first() or \
+                     VariableAnalitica.objects.filter(tipo="otro", nombre__icontains="chuv").first()
+        if lluvia_var:
+            registros = _MC.objects.filter(
+                campo=campo, variable=lluvia_var,
+                fecha__gte=meses_labels[0]
+            ).order_by("fecha")
+            if registros.exists():
+                este_ano = [next((r.promedio for r in registros if r.fecha.month == m.month and r.fecha.year == m.year), None) for m in meses_labels]
+                chuvas = {
+                    "labels":    [m.strftime("%b") for m in meses_labels],
+                    "este_ano":  este_ano,
+                    "historico": [None] * len(meses_labels),
+                }
+    except Exception:
+        pass
+
     return JsonResponse({
         "ok":          True,
         "lat":         round(lat, 6),
@@ -1611,4 +1635,5 @@ def ajax_analisis_punto(request, campo_id):
         "ciclo":       ciclo_data,
         "rendimiento": rendimiento,
         "variables":   variables,
+        "chuvas":      chuvas,
     })

@@ -118,73 +118,71 @@
 {# ── MODAL: análisis del punto ── #}
 <div class="modal fade" id="modalPunto" tabindex="-1">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
-    <div class="modal-content border-0" style="border-radius:12px;overflow:hidden">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden">
 
-      <div class="modal-header border-0 px-4 py-3" style="background:#1a2e1a">
+      <div class="modal-header border-0 px-4 py-3" style="background:#1e2d1e">
         <div class="d-flex align-items-center gap-2">
-          <i class="mdi mdi-map-marker-radius text-success" style="font-size:1.2rem"></i>
-          <span class="fw-semibold text-white" style="font-size:.95rem">{% translate "Análise do Ponto Selecionado" %}</span>
+          <i class="mdi mdi-chart-scatter-plot text-success" style="font-size:1.1rem"></i>
+          <span class="fw-semibold text-white" style="font-size:.9rem">{% translate "Análise do Ponto Selecionado" %}</span>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
-      <div class="modal-body p-0">
-
+      <div class="modal-body p-0 bg-white">
         <div id="modal-loading" class="text-center py-5">
-          <div class="spinner-border text-success" style="width:2rem;height:2rem"></div>
-          <div class="text-muted small mt-2">{% translate "Consultando datos del punto..." %}</div>
+          <div class="spinner-border text-success" style="width:1.8rem;height:1.8rem;border-width:2px"></div>
+          <div class="text-muted small mt-2">{% translate "Consultando dados do ponto..." %}</div>
         </div>
 
         <div id="modal-contenido" style="display:none">
 
           <!-- Dados de Plantío -->
-          <div id="modal-bloque-plantio" class="px-4 pt-3 pb-2 border-bottom" style="background:#f8faf8;display:none">
-            <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
-              <i class="mdi mdi-seed-outline me-1"></i>{% translate "Dados de Plantío" %}
+          <div id="modal-bloque-plantio" class="px-4 pt-3 pb-3 border-bottom" style="display:none;background:#fafafa">
+            <div class="d-flex align-items-center gap-1 mb-2">
+              <i class="mdi mdi-lightbulb-on-outline text-warning" style="font-size:.95rem"></i>
+              <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Dados de Plantío" %}</span>
             </div>
-            <div class="d-flex flex-wrap gap-3">
-              <div><div class="text-muted" style="font-size:.68rem">{% translate "Cultivo" %}</div><div class="fw-semibold" id="modal-pt-cultivo" style="font-size:.85rem">—</div></div>
-              <div><div class="text-muted" style="font-size:.68rem">{% translate "Variedade" %}</div><div class="fw-semibold" id="modal-pt-variedad" style="font-size:.85rem">—</div></div>
-              <div><div class="text-muted" style="font-size:.68rem">{% translate "Data Plantío" %}</div><div class="fw-semibold" id="modal-pt-fecha" style="font-size:.85rem">—</div></div>
-              <div><div class="text-muted" style="font-size:.68rem">{% translate "Superfície" %}</div><div class="fw-semibold" id="modal-pt-superficie" style="font-size:.85rem">—</div></div>
+            <div class="d-flex flex-wrap gap-4" style="font-size:.82rem">
+              <div><span class="text-muted">{% translate "Variedade" %}:</span> <strong id="modal-pt-variedad">—</strong></div>
+              <div><span class="text-muted">{% translate "Cultivo" %}:</span> <strong id="modal-pt-cultivo">—</strong></div>
+              <div><span class="text-muted">{% translate "Superfície" %}:</span> <strong id="modal-pt-superficie">—</strong></div>
+              <div><span class="text-muted">{% translate "Data de Plantío" %}:</span> <strong id="modal-pt-fecha">—</strong></div>
             </div>
           </div>
 
+          <!-- Localização + Análise de Nutrientes -->
           <div class="row g-0">
-            <!-- Localização + Rendimento -->
-            <div class="col-md-5 px-4 py-3 border-end border-bottom">
-              <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
-                <i class="mdi mdi-crosshairs-gps me-1"></i>{% translate "Localização" %}
+            <div class="col-md-4 px-4 py-3 border-end" style="background:#fafafa">
+              <div class="d-flex align-items-center gap-1 mb-2">
+                <i class="mdi mdi-map-marker-outline text-danger" style="font-size:.95rem"></i>
+                <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Localização" %}</span>
               </div>
-              <div class="mb-1" style="font-size:.82rem"><span class="text-muted">Lat:</span><span id="modal-lat" class="fw-semibold ms-1"></span></div>
-              <div class="mb-3" style="font-size:.82rem"><span class="text-muted">Lng:</span><span id="modal-lng" class="fw-semibold ms-1"></span></div>
-
+              <div style="font-size:.8rem;color:#555" class="mb-3">
+                {% translate "Coordenadas" %}: <span id="modal-lat">—</span>, <span id="modal-lng">—</span>
+              </div>
               <div id="modal-bloque-rendimiento" style="display:none">
-                <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
-                  <i class="mdi mdi-chart-bar me-1"></i>{% translate "Rendimento" %}
-                </div>
-                <div class="d-flex flex-column gap-1">
-                  <div class="d-flex justify-content-between" style="font-size:.82rem"><span class="text-muted">{% translate "No Ponto" %}</span><span class="fw-bold" id="modal-rend-punto">—</span></div>
-                  <div class="d-flex justify-content-between" style="font-size:.82rem"><span class="text-muted">{% translate "Máximo" %}</span><span id="modal-rend-max">—</span></div>
-                  <div class="d-flex justify-content-between" style="font-size:.82rem"><span class="text-muted">{% translate "Médio" %}</span><span id="modal-rend-prom">—</span></div>
-                  <div class="d-flex justify-content-between" style="font-size:.82rem"><span class="text-muted">{% translate "Mínimo" %}</span><span id="modal-rend-min">—</span></div>
-                </div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimento no Ponto" %}: <strong id="modal-rend-punto">—</strong></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimento Máximo" %}: <span id="modal-rend-max">—</span></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimento Médio" %}: <span id="modal-rend-prom">—</span></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimento Mínimo" %}: <span id="modal-rend-min">—</span></div>
               </div>
             </div>
 
-            <!-- Tabla variables -->
-            <div class="col-md-7 px-4 py-3 border-bottom">
-              <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
-                <i class="mdi mdi-flask-outline me-1"></i>{% translate "Análise de Variáveis" %}
+            <div class="col-md-8 px-4 py-3">
+              <div class="d-flex align-items-center gap-1 mb-2">
+                <i class="mdi mdi-flask-outline text-primary" style="font-size:.95rem"></i>
+                <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Análise de Nutrientes" %}</span>
               </div>
-              <div id="modal-sin-datos" class="text-muted small py-3 text-center" style="display:none">{% translate "Sin datos analíticos para este punto" %}</div>
-              <table class="table table-sm mb-0" id="modal-tabla" style="font-size:.82rem;display:none">
-                <thead>
-                  <tr style="border-bottom:2px solid #e9ecef">
-                    <th class="ps-0 text-muted fw-normal" style="font-size:.72rem">{% translate "Variable" %}</th>
-                    <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Valor" %}</th>
-                    <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Máximo" %}</th>
-                    <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Diferença" %}</th>
+              <div id="modal-sin-datos" class="text-muted small py-2 text-center" style="display:none">
+                {% translate "Sin datos analíticos para este punto" %}
+              </div>
+              <table class="table table-sm table-bordered mb-0" id="modal-tabla" style="font-size:.8rem;display:none">
+                <thead class="table-light">
+                  <tr>
+                    <th style="font-size:.72rem;font-weight:600;color:#555">{% translate "Variável" %}</th>
+                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Valor do Ponto" %}</th>
+                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Valor Máximo" %}</th>
+                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Diferença" %}</th>
                   </tr>
                 </thead>
                 <tbody id="modal-tabla-body"></tbody>
@@ -192,12 +190,21 @@
             </div>
           </div>
 
-        </div>{# /modal-contenido #}
+          <!-- Chuvas Acumuladas -->
+          <div id="modal-bloque-chuvas" class="px-4 pt-3 pb-4 border-top" style="display:none">
+            <div class="d-flex align-items-center gap-1 mb-3">
+              <i class="mdi mdi-weather-rainy text-info" style="font-size:.95rem"></i>
+              <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Chuvas Acumuladas Mensais (mm)" %}</span>
+            </div>
+            <canvas id="modal-chart-chuvas" height="90"></canvas>
+          </div>
+
+        </div>
       </div>
 
-      <div class="modal-footer border-0 py-2 px-4" style="background:#f8faf8">
-        <small class="text-muted me-auto" id="modal-coords-footer"></small>
-        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cerrar" %}</button>
+      <div class="modal-footer border-0 py-2 px-4" style="background:#fafafa">
+        <small class="text-muted me-auto" id="modal-coords-footer" style="font-size:.72rem"></small>
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">{% translate "Cerrar" %}</button>
       </div>
 
     </div>
@@ -527,18 +534,64 @@ function onMapClick(latlng) {
                 let difHtml = "—";
                 if (dif !== null && dif !== undefined) {
                     const color = dif >= 0 ? "#198754" : "#dc3545";
-                    const signo = dif >= 0 ? "+" : "";
-                    difHtml = `<span style="color:${color};font-weight:600">${signo}${dif.toFixed(2)}</span>`;
+                    difHtml = `<span style="color:${color};font-weight:600">${dif.toFixed(1)}</span>`;
                 }
                 return `<tr>
-                    <td class="ps-0"><span class="fw-semibold">${v.nombre}</span>${v.unidad ? `<span class="text-muted ms-1" style="font-size:.72rem">(${v.unidad})</span>` : ""}</td>
-                    <td class="text-end fw-bold">${v.valor.toFixed(2)}</td>
-                    <td class="text-end text-muted">${v.val_max !== null ? v.val_max.toFixed(2) : "—"}</td>
-                    <td class="text-end">${difHtml}</td>
+                    <td>${v.nombre}${v.unidad ? `<span class="text-muted ms-1" style="font-size:.72rem">(${v.unidad})</span>` : ""}</td>
+                    <td class="text-center fw-semibold">${v.valor.toFixed(1)}</td>
+                    <td class="text-center text-muted">${v.val_max !== null ? v.val_max.toFixed(1) : "—"}</td>
+                    <td class="text-center">${difHtml}</td>
                 </tr>`;
             }).join("");
             document.getElementById("modal-tabla-body").innerHTML = rows;
             document.getElementById("modal-tabla").style.display = "";
+        }
+    })
+        // ── Chuvas (demo con datos históricos del campo si existen, sino ocultar)
+        const chuvaData = d.chuvas || null;
+        if (chuvaData && chuvaData.labels && chuvaData.este_ano) {
+            document.getElementById("modal-bloque-chuvas").style.display = "";
+            const ctx = document.getElementById("modal-chart-chuvas").getContext("2d");
+            if (window._chartChuvas) window._chartChuvas.destroy();
+            window._chartChuvas = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: chuvaData.labels,
+                    datasets: [
+                        {
+                            label: "{% translate 'Este Año' %}",
+                            data: chuvaData.este_ano,
+                            borderColor: "#4dc9a0",
+                            backgroundColor: "rgba(77,201,160,.15)",
+                            borderWidth: 2,
+                            pointRadius: 3,
+                            tension: 0.4,
+                            fill: true,
+                        },
+                        {
+                            label: "{% translate 'Histórico' %}",
+                            data: chuvaData.historico,
+                            borderColor: "#bbb",
+                            backgroundColor: "rgba(180,180,180,.1)",
+                            borderWidth: 1.5,
+                            pointRadius: 2,
+                            tension: 0.4,
+                            fill: true,
+                            borderDash: [4,3],
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { font: { size: 11 }, boxWidth: 20 } } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+                        x: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        } else {
+            document.getElementById("modal-bloque-chuvas").style.display = "none";
         }
     })
     .catch(() => {
