@@ -1,0 +1,23 @@
+# Base de datos
+*.sqlite3
+backup_data.json
+backup_pythonanywhere.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Entornos
+.env
+.venv
+env/
+venv/
+
+# Media uploads
+media/
+
+# Logs
+*.log
