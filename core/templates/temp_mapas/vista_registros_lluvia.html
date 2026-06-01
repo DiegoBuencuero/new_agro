@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <h4 class="mb-0 fw-bold">
+      <i class="mdi mdi-weather-rainy me-2 text-info"></i>{% translate "Registros de Lluvia" %}
+    </h4>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+    <div class="alert alert-{{ msg.tags }} alert-dismissible fade show">
+      {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="row g-4">
+
+    <!-- Formulario -->
+    <div class="col-md-4">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <h6 class="fw-semibold mb-3">{% translate "Nuevo registro" %}</h6>
+          <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">{% translate "Campo" %} <span class="text-danger">*</span></label>
+              {{ form.campo }}
+              {% if form.campo.errors %}<div class="text-danger small mt-1">{{ form.campo.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">{% translate "Fecha" %} <span class="text-danger">*</span></label>
+              {{ form.fecha }}
+              {% if form.fecha.errors %}<div class="text-danger small mt-1">{{ form.fecha.errors }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+              <label class="form-label small fw-semibold">{% translate "Precipitación (mm)" %} <span class="text-danger">*</span></label>
+              {{ form.promedio }}
+              {% if form.promedio.errors %}<div class="text-danger small mt-1">{{ form.promedio.errors }}</div>{% endif %}
+            </div>
+            <button type="submit" class="btn btn-info btn-sm w-100 text-white">
+              <i class="mdi mdi-plus me-1"></i>{% translate "Guardar" %}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de registros -->
+    <div class="col-md-8">
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          {% if registros %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead style="background:#f8f9fa;border-bottom:2px solid #e9ecef">
+                <tr>
+                  <th class="px-4 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Campo" %}</th>
+                  <th class="px-3 py-3" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "Fecha" %}</th>
+                  <th class="px-3 py-3 text-end" style="font-size:.8rem;text-transform:uppercase;color:#6c757d">{% translate "mm" %}</th>
+                  <th class="px-3 py-3" style="width:60px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in registros %}
+                <tr style="border-bottom:1px solid #f1f3f5">
+                  <td class="px-4 py-2 fw-semibold small">{{ r.campo.nombre }}</td>
+                  <td class="px-3 py-2 text-muted small">{{ r.fecha|date:"d/m/Y" }}</td>
+                  <td class="px-3 py-2 text-end fw-semibold">
+                    <span class="text-info">{{ r.promedio|floatformat:1 }}</span>
+                  </td>
+                  <td class="px-3 py-2 text-center">
+                    <button class="btn btn-sm btn-outline-danger border-0 py-0 px-1"
+                            onclick="eliminar({{ r.id }}, this)"
+                            data-bs-toggle="tooltip" title="{% translate 'Eliminar' %}">
+                      <i class="mdi mdi-delete-outline"></i>
+                    </button>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-5 text-muted">
+            <i class="mdi mdi-weather-rainy display-5 d-block mb-2"></i>
+            {% translate "Sin registros de lluvia cargados" %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% block custom_js %}
+<script>
+function eliminar(id, btn) {
+  if (!confirm('{% translate "¿Eliminar este registro?" %}')) return;
+  fetch('/mapas/lluvia/' + id + '/eliminar/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+  })
+  .then(r => r.json())
+  .then(d => { if (d.ok) btn.closest('tr').remove(); });
+}
+</script>
+{% endblock %}
+{% endblock %}

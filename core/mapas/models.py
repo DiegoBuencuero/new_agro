@@ -13,6 +13,7 @@ class VariableAnalitica(models.Model):
             ("satelite", "Satélite"),
             ("suelo", "Análisis de suelo"),
             ("cosecha", "Rendimiento / Cosecha"),
+            ("clima", "Clima / Lluvia"),
             ("otro", "Otro"),
         ],
         verbose_name=_("Tipo"),

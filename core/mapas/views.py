@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST
 from agro.models import Empresa
 from gestion_agro.models import Campo, AreaCampo
 from mapas.models import CapturaSatelite, IndiceVegetacion, ArchivoAnalitico, MedicionCampo, VariableAnalitica
-from mapas.forms import CapaMapaForm
+from mapas.forms import CapaMapaForm, LluviaForm
 from mapas.aux_shapefile import procesar_shapefile_a_geojson, procesar_kml_a_geojson
 from mapas.aux_geo import geojson_union_areas, extraer_bbox
 from mapas.aux_sentenial import _get_sh_config, procesar_campo
@@ -1604,27 +1604,43 @@ def ajax_analisis_punto(request, campo_id):
         except Exception as e:
             continue
 
-    # ── Chuvas: buscar mediciones tipo "clima" para el campo ────
+    # ── Chuvas: registros manuales del campo ────────────────────
     chuvas = None
     try:
-        from mapas.models import MedicionCampo as _MC
         import datetime as _dt
         hoy = _dt.date.today()
-        meses_labels = [(hoy.replace(day=1) - _dt.timedelta(days=30*i)) for i in range(5, -1, -1)]
-        lluvia_var = VariableAnalitica.objects.filter(campo__isnull=True, tipo="otro", nombre__icontains="lluv").first() or \
-                     VariableAnalitica.objects.filter(tipo="otro", nombre__icontains="chuv").first()
+        ano_actual = hoy.year
+        lluvia_var = VariableAnalitica.objects.filter(tipo="clima").first()
         if lluvia_var:
-            registros = _MC.objects.filter(
-                campo=campo, variable=lluvia_var,
-                fecha__gte=meses_labels[0]
-            ).order_by("fecha")
+            registros = (
+                MedicionCampo.objects
+                .filter(campo=campo, variable=lluvia_var, fecha__year=ano_actual)
+                .order_by("fecha")
+            )
             if registros.exists():
-                este_ano = [next((r.promedio for r in registros if r.fecha.month == m.month and r.fecha.year == m.year), None) for m in meses_labels]
-                chuvas = {
-                    "labels":    [m.strftime("%b") for m in meses_labels],
-                    "este_ano":  este_ano,
-                    "historico": [None] * len(meses_labels),
-                }
+                meses = list(range(1, hoy.month + 1))
+                import calendar as _cal
+                labels = [_cal.month_abbr[m] for m in meses]
+                este_ano = []
+                for m in meses:
+                    total = sum(
+                        float(r.promedio) for r in registros
+                        if r.fecha.month == m
+                    )
+                    este_ano.append(round(total, 1) if total else None)
+                # Histórico: promedio del mismo mes en años anteriores
+                historico = []
+                for m in meses:
+                    prev = MedicionCampo.objects.filter(
+                        campo=campo, variable=lluvia_var,
+                        fecha__month=m, fecha__year__lt=ano_actual,
+                    )
+                    if prev.exists():
+                        avg = sum(float(r.promedio) for r in prev) / prev.count()
+                        historico.append(round(avg, 1))
+                    else:
+                        historico.append(None)
+                chuvas = {"labels": labels, "este_ano": este_ano, "historico": historico}
     except Exception:
         pass
 
@@ -1637,3 +1653,59 @@ def ajax_analisis_punto(request, campo_id):
         "variables":   variables,
         "chuvas":      chuvas,
     })
+
+
+# =====================================================
+# REGISTRO DE LLUVIA
+# =====================================================
+
+@login_required
+def vista_registros_lluvia(request):
+    empresa = request.user.profile.empresa
+
+    # Asegurar que existe la variable Precipitación
+    var_lluvia, _ = VariableAnalitica.objects.get_or_create(
+        nombre="Precipitación",
+        tipo="clima",
+        defaults={"unidad": "mm"},
+    )
+
+    if request.method == "POST":
+        form = LluviaForm(empresa, request.POST)
+        if form.is_valid():
+            medicion = form.save(commit=False)
+            medicion.variable = var_lluvia
+            medicion.minimo   = None
+            medicion.maximo   = None
+            medicion.save()
+            from django.contrib import messages
+            messages.success(request, _("Registro guardado."))
+            form = LluviaForm(empresa)
+    else:
+        form = LluviaForm(empresa)
+
+    registros = (
+        MedicionCampo.objects
+        .filter(campo__empresa=empresa, variable=var_lluvia)
+        .select_related("campo")
+        .order_by("-fecha")[:60]
+    )
+
+    return render(request, "temp_mapas/vista_registros_lluvia.html", {
+        "form":      form,
+        "registros": registros,
+    })
+
+
+@login_required
+@require_POST
+def ajax_eliminar_lluvia(request, medicion_id):
+    empresa = request.user.profile.empresa
+    medicion = get_object_or_404(
+        MedicionCampo,
+        id=medicion_id,
+        campo__empresa=empresa,
+        variable__tipo="clima",
+    )
+    medicion.delete()
+    return JsonResponse({"ok": True})

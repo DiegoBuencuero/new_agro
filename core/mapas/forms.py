@@ -9,6 +9,7 @@ from django.forms import ModelForm
 from agro.models import Ciudad, Unidad
 from gestion_agro.funciones_aux import convertir_unidad
 from gestion_agro.models import (AreaCampo, Campo, CicloAgricola, )
+from mapas.models import MedicionCampo, VariableAnalitica
 
 
 class BaseForm(ModelForm):
@@ -42,3 +43,26 @@ class CapaMapaForm(BaseSimpleForm):
         if empresa:
 
             self.fields["campo"].queryset = Campo.objects.filter(empresa=empresa).order_by("nombre")
+
+
+class LluviaForm(BaseForm):
+    class Meta:
+        model  = MedicionCampo
+        fields = ["campo", "fecha", "promedio"]
+        labels = {
+            "campo":    _("Campo"),
+            "fecha":    _("Fecha"),
+            "promedio": _("Precipitación (mm)"),
+        }
+        widgets = {
+            "fecha":    forms.DateInput(attrs={"type": "date"}),
+            "promedio": forms.NumberInput(attrs={"step": "0.1", "min": "0"}),
+        }
+
+    def __init__(self, empresa=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if empresa:
+            self.fields["campo"].queryset = Campo.objects.filter(empresa=empresa).order_by("nombre")
+        self.fields["campo"].widget.attrs["class"]    = "form-select"
+        self.fields["fecha"].widget.attrs["class"]    = "form-control"
+        self.fields["promedio"].widget.attrs["class"] = "form-control"
