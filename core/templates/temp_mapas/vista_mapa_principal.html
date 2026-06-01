@@ -229,71 +229,130 @@
   </div>
 </div>
 
-<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl modal-dialog-scrollable">
-    <div class="modal-content border-0 rounded-4 shadow">
+<!-- ── MODAL ANÁLISIS DE PUNTO ─────────────────────────────── -->
+<div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0" style="border-radius:12px;overflow:hidden">
 
-      <div class="modal-header bg-dark text-white rounded-top-4">
-        <h5 class="modal-title" id="infoModalLabel">📊 Análisis del Punto Seleccionado</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-      </div>
-
-      <div class="modal-body bg-light">
-        <div class="container-fluid">
-          <div class="row g-3">
-
-            <div class="col-md-4">
-              <div class="card shadow-sm h-100">
-                <div class="card-body">
-                  <h6 class="fw-bold">📍 Localización</h6>
-                  <p class="mb-1"><strong>Lat:</strong> <span id="modalLat"></span></p>
-                  <p class="mb-1"><strong>Lng:</strong> <span id="modalLng"></span></p>
-
-                  <hr>
-
-                  <h6 class="fw-bold">🌾 Capa</h6>
-                  <p class="mb-1"><strong>Nombre:</strong> <span id="modalCapa"></span></p>
-                  <p class="mb-1"><strong>Variable:</strong> <span id="modalVariable"></span></p>
-                  <p class="mb-1"><strong>Valor del punto:</strong> <span id="modalValor"></span></p>
-
-                  <hr>
-
-                  <h6 class="fw-bold">📈 Resumen de la capa</h6>
-                  <p class="mb-1"><strong>Promedio:</strong> <span id="modalPromedio"></span></p>
-                  <p class="mb-1"><strong>Máximo:</strong> <span id="modalMaximo"></span></p>
-                  <p class="mb-1"><strong>Mínimo:</strong> <span id="modalMinimo"></span></p>
-                  <p class="mb-1"><strong>Diferencia vs promedio:</strong> <span id="modalDifPromedio"></span></p>
-                </div>
-              </div>
-            </div>
-
-            <div class="col-md-8">
-              <div class="card shadow-sm h-100">
-                <div class="card-body">
-                  <h6 class="fw-bold">🔬 Datos del Polígono</h6>
-
-                  <table class="table table-sm table-bordered text-center mt-3">
-                    <thead class="table-light">
-                      <tr>
-                        <th>Campo</th>
-                        <th>Valor</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tablaPropsPunto"></tbody>
-                  </table>
-
-                </div>
-              </div>
-            </div>
-
-          </div>
+      <!-- Header -->
+      <div class="modal-header border-0 px-4 py-3" style="background:#1a2e1a">
+        <div class="d-flex align-items-center gap-2">
+          <i class="mdi mdi-map-marker-radius text-success" style="font-size:1.2rem"></i>
+          <span class="fw-semibold text-white" style="font-size:.95rem">{% translate "Análise do Ponto Selecionado" %}</span>
         </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
 
-      <div class="modal-footer bg-white border-top-0">
-        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
-          Cerrar
-        </button>
+      <div class="modal-body p-0" id="analisis-body">
+
+        <!-- Skeleton loader -->
+        <div id="analisis-loading" class="text-center py-5">
+          <div class="spinner-border text-success" style="width:2rem;height:2rem"></div>
+          <div class="text-muted small mt-2">{% translate "Consultando datos del punto..." %}</div>
+        </div>
+
+        <!-- Contenido (oculto hasta que carga) -->
+        <div id="analisis-contenido" style="display:none">
+
+          <!-- Dados de Plantío -->
+          <div id="bloque-plantio" class="px-4 pt-3 pb-2 border-bottom" style="background:#f8faf8;display:none">
+            <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
+              <i class="mdi mdi-seed-outline me-1"></i>{% translate "Dados de Plantío" %}
+            </div>
+            <div class="d-flex flex-wrap gap-3">
+              <div>
+                <div class="text-muted" style="font-size:.68rem">{% translate "Cultivo" %}</div>
+                <div class="fw-semibold" id="pt-cultivo" style="font-size:.85rem">—</div>
+              </div>
+              <div>
+                <div class="text-muted" style="font-size:.68rem">{% translate "Variedade" %}</div>
+                <div class="fw-semibold" id="pt-variedad" style="font-size:.85rem">—</div>
+              </div>
+              <div>
+                <div class="text-muted" style="font-size:.68rem">{% translate "Data Plantío" %}</div>
+                <div class="fw-semibold" id="pt-fecha" style="font-size:.85rem">—</div>
+              </div>
+              <div>
+                <div class="text-muted" style="font-size:.68rem">{% translate "Superfície" %}</div>
+                <div class="fw-semibold" id="pt-superficie" style="font-size:.85rem">—</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Localización + Rendimiento -->
+          <div class="row g-0">
+            <div class="col-md-5 px-4 py-3 border-end border-bottom">
+              <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
+                <i class="mdi mdi-crosshairs-gps me-1"></i>{% translate "Localização" %}
+              </div>
+              <div class="mb-1" style="font-size:.82rem">
+                <span class="text-muted">Lat:</span>
+                <span id="modalLat" class="fw-semibold ms-1"></span>
+              </div>
+              <div class="mb-3" style="font-size:.82rem">
+                <span class="text-muted">Lng:</span>
+                <span id="modalLng" class="fw-semibold ms-1"></span>
+              </div>
+
+              <div id="bloque-rendimiento" style="display:none">
+                <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
+                  <i class="mdi mdi-chart-bar me-1"></i>{% translate "Rendimento" %}
+                </div>
+                <div class="d-flex flex-column gap-1">
+                  <div class="d-flex justify-content-between" style="font-size:.82rem">
+                    <span class="text-muted">{% translate "No Ponto" %}</span>
+                    <span class="fw-bold" id="rend-punto">—</span>
+                  </div>
+                  <div class="d-flex justify-content-between" style="font-size:.82rem">
+                    <span class="text-muted">{% translate "Máximo" %}</span>
+                    <span id="rend-max">—</span>
+                  </div>
+                  <div class="d-flex justify-content-between" style="font-size:.82rem">
+                    <span class="text-muted">{% translate "Médio" %}</span>
+                    <span id="rend-prom">—</span>
+                  </div>
+                  <div class="d-flex justify-content-between" style="font-size:.82rem">
+                    <span class="text-muted">{% translate "Mínimo" %}</span>
+                    <span id="rend-min">—</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de variables -->
+            <div class="col-md-7 px-4 py-3 border-bottom">
+              <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
+                <i class="mdi mdi-flask-outline me-1"></i>{% translate "Análise de Variáveis" %}
+              </div>
+              <div id="sin-variables" class="text-muted small py-3 text-center" style="display:none">
+                {% translate "Sin datos analíticos para este punto" %}
+              </div>
+              <table class="table table-sm mb-0" id="tabla-variables" style="font-size:.82rem;display:none">
+                <thead>
+                  <tr style="border-bottom:2px solid #e9ecef">
+                    <th class="ps-0 text-muted fw-normal" style="font-size:.72rem">{% translate "Variable" %}</th>
+                    <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Valor" %}</th>
+                    <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Máximo" %}</th>
+                    <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Diferença" %}</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-variables"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Sin datos -->
+          <div id="analisis-sin-datos" class="text-center py-4 text-muted" style="display:none">
+            <i class="mdi mdi-map-marker-off display-6 d-block mb-2"></i>
+            {% translate "No hay datos analíticos para este punto" %}
+          </div>
+
+        </div><!-- /analisis-contenido -->
+      </div><!-- /modal-body -->
+
+      <div class="modal-footer border-0 py-2 px-4" style="background:#f8faf8">
+        <small class="text-muted me-auto" id="analisis-coords-footer"></small>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">{% translate "Cerrar" %}</button>
       </div>
 
     </div>
@@ -319,6 +378,7 @@
     subirAreaKml:      "{% url 'ajax_cargar_area_kml' 0 %}",
     guardarAreaGeojson:"{% url 'ajax_guardar_area_geojson' 0 %}",
     eliminarArea:      "{% url 'ajax_eliminar_area' 0 %}",
+    analisisPunto:     "{% url 'ajax_analisis_punto' 0 %}",
   };
   window.CSRF_TOKEN = "{{ csrf_token }}";
 </script>

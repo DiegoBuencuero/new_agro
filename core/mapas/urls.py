@@ -46,4 +46,5 @@ urlpatterns = [
     path("ajax/comparacion/<int:campo_id>/capas/", views.ajax_comparacion_capas, name="ajax_comparacion_capas"),
     path("ajax/comparacion/<int:campo_id>/punto/", views.ajax_comparacion_punto, name="ajax_comparacion_punto"),
     path("comparacion/",                           views.vista_comparacion,      name="vista_comparacion"),
+    path("ajax/<int:campo_id>/analisis-punto/",    views.ajax_analisis_punto,   name="ajax_analisis_punto"),
 ]

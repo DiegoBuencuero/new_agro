@@ -214,31 +214,84 @@ $(function () {
   // ============================
 
   function mostrarModal(resultados, latlng) {
+    const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('infoModal'));
 
+    // Reset estado
+    $('#analisis-loading').show();
+    $('#analisis-contenido').hide();
     $('#modalLat').text(latlng.lat.toFixed(6));
     $('#modalLng').text(latlng.lng.toFixed(6));
+    $('#analisis-coords-footer').text('Lat ' + latlng.lat.toFixed(6) + '  Lng ' + latlng.lng.toFixed(6));
+    modal.show();
 
-    let rows = '';
+    if (!state.campoActual) return;
 
-    resultados.forEach(r => {
+    const url = window.MAPA_URLS.analisisPunto.replace('/0/', '/' + state.campoActual + '/');
 
-      const v = Number(r.feature.properties.v);
+    $.getJSON(url + '?lat=' + latlng.lat + '&lng=' + latlng.lng, function (d) {
+      $('#analisis-loading').hide();
+      $('#analisis-contenido').show();
 
-      rows += `
-        <tr>
-          <td>${r.info.nombre}</td>
-          <td>${r.info.variable}</td>
-          <td>${v.toFixed(2)}</td>
-          <td>${r.info.valor_promedio.toFixed(2)}</td>
-          <td>${r.info.valor_max.toFixed(2)}</td>
-          <td>${r.info.valor_min.toFixed(2)}</td>
-        </tr>
-      `;
+      // ── Dados de Plantío ──────────────────────────────
+      if (d.ciclo) {
+        $('#pt-cultivo').text(d.ciclo.cultivo || '—');
+        $('#pt-variedad').text(d.ciclo.variedad || '—');
+        $('#pt-fecha').text(d.ciclo.fecha_inicio || '—');
+        $('#pt-superficie').text(d.ciclo.superficie ? d.ciclo.superficie + ' ha' : '—');
+        $('#bloque-plantio').show();
+      } else {
+        $('#bloque-plantio').hide();
+      }
+
+      // ── Rendimento ────────────────────────────────────
+      const rend = d.rendimiento;
+      if (rend && rend.punto !== null) {
+        const u = rend.unidad || 'kg/ha';
+        $('#rend-punto').text(rend.punto + ' ' + u);
+        $('#rend-max').text(rend.maximo !== null ? rend.maximo + ' ' + u : '—');
+        $('#rend-prom').text(rend.promedio !== null ? rend.promedio + ' ' + u : '—');
+        $('#rend-min').text(rend.minimo !== null ? rend.minimo + ' ' + u : '—');
+        $('#bloque-rendimiento').show();
+      } else {
+        $('#bloque-rendimiento').hide();
+      }
+
+      // ── Variables analíticas ──────────────────────────
+      const vars = d.variables || [];
+      if (vars.length === 0) {
+        $('#tabla-variables').hide();
+        $('#sin-variables').show();
+        $('#analisis-sin-datos').toggle(!d.ciclo && rend.punto === null);
+      } else {
+        $('#sin-variables').hide();
+        $('#analisis-sin-datos').hide();
+        let rows = '';
+        vars.forEach(function (v) {
+          const dif = v.diferencia;
+          let difHtml = '—';
+          if (dif !== null && dif !== undefined) {
+            const color = dif >= 0 ? '#198754' : '#dc3545';
+            const signo = dif >= 0 ? '+' : '';
+            difHtml = '<span style="color:' + color + ';font-weight:600">' + signo + dif.toFixed(2) + '</span>';
+          }
+          rows += '<tr>' +
+            '<td class="ps-0"><span class="fw-semibold">' + v.nombre + '</span>' +
+            (v.unidad ? '<span class="text-muted ms-1" style="font-size:.72rem">(' + v.unidad + ')</span>' : '') +
+            '</td>' +
+            '<td class="text-end fw-bold">' + v.valor.toFixed(2) + '</td>' +
+            '<td class="text-end text-muted">' + (v.val_max !== null ? v.val_max.toFixed(2) : '—') + '</td>' +
+            '<td class="text-end">' + difHtml + '</td>' +
+            '</tr>';
+        });
+        $('#tbody-variables').html(rows);
+        $('#tabla-variables').show();
+      }
+
+    }).fail(function () {
+      $('#analisis-loading').hide();
+      $('#analisis-contenido').show();
+      $('#analisis-sin-datos').show();
     });
-
-    $('#tablaPropsPunto').html(rows);
-
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('infoModal')).show();
   }
 
   // ============================

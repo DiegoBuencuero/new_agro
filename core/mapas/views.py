@@ -1479,3 +1479,136 @@ def ajax_comparacion_punto(request, campo_id):
         "lng":        lng,
         "resultados": resultados,
     })
+
+
+@login_required
+def ajax_analisis_punto(request, campo_id):
+    """
+    GET ?lat=&lng=
+    Devuelve todos los datos del punto para el modal de análisis de precisión:
+    - Info del ciclo activo (cultivo, variedad, fechas)
+    - Variables analíticas con valor en el punto, máximo de la capa y diferencia
+    - Separadas por tipo (suelo, rendimiento, satélite)
+    """
+    from gestion_agro.models import CicloAgricola
+
+    empresa = request.user.profile.empresa
+    campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
+
+    try:
+        lat = float(request.GET.get("lat"))
+        lng = float(request.GET.get("lng"))
+    except (TypeError, ValueError):
+        return JsonResponse({"ok": False, "error": "lat/lng inválidos"}, status=400)
+
+    # ── Ciclo activo ─────────────────────────────────────
+    ciclo = (
+        CicloAgricola.objects
+        .filter(campo=campo, fecha_fin__isnull=True)
+        .select_related("cultivo")
+        .order_by("-fecha_inicio")
+        .first()
+    )
+    ciclo_data = None
+    if ciclo:
+        ciclo_data = {
+            "cultivo":    ciclo.cultivo.nombre if ciclo.cultivo else None,
+            "variedad":   ciclo.cultivo.variedad if ciclo.cultivo and ciclo.cultivo.variedad else None,
+            "fecha_inicio": ciclo.fecha_inicio.strftime("%d/%m/%Y") if ciclo.fecha_inicio else None,
+            "superficie": float(ciclo.superficie_ha) if ciclo.superficie_ha else None,
+            "campana":    ciclo.campana if hasattr(ciclo, 'campana') else None,
+        }
+
+    # ── Variables analíticas en el punto ────────────────
+    archivos = (
+        ArchivoAnalitico.objects
+        .filter(campo=campo, estado="procesado")
+        .select_related("variable")
+        .order_by("variable__tipo", "variable__nombre")
+    )
+
+    variables = []
+    rendimiento = {"punto": None, "maximo": None, "minimo": None, "promedio": None}
+
+    for a in archivos:
+        try:
+            if a.tipo_archivo == "shapefile":
+                contenido = a.archivo.read()
+                with zipfile.ZipFile(_io.BytesIO(contenido)) as z:
+                    nombres = z.namelist()
+                    shp_n = next((n for n in nombres if n.lower().endswith(".shp")), None)
+                    shx_n = next((n for n in nombres if n.lower().endswith(".shx")), None)
+                    dbf_n = next((n for n in nombres if n.lower().endswith(".dbf")), None)
+                    if not all([shp_n, shx_n, dbf_n]):
+                        continue
+                    def _buf(name):
+                        data = z.read(name)
+                        b = _io.BytesIO(data); b.name = name
+                        b.chunks = lambda: [data]; return b
+                    geojson_str, _ = procesar_shapefile_a_geojson(
+                        {"shp": _buf(shp_n), "shx": _buf(shx_n), "dbf": _buf(dbf_n)}
+                    )
+            elif a.tipo_archivo == "geojson":
+                geojson_str = a.archivo.read().decode("utf-8")
+            else:
+                continue
+
+            gj    = json.loads(geojson_str)
+            props = buscar_feature_en_punto(gj, lng, lat)
+            if props is None:
+                continue
+
+            valor = None
+            for key in ("v", "valor", "rendimiento", "value"):
+                if key in props and isinstance(props[key], (int, float)):
+                    valor = props[key]; break
+            if valor is None:
+                for v in props.values():
+                    if isinstance(v, (int, float)):
+                        valor = v; break
+            if valor is None:
+                continue
+
+            stats    = a.estadisticas or {}
+            val_max  = stats.get("max")
+            val_min  = stats.get("min")
+            val_prom = stats.get("prom")
+            rng_max  = a.variable.rango_maximo if a.variable else None
+            rng_min  = a.variable.rango_minimo if a.variable else None
+
+            referencia = rng_max or val_max
+            diferencia = round(valor - referencia, 3) if referencia is not None else None
+
+            tipo = a.variable.tipo if a.variable else "otro"
+            nombre   = a.variable.nombre if a.variable else a.archivo.name.split("/")[-1]
+            unidad   = a.variable.unidad if a.variable else ""
+
+            if tipo == "cosecha":
+                rendimiento = {
+                    "punto":   round(valor, 2),
+                    "maximo":  round(val_max, 2)  if val_max  is not None else None,
+                    "minimo":  round(val_min, 2)  if val_min  is not None else None,
+                    "promedio":round(val_prom, 2) if val_prom is not None else None,
+                    "unidad":  unidad,
+                }
+            else:
+                variables.append({
+                    "nombre":     nombre,
+                    "tipo":       tipo,
+                    "unidad":     unidad,
+                    "valor":      round(valor, 3),
+                    "val_max":    round(rng_max, 3) if rng_max is not None else (round(val_max, 3) if val_max is not None else None),
+                    "diferencia": diferencia,
+                })
+
+        except Exception as e:
+            continue
+
+    return JsonResponse({
+        "ok":          True,
+        "lat":         round(lat, 6),
+        "lng":         round(lng, 6),
+        "ciclo":       ciclo_data,
+        "rendimiento": rendimiento,
+        "variables":   variables,
+    })
