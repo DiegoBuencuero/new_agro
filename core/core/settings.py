@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-#slkw6b*t!0im%(ohw+@&o7u!*18w%6l654-9rdaln@y_j_6on
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['www.agroinnova.agr.br', 'agroinnova.agr.br', 'www.innobrar.com.br', 'innobrar.com.br', 'Innobrar.pythonanywhere.com', '127.0.0.1', 'localhost']
 
 
 # Application definition
