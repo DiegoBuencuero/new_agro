@@ -20,7 +20,7 @@ class BaseSimpleForm(forms.Form):
             field.widget.attrs['class'] = 'form-control'
 
 
-class RegistroForm(BaseForm):
+class RegistroForm(BaseSimpleForm):
     empresa_nombre = forms.CharField(label=_("Nombre de la empresa"), max_length=100, widget=forms.TextInput(attrs={"placeholder": _("Ej: Estancia San Juan")}))
     empresa_razon_social = forms.CharField(label=_("Razón social"), max_length=100)
     empresa_cuit = forms.CharField(label=_("CUIT / CNPJ"), max_length=50, widget=forms.TextInput(attrs={"placeholder": "00.000.000/0000-00"}))
