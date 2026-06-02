@@ -59,6 +59,9 @@
       <button id="btn-recargar-ndvi" class="btn btn-outline-secondary btn-sm w-100" style="display:none">
         <i class="mdi mdi-refresh me-1"></i>{% translate "Actualizar" %}
       </button>
+      <button id="btn-historico-ndvi" class="btn btn-outline-primary btn-sm w-100 mt-1" disabled>
+        <i class="mdi mdi-history me-1"></i>{% translate "Últimas 5 imágenes" %}
+      </button>
       <button id="btn-forzar-ndvi" class="btn btn-outline-warning btn-sm w-100 mt-1" style="display:none"
               title="Regenera la imagen aunque ya exista una captura para hoy">
         <i class="mdi mdi-reload me-1"></i>{% translate "Regenerar imagen" %}
@@ -214,6 +217,7 @@ let datosCampo   = null;
 $('#select-campo-ndvi').on('change', function () {
   campoActual = $(this).val() || null;
   $('#btn-fetch-ndvi').prop('disabled', !campoActual);
+  $('#btn-historico-ndvi').prop('disabled', !campoActual);
   document.getElementById("panel-stats").style.display = "none";
   document.getElementById("lista-capturas").innerHTML =
     '<p class="text-muted small">Cargando...</p>';
@@ -413,6 +417,39 @@ $('#btn-forzar-ndvi').on('click', function () {
   if (!campoActual) return;
   $(this).hide();
   fetchNdvi(true);
+});
+
+$('#btn-historico-ndvi').on('click', function () {
+  if (!campoActual) return;
+  var btn = $(this);
+  btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>Buscando...');
+  $('#panel-log').show();
+  $('#spinner-fetch').show();
+  $('#log-titulo').text('Buscando últimas 5 imágenes en el catálogo...');
+  $('#log-contenido').text('');
+
+  $.ajax({
+    url: '{% url "ajax_fetch_ndvi_historico" campo_id=1 %}'.replace('/1/', '/' + campoActual + '/'),
+    type: 'POST',
+    data: { csrfmiddlewaretoken: CSRF, n: 5 },
+    success: function(res) {
+      $('#spinner-fetch').hide();
+      btn.prop('disabled', false).html('<i class="mdi mdi-history me-1"></i>Últimas 5 imágenes');
+      if (res.log && res.log.length) $('#log-contenido').text(res.log.join('\n'));
+      if (res.ok) {
+        $('#log-titulo').text('✓ ' + res.procesadas + ' imagen/es procesada/s de ' + res.total + ' encontradas');
+        cargarNdvi(campoActual);
+      } else {
+        $('#log-titulo').text('✗ Error');
+        if (res.error) $('#log-contenido').append('\n' + res.error);
+      }
+    },
+    error: function(xhr) {
+      $('#spinner-fetch').hide();
+      btn.prop('disabled', false).html('<i class="mdi mdi-history me-1"></i>Últimas 5 imágenes');
+      $('#log-titulo').text('✗ Error de conexión');
+    }
+  });
 });
 
 function fetchNdvi(forzar) {

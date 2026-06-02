@@ -7,8 +7,11 @@ urlpatterns = [
     path("ndvi/",   views.vista_ndvi,  name="vista_ndvi"),
 
     # NDVI
-    path("ndvi/<int:campo_id>/procesar/", views.vista_ndvi_procesar, name="vista_ndvi_procesar"),
-    path("ajax/ndvi/<int:campo_id>/serie/", views.ajax_ndvi_serie,   name="ajax_ndvi_serie"),
+    path("ndvi/<int:campo_id>/procesar/",          views.vista_ndvi_procesar,      name="vista_ndvi_procesar"),
+    path("ajax/ndvi/<int:campo_id>/serie/",        views.ajax_ndvi_serie,          name="ajax_ndvi_serie"),
+    path("ajax/ndvi/<int:campo_id>/data/",         views.ajax_ndvi_data,           name="ajax_ndvi_data"),
+    path("ajax/ndvi/<int:campo_id>/fetch/",        views.ajax_fetch_ndvi_campo,    name="ajax_fetch_ndvi_campo"),
+    path("ajax/ndvi/<int:campo_id>/historico/",    views.ajax_fetch_ndvi_historico, name="ajax_fetch_ndvi_historico"),
 
     # Áreas del campo
     path("ajax/areas/<int:campo_id>/",               views.ajax_areas_listar,          name="ajax_areas_listar"),

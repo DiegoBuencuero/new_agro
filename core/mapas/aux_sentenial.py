@@ -212,6 +212,43 @@ def _procesar_ndvi_array(ndvi_raw, bbox, area_geojson_str, ciclo_geojson_str=Non
     return promedio, ndvi_min, ndvi_max, nubosidad, buf.read()
 
 
+def buscar_fechas_historicas(bbox, config, n=5, dias_atras=120, max_nubes=80):
+    """Devuelve hasta n fechas únicas con menos nubes en los últimos dias_atras días."""
+    from datetime import date, timedelta
+    from datetime import datetime
+    try:
+        from sentinelhub import SentinelHubCatalog, DataCollection
+        catalog = SentinelHubCatalog(config=config)
+        fecha_hasta = date.today()
+        fecha_desde = fecha_hasta - timedelta(days=dias_atras)
+        results = catalog.search(
+            DataCollection.SENTINEL2_L2A.define_from("s2l2a", service_url=config.sh_base_url),
+            bbox=bbox,
+            time=(str(fecha_desde), str(fecha_hasta)),
+            fields={"include": ["id", "properties.datetime", "properties.eo:cloud_cover"]},
+        )
+        items = sorted(
+            [i for i in results if i.get("properties", {}).get("eo:cloud_cover", 100) <= max_nubes],
+            key=lambda x: x["properties"]["datetime"],
+            reverse=True,
+        )
+        fechas_vistas = set()
+        fechas = []
+        for item in items:
+            dt_str = item["properties"]["datetime"]
+            fecha = datetime.strptime(dt_str[:10], "%Y-%m-%d").date()
+            if fecha not in fechas_vistas:
+                fechas_vistas.add(fecha)
+                cloud = round(item["properties"].get("eo:cloud_cover", 0), 1)
+                fechas.append((fecha, cloud))
+            if len(fechas) >= n:
+                break
+        return fechas
+    except Exception as e:
+        logger.warning(f"buscar_fechas_historicas error: {e}")
+        return []
+
+
 def _buscar_mejor_imagen(bbox, fecha_desde, fecha_hasta, config, max_nubes=10):
     from datetime import datetime
     try:

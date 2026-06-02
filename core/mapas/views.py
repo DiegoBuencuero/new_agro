@@ -197,6 +197,128 @@ def vista_ndvi_procesar(request, campo_id):
 
 
 @login_required
+def ajax_ndvi_data(request, campo_id):
+    """Datos de capturas NDVI de un campo: capturas + bbox + geojson."""
+    import json as _json
+    empresa = request.user.profile.empresa
+    campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
+
+    capturas_qs = (
+        CapturaSatelite.objects
+        .filter(campo=campo, fuente="sentinel2", estado="procesada")
+        .prefetch_related("indices")
+        .order_by("fecha")
+    )
+
+    capturas = []
+    for c in capturas_qs:
+        indice = next((i for i in c.indices.all() if i.tipo == "ndvi"), None)
+        ndvi_avg = float(indice.promedio) if indice and indice.promedio is not None else None
+        estado = "sin_datos"
+        if ndvi_avg is not None:
+            if ndvi_avg >= 0.5:   estado = "optimo"
+            elif ndvi_avg >= 0.3: estado = "normal"
+            elif ndvi_avg >= 0.1: estado = "estres"
+            else:                 estado = "critico"
+        capturas.append({
+            "fecha":         str(c.fecha),
+            "ndvi_promedio": ndvi_avg,
+            "ndvi_min":      float(indice.minimo) if indice and indice.minimo is not None else None,
+            "ndvi_max":      float(indice.maximo) if indice and indice.maximo is not None else None,
+            "nubosidad":     float(c.nubosidad_pct) if c.nubosidad_pct is not None else 0,
+            "estado":        estado,
+            "imagen_url":    indice.imagen_png.url if (indice and indice.imagen_png) else None,
+        })
+
+    # BBox desde contorno del campo
+    bbox = None
+    area_geojson = None
+    geojson_str = geojson_union_areas(campo) or campo.contorno
+    if geojson_str:
+        try:
+            gj = _json.loads(geojson_str) if isinstance(geojson_str, str) else geojson_str
+            area_geojson = gj
+            coords = []
+            def _collect(obj):
+                t = obj.get("type", "")
+                if t == "Polygon":
+                    coords.extend(obj["coordinates"][0])
+                elif t == "MultiPolygon":
+                    for poly in obj["coordinates"]:
+                        coords.extend(poly[0])
+                elif t == "FeatureCollection":
+                    for f in obj.get("features", []): _collect(f.get("geometry", {}))
+                elif t == "Feature":
+                    _collect(obj.get("geometry", {}))
+            _collect(gj)
+            if coords:
+                lngs = [c[0] for c in coords]
+                lats = [c[1] for c in coords]
+                bbox = [min(lats), min(lngs), max(lats), max(lngs)]
+        except Exception:
+            pass
+
+    return JsonResponse({"ok": True, "capturas": capturas, "bbox": bbox, "area_geojson": area_geojson})
+
+
+@login_required
+@require_POST
+def ajax_fetch_ndvi_campo(request, campo_id):
+    """Alias de vista_ndvi_procesar para la URL /fetch/."""
+    return vista_ndvi_procesar(request, campo_id)
+
+
+@login_required
+@require_POST
+def ajax_fetch_ndvi_historico(request, campo_id):
+    """Busca y procesa las últimas N imágenes Sentinel-2 del catálogo."""
+    empresa = request.user.profile.empresa
+    campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
+
+    if not geojson_union_areas(campo) and not campo.contorno:
+        return JsonResponse({"ok": False, "error": "El campo no tiene áreas ni contorno definido."}, status=400)
+
+    try:
+        config = _get_sh_config()
+    except RuntimeError as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=400)
+
+    from mapas.aux_sentenial import buscar_fechas_historicas, _bbox_from_geojson
+    from gestion_agro.models import CicloAgricola
+
+    geojson_str = geojson_union_areas(campo) or campo.contorno
+    bbox = _bbox_from_geojson(geojson_str)
+
+    n = int(request.POST.get("n", 5))
+    fechas = buscar_fechas_historicas(bbox, config, n=n)
+
+    if not fechas:
+        return JsonResponse({"ok": False, "error": "No se encontraron imágenes en el catálogo para los últimos 120 días."})
+
+    class Log:
+        def __init__(self): self.lines = []
+        def write(self, s): self.lines.append(str(s))
+
+    log = Log()
+    procesadas = 0
+
+    for fecha, nubes in fechas:
+        ya_existe = CapturaSatelite.objects.filter(campo=campo, fecha=fecha, fuente="sentinel2", estado="procesada").exists()
+        if ya_existe:
+            log.write(f"  {fecha} — ya procesada, salteando")
+            continue
+        log.write(f"  Procesando {fecha} (nubes: {nubes}%)...")
+        from datetime import timedelta
+        try:
+            procesar_campo(campo, fecha, fecha, config, log)
+            procesadas += 1
+        except Exception as e:
+            log.write(f"  ERROR {fecha}: {e}")
+
+    return JsonResponse({"ok": True, "procesadas": procesadas, "total": len(fechas), "log": log.lines})
+
+
+@login_required
 def ajax_ndvi_serie(request, campo_id):
     """Serie temporal NDVI de un campo — para Chart.js."""
     empresa = request.user.profile.empresa
