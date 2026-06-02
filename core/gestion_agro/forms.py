@@ -288,6 +288,9 @@ class CicloFiltroForm(BaseSimpleForm):
         if empresa:
             self.fields["campana"].queryset = Campana.objects.filter(empresa=empresa).order_by("-fecha_desde")
             self.fields["campo"].queryset = Campo.objects.filter(empresa=empresa).order_by("nombre")
+        else:
+            self.fields["campana"].queryset = Campana.objects.none()
+            self.fields["campo"].queryset = Campo.objects.none()
 
         self.fields["cultivo"].queryset = Cultivo.objects.all().order_by("nombre")
 
