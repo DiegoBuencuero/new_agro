@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 from agro.models import Moneda, Pais, Provincia, Ciudad, Unidad, ConversionUM
-from gestion_agro.models import Cultivo
+from gestion_agro.models import Cultivo, CategoriaProducto
 
 
 UNIDADES = [
@@ -64,6 +64,17 @@ MONEDAS = [
 
 CULTIVOS = ["Soja", "Milho", "Trigo", "Girassol", "Feijão", "Carinata"]
 
+CATEGORIAS_PRODUCTO = [
+    # (codigo, nombre, es_semilla)
+    ("PRODUCTO_FINAL", "Producto final",  False),
+    ("INSUMO",         "Insumo",          False),
+    ("SEMILLA",        "Semilla",         True),
+    ("FERTILIZANTE",   "Fertilizante",    False),
+    ("AGROQUIMICO",    "Agroquímico",     False),
+    ("COMBUSTIBLE",    "Combustible",     False),
+    ("OTROS",          "Otros",           False),
+]
+
 
 class Command(BaseCommand):
     help = "Carga datos iniciales: monedas, unidades, conversiones y ciudades BR/AR/PY"
@@ -75,6 +86,7 @@ class Command(BaseCommand):
         self._seed_monedas()
         self._seed_unidades()
         self._seed_conversiones()
+        self._seed_categorias()
         self._seed_geografico()
         if options["empresa"]:
             self._seed_cultivos(options["empresa"])
@@ -109,6 +121,15 @@ class Command(BaseCommand):
             )
             if created:
                 self.stdout.write(f"  Conversión creada: {orig_abr} → {dest_abr} (x{factor})")
+
+    def _seed_categorias(self):
+        for codigo, nombre, es_semilla in CATEGORIAS_PRODUCTO:
+            obj, created = CategoriaProducto.objects.get_or_create(
+                codigo=codigo,
+                defaults={"nombre": nombre, "es_semilla": es_semilla},
+            )
+            if created:
+                self.stdout.write(f"  Categoría creada: {obj}")
 
     def _seed_cultivos(self, empresa_nombre):
         from agro.models import Empresa
