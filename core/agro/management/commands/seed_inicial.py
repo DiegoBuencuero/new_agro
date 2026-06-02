@@ -1,5 +1,6 @@
 from django.core.management.base import BaseCommand
 from agro.models import Moneda, Pais, Provincia, Ciudad, Unidad, ConversionUM
+from gestion_agro.models import Cultivo
 
 
 UNIDADES = [
@@ -61,15 +62,22 @@ MONEDAS = [
     ("Guaraní paraguayo","PYG"),
 ]
 
+CULTIVOS = ["Soja", "Milho", "Trigo", "Girassol", "Feijão", "Carinata"]
+
 
 class Command(BaseCommand):
     help = "Carga datos iniciales: monedas, unidades, conversiones y ciudades BR/AR/PY"
+
+    def add_arguments(self, parser):
+        parser.add_argument("--empresa", type=str, default=None)
 
     def handle(self, *args, **options):
         self._seed_monedas()
         self._seed_unidades()
         self._seed_conversiones()
         self._seed_geografico()
+        if options["empresa"]:
+            self._seed_cultivos(options["empresa"])
         self.stdout.write(self.style.SUCCESS("Seed inicial completado."))
 
     def _seed_monedas(self):
@@ -101,6 +109,18 @@ class Command(BaseCommand):
             )
             if created:
                 self.stdout.write(f"  Conversión creada: {orig_abr} → {dest_abr} (x{factor})")
+
+    def _seed_cultivos(self, empresa_nombre):
+        from agro.models import Empresa
+        try:
+            empresa = Empresa.objects.get(nombre=empresa_nombre)
+        except Empresa.DoesNotExist:
+            self.stdout.write(self.style.ERROR(f"Empresa '{empresa_nombre}' no encontrada."))
+            return
+        for nombre in CULTIVOS:
+            obj, created = Cultivo.objects.get_or_create(nombre=nombre, defaults={"empresa": empresa})
+            if created:
+                self.stdout.write(f"  Cultivo creado: {obj}")
 
     def _seed_geografico(self):
         for pais_nombre, provincias in PAISES_PROVINCIAS_CIUDADES.items():
