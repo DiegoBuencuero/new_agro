@@ -710,8 +710,16 @@ RE_CODE    = re.compile(r"^\d{6,8}$")
 RE_QTD_3DEC = re.compile(r"^\d{1,3}(?:\.\d{3})*,\d{3}$")
 RE_MONEY   = re.compile(r"^\d{1,3}(?:\.\d{3})*,\d{2,4}$")
 RE_FOOTER  = re.compile(r"^\s*(INFORMAÇÕES COMPLEMENTARES|RESERVADO AO FISCO|CÁLCULO DO ISSQN)\b", re.I)
+# Tokens de columnas fiscales NF-e que deben excluirse de la descripción
+RE_NCM        = re.compile(r"^\d{8}$")        # NCM/SH: 8 dígitos
+RE_NCM_CST    = re.compile(r"^\d{11}$")       # NCM+CST concatenados sin espacio
+RE_CST        = re.compile(r"^\d{3}$")        # CST: 3 dígitos
+RE_CFOP       = re.compile(r"^[1-7]\d{3}$")   # CFOP: 4 dígitos empezando con 1-7
+RE_FISCAL_JUNK = re.compile(r"^\*\)?$")       # líneas sueltas de cierre de lote
+# Texto que es solo unidad de medida expandida (ej: LITROS, QUILOS)
+RE_UNIT_LABEL = re.compile(r"^(LITROS?|QUILOS?|GRAMAS?|UNIDADES?|CAIXAS?|SACOS?)$", re.I)
 
-UNIT_SET = {"pc", "un", "kg", "lt", "l", "cx", "sc", "und", "pct", "bld", "gl"}
+UNIT_SET = {"pc", "un", "kg", "lt", "l", "cx", "sc", "und", "pct", "bld", "gl", "fr", "tb", "cx"}
 
 
 # ── PDF parser ───────────────────────────────────────────────────────────────
@@ -772,19 +780,33 @@ def extract_nfe_number_from_lines(lines: List[str]) -> Optional[str]:
 
     return None
 
+_RE_PROV_JUNK = re.compile(
+    r"\b(RECEBEMOS|NF-E|NF\s*E|DANFE|OS PRODUTOS|SERVIÇOS CONSTANTES|DA NOTA FISCAL|INDICADA AO LADO)\b",
+    re.I,
+)
+
 def extract_provider_from_lines(lines: List[str]) -> Optional[str]:
     for i, ln in enumerate(lines):
-        if ln.strip().upper() == "RECEBEMOS":
+        up = ln.strip().upper()
+        # Línea exacta "RECEBEMOS" → buscar la siguiente
+        if up == "RECEBEMOS":
             for j in range(i + 1, min(i + 6, len(lines))):
                 cand = lines[j].strip()
                 if len(cand) >= 20 and any(ch.isalpha() for ch in cand):
                     if "PRODUTOS" in cand.upper() or "SERVIÇOS" in cand.upper():
                         continue
                     return cand
+        # Línea que mezcla "RECEBEMOS" con el nombre del proveedor
+        if "RECEBEMOS" in up and len(up) > 15:
+            cleaned = _RE_PROV_JUNK.sub("", ln).strip(" -|")
+            cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
+            if len(cleaned) >= 15:
+                return cleaned
 
     for ln in lines:
         if "COOPERATIVA" in ln.upper() and len(ln.strip()) >= 20:
-            return ln.strip()
+            cleaned = _RE_PROV_JUNK.sub("", ln).strip(" -|")
+            return re.sub(r"\s{2,}", " ", cleaned).strip()
 
     return None
 
@@ -807,8 +829,15 @@ def parse_item_row(tokens: List[str]) -> Optional[Dict[str, Any]]:
     if unit_idx is None:
         return None
 
-    descricao = " ".join(tokens[1:unit_idx]).strip()
-    unidade   = tokens[unit_idx]
+    # Filtrar tokens fiscales (NCM, CST, CFOP) de la descripción
+    desc_tokens = []
+    for t in tokens[1:unit_idx]:
+        if RE_NCM.match(t) or RE_NCM_CST.match(t) or RE_CST.match(t) or RE_CFOP.match(t):
+            continue
+        desc_tokens.append(t)
+
+    descricao  = " ".join(desc_tokens).strip()
+    unidade    = tokens[unit_idx]
     quantidade = tokens[unit_idx + 1]
 
     right  = tokens[unit_idx + 2:]
@@ -869,6 +898,10 @@ def parse_nfe_pdf(pdf_path: str) -> Dict[str, Any]:
                     continue
                 if RE_FOOTER.match(text):
                     break
+                if RE_UNIT_LABEL.match(text.strip()):
+                    continue
+                if RE_FISCAL_JUNK.match(text.strip()):
+                    continue
                 current["descricao"] = (current["descricao"] + " " + text).strip()
 
         if current:
