@@ -1937,7 +1937,7 @@ def vista_revisar_factura(request):
     initial_data = []
     match_info   = []
 
-    print('print nuestro',items)
+    print('=== ITEMS PARSEADOS ===', items)
 
     for item in items:
         desc         = item.get("descricao", "")
@@ -1945,6 +1945,7 @@ def vista_revisar_factura(request):
         cant         = _br_to_float(item.get("quantidade", 0)) or 0
         p_u          = _br_to_float(item.get("v_unit", 0)) or 0
         contenido, unidad, pres_nombre = _detectar_contenido_unidad(desc, unid_factura)
+        print(f'  desc={desc!r} unid={unid_factura!r} cant={cant} p_u={p_u} contenido={contenido} unidad={unidad}')
 
         # Buscar candidatos — filtro simple por la primera palabra significativa
         palabras = [p for p in desc.split() if len(p) >= 4]
@@ -2020,6 +2021,10 @@ def vista_revisar_factura(request):
         form_kwargs={"empresa": empresa},
     )
 
+    print(f'=== FORMSET total_forms={formset.total_form_count()} initial_len={len(initial_data)}')
+    for i, f in enumerate(formset):
+        print(f'  form[{i}].initial={f.initial}')
+
     # Pre-cargar presentaciones y variedades en el form según el candidato principal
     for i, form in enumerate(formset):
         prod = initial_data[i].get("producto_existente")
@@ -2037,7 +2042,7 @@ def vista_revisar_factura(request):
     context = {
         "cabecera_form":   cabecera_form,
         "formset":         formset,
-        "items_con_match": list(zip(formset, match_info)),
+        "items_con_match": list(zip(formset, match_info, initial_data)),
         "items":           items,
         "nombre_archivo":  factura_temp["nombre_archivo"],
         "datos_factura":   datos_factura,

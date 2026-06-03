@@ -151,7 +151,7 @@
                               </thead>
                                 <tbody>
 
-                                    {% for form, match in items_con_match %}
+                                    {% for form, match, idata in items_con_match %}
                                     {% comment %} {#
                                         data-idx  = índice de fila para el JS
                                         data-unidad = unidad normalizada del PDF (ej: "KG", "L")
@@ -280,7 +280,7 @@
                                                    id="cantidad_{{ forloop.counter0 }}"
                                                    name="{{ form.cantidad.html_name }}"
                                                    class="form-control form-control-sm"
-                                                   value="{{ form.initial.cantidad|default_if_none:'' }}"
+                                                   value="{{ idata.cantidad|default_if_none:'' }}"
                                                    step="any"
                                                    oninput="recalcular({{ forloop.counter0 }})">
                                             {% if form.cantidad.errors %}
@@ -296,7 +296,7 @@
                                                    id="contenido_{{ forloop.counter0 }}"
                                                    name="{{ form.contenido_por_envase.html_name }}"
                                                    class="form-control form-control-sm"
-                                                   value="{{ form.initial.contenido_por_envase|default_if_none:'' }}"
+                                                   value="{{ idata.contenido_por_envase|default_if_none:'' }}"
                                                    step="any"
                                                    oninput="recalcular({{ forloop.counter0 }})">
                                         </td>
@@ -328,7 +328,7 @@
                                                    id="precio_{{ forloop.counter0 }}"
                                                    name="{{ form.precio_unitario.html_name }}"
                                                    class="form-control form-control-sm"
-                                                   value="{{ form.initial.precio_unitario|default_if_none:'' }}"
+                                                   value="{{ idata.precio_unitario|default_if_none:'' }}"
                                                    step="any"
                                                    oninput="recalcular({{ forloop.counter0 }})">
                                             {% if form.precio_unitario.errors %}
