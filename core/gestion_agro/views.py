@@ -1042,6 +1042,52 @@ def ajax_valores_actividad(request):
     })
 
 @login_required
+@require_POST
+def ajax_eliminar_insumo(request, insumo_id):
+    empresa = request.user.profile.empresa
+    try:
+        insumo = ActividadInsumo.objects.get(
+            id=insumo_id,
+            actividad__fase__ciclo__campo__empresa=empresa
+        )
+        insumo.delete()
+        return JsonResponse({"ok": True})
+    except ActividadInsumo.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Insumo no encontrado"}, status=404)
+
+
+@login_required
+@require_POST
+def ajax_editar_insumo(request, insumo_id):
+    empresa = request.user.profile.empresa
+    try:
+        insumo = ActividadInsumo.objects.get(
+            id=insumo_id,
+            actividad__fase__ciclo__campo__empresa=empresa
+        )
+    except ActividadInsumo.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Insumo no encontrado"}, status=404)
+
+    try:
+        nueva_dosis = Decimal(request.POST.get("dosis", "0"))
+    except Exception:
+        return JsonResponse({"ok": False, "error": "Dosis inválida"}, status=400)
+
+    insumo.dosis = nueva_dosis
+    sup = insumo.actividad.fase.ciclo.superficie_ha
+    if sup:
+        insumo.cantidad_real = nueva_dosis * sup
+        insumo.costo_total   = (insumo.costo_ha or Decimal("0")) * sup if insumo.costo_ha else None
+    insumo.save()
+
+    um = insumo.um.abreviatura if insumo.um else ""
+    return JsonResponse({
+        "ok": True,
+        "dosis_fmt": f"{float(nueva_dosis):.2f} {um}/ha",
+    })
+
+
+@login_required
 def vista_lista_stock(request):
     empresa = request.user.profile.empresa
     form = StockFiltroForm(request.GET or None)

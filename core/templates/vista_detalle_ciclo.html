@@ -340,11 +340,11 @@
                                                                                         </thead>
                                                                                         <tbody>
                                                                                             {% for insumo in act.insumos.all %}
-                                                                                                <tr>
+                                                                                                <tr id="insumo-row-{{ insumo.id }}">
                                                                                                     <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                                                                                                         {{ insumo.producto.nombre }}
                                                                                                     </td>
-                                                                                                    <td class="text-end">
+                                                                                                    <td class="text-end" id="insumo-dosis-{{ insumo.id }}">
                                                                                                         {{ insumo.dosis|floatformat:2 }} {% if insumo.um %}{{ insumo.um.abreviatura }}{% endif %}/ha
                                                                                                     </td>
                                                                                                     <td class="text-end">
@@ -360,6 +360,18 @@
                                                                                                         {% else %}
                                                                                                             <span class="text-muted">-</span>
                                                                                                         {% endif %}
+                                                                                                    </td>
+                                                                                                    <td class="text-end" style="width:70px">
+                                                                                                        <button class="btn btn-sm btn-outline-secondary py-0 px-1 me-1"
+                                                                                                                onclick="editarInsumo({{ insumo.id }}, {{ insumo.dosis }}, '{{ insumo.um.abreviatura|default:'' }}')"
+                                                                                                                title="Editar">
+                                                                                                            <i class="mdi mdi-pencil" style="font-size:.75rem"></i>
+                                                                                                        </button>
+                                                                                                        <button class="btn btn-sm btn-outline-danger py-0 px-1"
+                                                                                                                onclick="borrarInsumo({{ insumo.id }})"
+                                                                                                                title="Eliminar">
+                                                                                                            <i class="mdi mdi-delete" style="font-size:.75rem"></i>
+                                                                                                        </button>
                                                                                                     </td>
                                                                                                 </tr>
                                                                                             {% endfor %}
@@ -526,11 +538,66 @@
 <script>
 setTimeout(function () {
     const alerts = document.querySelectorAll('.alert');
-    alerts.forEach(function(alert) {
-        const bsAlert = new bootstrap.Alert(alert);
-        bsAlert.close();
-    });
+    alerts.forEach(function(alert) { new bootstrap.Alert(alert).close(); });
 }, 5000);
 
+var CSRF = '{{ csrf_token }}';
+
+function borrarInsumo(id) {
+    if (!confirm('¿Eliminar este insumo?')) return;
+    $.post('/ajax/insumo/' + id + '/eliminar/', {csrfmiddlewaretoken: CSRF})
+     .done(function(r) {
+        if (r.ok) {
+            $('#insumo-row-' + id).fadeOut(300, function(){ $(this).remove(); });
+        } else {
+            alert(r.error || 'Error al eliminar');
+        }
+     });
+}
+
+var _insumoEditId = null;
+function editarInsumo(id, dosis, um) {
+    _insumoEditId = id;
+    $('#edit-insumo-dosis').val(dosis);
+    $('#edit-insumo-um').text(um + '/ha');
+    new bootstrap.Modal(document.getElementById('modalEditarInsumo')).show();
+}
+
+$('#formEditarInsumo').on('submit', function(e) {
+    e.preventDefault();
+    var nuevaDosis = $('#edit-insumo-dosis').val();
+    $.post('/ajax/insumo/' + _insumoEditId + '/editar/', {
+        csrfmiddlewaretoken: CSRF,
+        dosis: nuevaDosis,
+    }).done(function(r) {
+        if (r.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('modalEditarInsumo')).hide();
+            $('#insumo-dosis-' + _insumoEditId).text(r.dosis_fmt);
+        } else {
+            alert(r.error || 'Error al editar');
+        }
+    });
+});
 </script>
+
+<!-- Modal editar insumo -->
+<div class="modal fade" id="modalEditarInsumo" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header py-2">
+        <h6 class="modal-title">Editar dosis</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formEditarInsumo">
+          <div class="mb-3">
+            <label class="form-label small">Dosis <span id="edit-insumo-um" class="text-muted"></span></label>
+            <input type="number" id="edit-insumo-dosis" class="form-control form-control-sm" step="0.001" min="0">
+          </div>
+          <button type="submit" class="btn btn-success btn-sm w-100">Guardar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
