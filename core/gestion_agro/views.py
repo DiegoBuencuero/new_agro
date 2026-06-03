@@ -14,6 +14,7 @@ from django.db.models import Prefetch, Q, Sum
 from django.db.models.functions import Coalesce
 from django.urls import reverse
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.template.loader import render_to_string
 import tempfile as tempfile
