@@ -345,12 +345,10 @@
                                                                                                         {{ insumo.producto.nombre }}
                                                                                                     </td>
                                                                                                     <td class="text-end">
+                                                                                                        <span class="fw-semibold">{{ insumo.dosis|floatformat:2 }} {% if insumo.um %}{{ insumo.um.abreviatura }}{% endif %}/ha</span>
                                                                                                         {% if insumo.cantidad_real %}
-                                                                                                            {{ insumo.cantidad_real|floatformat:2 }}
-                                                                                                        {% else %}
-                                                                                                            {{ insumo.dosis|floatformat:2 }}
+                                                                                                        <br><small class="text-muted">{{ insumo.cantidad_real|floatformat:0 }} {% if insumo.um %}{{ insumo.um.abreviatura }}{% endif %} total</small>
                                                                                                         {% endif %}
-                                                                                                        {% if insumo.um %}{{ insumo.um.abreviatura }}{% endif %}
                                                                                                     </td>
                                                                                                     <td class="text-end">
                                                                                                         {% if insumo.cantidad_real and insumo.costo_total and insumo.cantidad_real > 0 %}
