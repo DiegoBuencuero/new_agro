@@ -296,6 +296,9 @@
                                         <button id="ndvi-btn-actualizar" class="btn btn-success btn-sm w-100 mb-1">
                                             <i class="mdi mdi-satellite-variant me-1"></i>{% translate "Actualizar Sentinel-2" %}
                                         </button>
+                                        <button id="ndvi-btn-historico" class="btn btn-outline-primary btn-sm w-100 mb-1">
+                                            <i class="mdi mdi-history me-1"></i>{% translate "Últimas 5 imágenes" %}
+                                        </button>
                                         <button id="ndvi-btn-regenerar" class="btn btn-outline-warning btn-sm w-100" style="display:none">
                                             <i class="mdi mdi-reload me-1"></i>{% translate "Regenerar imagen" %}
                                         </button>
@@ -1188,8 +1191,9 @@ function _statChip(lbl, val) {
 // ══════════════════════════════════════════════════════════════════════
 // NDVI
 // ══════════════════════════════════════════════════════════════════════
-var URL_SERIE = '{% url "ajax_ndvi_serie"     campo_id=campo_sel.id %}';
-var URL_PROC  = '{% url "vista_ndvi_procesar" campo_id=campo_sel.id %}';
+var URL_SERIE      = '{% url "ajax_ndvi_serie"            campo_id=campo_sel.id %}';
+var URL_PROC       = '{% url "vista_ndvi_procesar"       campo_id=campo_sel.id %}';
+var URL_HISTORICO  = '{% url "ajax_fetch_ndvi_historico" campo_id=campo_sel.id %}';
 
 function ndviAjustarAltura() {
     var el = document.getElementById('ndvi-visor-layout');
@@ -1355,6 +1359,35 @@ document.getElementById('ndvi-btn-actualizar').addEventListener('click', functio
 document.getElementById('ndvi-btn-regenerar').addEventListener('click', function () {
     this.style.display = 'none';
     ndviConsultar(true);
+});
+document.getElementById('ndvi-btn-historico').addEventListener('click', function () {
+    var btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>{% translate "Buscando..." %}';
+    document.getElementById('ndvi-log-panel').style.display  = '';
+    document.getElementById('ndvi-spinner').style.display    = '';
+    document.getElementById('ndvi-log-titulo').textContent   = '{% translate "Buscando últimas 5 imágenes en catálogo..." %}';
+    document.getElementById('ndvi-log-texto').textContent    = '';
+    $.post(URL_HISTORICO, { csrfmiddlewaretoken: CSRF, n: 5 }, function (res) {
+        document.getElementById('ndvi-spinner').style.display = 'none';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="mdi mdi-history me-1"></i>{% translate "Últimas 5 imágenes" %}';
+        if (res.log && res.log.length)
+            document.getElementById('ndvi-log-texto').textContent = res.log.join('\n');
+        if (res.ok) {
+            document.getElementById('ndvi-log-titulo').textContent =
+                '✓ ' + res.procesadas + ' {% translate "imagen/es procesada/s de" %} ' + res.total;
+            ndviCargarSerie();
+        } else {
+            document.getElementById('ndvi-log-titulo').textContent = '✗ {% translate "Error" %}';
+            if (res.error) document.getElementById('ndvi-log-texto').textContent += '\n' + res.error;
+        }
+    }).fail(function () {
+        document.getElementById('ndvi-spinner').style.display = 'none';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="mdi mdi-history me-1"></i>{% translate "Últimas 5 imágenes" %}';
+        document.getElementById('ndvi-log-titulo').textContent = '✗ {% translate "Error de conexión" %}';
+    });
 });
 
 function ndviConsultar(forzar) {
