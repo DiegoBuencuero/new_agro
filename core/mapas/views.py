@@ -1627,8 +1627,8 @@ def ajax_analisis_punto(request, campo_id):
     # ── Ciclo activo ─────────────────────────────────────
     ciclo = (
         CicloAgricola.objects
-        .filter(campo=campo, fecha_fin__isnull=True)
-        .select_related("cultivo")
+        .filter(campo=campo, activa=True)
+        .select_related("cultivo", "campana")
         .order_by("-fecha_inicio")
         .first()
     )

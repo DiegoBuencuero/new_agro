@@ -269,11 +269,15 @@ def _ray_cast(px, py, ring):
     return inside
 
 
-def buscar_feature_en_punto(geojson_dict, lng, lat, radio_grados=0.0003):
+def buscar_feature_en_punto(geojson_dict, lng, lat, radio_grados=0.002):
     """
-    Retorna las properties del feature que contiene (lng, lat), o None.
-    Para puntos usa un radio de búsqueda.
+    Retorna las properties del feature más cercano a (lng, lat), o None.
+    Para Polygon/MultiPolygon verifica contención. Para Point busca el más cercano
+    dentro del radio (default 0.002° ≈ 220m).
     """
+    mejor_props = None
+    mejor_dist  = float("inf")
+
     for feature in geojson_dict.get("features", []):
         geom  = feature.get("geometry") or {}
         gtype = geom.get("type")
@@ -292,7 +296,12 @@ def buscar_feature_en_punto(geojson_dict, lng, lat, radio_grados=0.0003):
 
         elif gtype == "Point":
             x, y = geom["coordinates"][0], geom["coordinates"][1]
-            if abs(x - lng) <= radio_grados and abs(y - lat) <= radio_grados:
-                return props
+            dist = (x - lng) ** 2 + (y - lat) ** 2
+            if dist < mejor_dist:
+                mejor_dist  = dist
+                mejor_props = props
 
+    # Para puntos: devolver el más cercano si está dentro del radio
+    if mejor_props is not None and mejor_dist <= radio_grados ** 2:
+        return mejor_props
     return None
