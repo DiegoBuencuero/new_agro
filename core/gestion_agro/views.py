@@ -1112,6 +1112,21 @@ def ajax_valores_actividad(request):
 
 @login_required
 @require_POST
+def ajax_eliminar_actividad(request, actividad_id):
+    empresa = request.user.profile.empresa
+    try:
+        act = ActividadProductiva.objects.get(
+            id=actividad_id,
+            fase__ciclo__campo__empresa=empresa
+        )
+        act.delete()
+        return JsonResponse({"ok": True})
+    except ActividadProductiva.DoesNotExist:
+        return JsonResponse({"ok": False, "error": "Actividad no encontrada"}, status=404)
+
+
+@login_required
+@require_POST
 def ajax_eliminar_insumo(request, insumo_id):
     empresa = request.user.profile.empresa
     try:

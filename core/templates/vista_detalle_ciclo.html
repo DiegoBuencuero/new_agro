@@ -200,7 +200,7 @@
                                                                 {% endif %}
                                                             </div>
 
-                                                            <div class="activity-card {{ act.tipo.nombre|slugify }}">
+                                                            <div class="activity-card {{ act.tipo.nombre|slugify }}" data-act-id="{{ act.id }}">
                                                                 <div
                                                                     class="activity-header"
                                                                     data-bs-toggle="collapse"
@@ -242,6 +242,11 @@
 
                                                                         <div class="activity-date d-flex align-items-center gap-2">
                                                                             <span>{{ act.fecha|date:"d/m/Y" }}</span>
+                                                                            <button class="btn btn-sm btn-outline-danger py-0 px-1 no-print"
+                                                                                    onclick="event.stopPropagation(); borrarActividad({{ act.id }})"
+                                                                                    title="Eliminar actividad">
+                                                                                <i class="mdi mdi-delete-outline" style="font-size:.8rem"></i>
+                                                                            </button>
                                                                             <i class="mdi mdi-chevron-down"></i>
                                                                         </div>
                                                                     </div>
@@ -535,6 +540,18 @@ setTimeout(function () {
 }, 5000);
 
 var CSRF = '{{ csrf_token }}';
+
+function borrarActividad(id) {
+    if (!confirm('¿Eliminar esta actividad y todos sus insumos?')) return;
+    $.post('/ajax/actividad/' + id + '/eliminar/', {csrfmiddlewaretoken: CSRF})
+     .done(function(r) {
+        if (r.ok) {
+            var card = document.querySelector('.activity-card[data-act-id="' + id + '"]');
+            if (card) { $(card).fadeOut(300, function(){ $(this).remove(); }); }
+            else { location.reload(); }
+        } else { alert(r.error || 'Error al eliminar'); }
+     });
+}
 
 function borrarInsumo(id) {
     if (!confirm('¿Eliminar este insumo?')) return;
