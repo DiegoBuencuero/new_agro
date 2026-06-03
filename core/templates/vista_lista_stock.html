@@ -45,6 +45,23 @@
                 <div class="card border-0 shadow-sm my-3">
                     <div class="card-body py-2">
                         <form method="get" class="row g-2 align-items-end">
+                            {% if campana_sel %}
+                            <div class="col-12 mb-1">
+                                <span class="badge bg-success" style="font-size:.85rem">
+                                    🌾 Safra: {{ campana_sel.nombre }}
+                                </span>
+                                <a href="{% url 'vista_lista_stock' %}" class="btn btn-sm btn-outline-secondary ms-2">✕ Ver todo</a>
+                            </div>
+                            {% endif %}
+                            <div class="col-md-2">
+                                <label class="form-label small mb-1">{% translate "Safra" %}</label>
+                                <select name="campana" class="form-select form-select-sm" onchange="this.form.submit()">
+                                    <option value="">— Todas —</option>
+                                    {% for camp in campanas %}
+                                    <option value="{{ camp.id }}" {% if campana_sel and campana_sel.id == camp.id %}selected{% endif %}>{{ camp.nombre }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
                             <div class="col-md-3">
                                 <label class="form-label small mb-1">{% translate "Producto" %}</label>
                                 <input type="text" name="producto" id="filtro-producto" class="form-control form-control-sm"

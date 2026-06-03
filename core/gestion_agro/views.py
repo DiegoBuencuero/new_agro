@@ -1176,6 +1176,20 @@ def vista_lista_stock(request):
     empresa = request.user.profile.empresa
     form = StockFiltroForm(request.GET or None)
 
+    # Filtro por safra (campana)
+    campanas       = Campana.objects.filter(empresa=empresa).order_by("-nombre")
+    campana_id     = request.GET.get("campana") or None
+    campana_sel    = None
+    ciclos_safra   = None  # IDs de ciclos de la safra seleccionada
+
+    if campana_id:
+        campana_sel = campanas.filter(id=campana_id).first()
+        if campana_sel:
+            ciclos_safra = list(
+                CicloAgricola.objects.filter(campana=campana_sel, campo__empresa=empresa)
+                .values_list("id", flat=True)
+            )
+
     productos = (
         Producto.objects.select_related("categoria", "unidad_base")
         .filter(empresa=empresa)
@@ -1195,7 +1209,7 @@ def vista_lista_stock(request):
         fecha_desde = form.cleaned_data.get("fecha_entrada_desde")
         fecha_hasta = form.cleaned_data.get("fecha_entrada_hasta")
 
-    if producto_txt: # buscar por nombre o código , es mas flexible para el usuario que no recuerde exactamente el nombre o quiera buscar por código
+    if producto_txt:
         productos = productos.filter(
             Q(nombre__icontains=producto_txt) |
             Q(codigo__icontains=producto_txt)
@@ -1227,9 +1241,15 @@ def vista_lista_stock(request):
 
         if fecha_desde:
             movimientos = movimientos.filter(fecha__gte=fecha_desde)
-
         if fecha_hasta:
             movimientos = movimientos.filter(fecha__lte=fecha_hasta)
+
+        # Filtro por safra: solo movimientos de actividades de ciclos de esa campaña
+        if ciclos_safra is not None:
+            movimientos = movimientos.filter(
+                Q(actividad__fase__ciclo__id__in=ciclos_safra) |
+                Q(cosecha__actividad__fase__ciclo__id__in=ciclos_safra)
+            )
 
         if not movimientos.exists():
             continue
@@ -1364,6 +1384,8 @@ def vista_lista_stock(request):
         "form": form,
         "categorias": categorias,
         "depositos": depositos,
+        "campanas":    campanas,
+        "campana_sel": campana_sel,
 
         # lista general
         "productos": lista_productos,
