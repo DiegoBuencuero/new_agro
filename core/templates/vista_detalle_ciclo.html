@@ -278,7 +278,7 @@
                                                                                                 <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                                                                                                     {{ act.tipo.nombre }}{% if act.subtipo %} · {{ act.subtipo.nombre }}{% endif %}
                                                                                                 </td>
-                                                                                                <td class="text-end">{{ act.tipo.valor_x_ha_mo|floatformat:2 }} dia-h/ha</td>
+                                                                                                <td class="text-end">{% if act.subtipo and act.subtipo.valor_x_ha_mo %}{{ act.subtipo.valor_x_ha_mo|floatformat:2 }}{% elif act.tipo.valor_x_ha_mo %}{{ act.tipo.valor_x_ha_mo|floatformat:2 }}{% else %}—{% endif %} dia-h/ha</td>
                                                                                                 <td class="text-end">R$ {{ act.valor_hombre|floatformat:2 }}</td>
                                                                                                 <td class="text-end">R$ {{ act.total_mo|floatformat:2 }}</td>
                                                                                             </tr>
@@ -309,7 +309,7 @@
                                                                                                 <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
                                                                                                     {{ act.tipo.nombre }}{% if act.subtipo %} · {{ act.subtipo.nombre }}{% endif %}
                                                                                                 </td>
-                                                                                                <td class="text-end">{{ act.tipo.valor_x_ha_mq|floatformat:2 }} h/ha</td>
+                                                                                                <td class="text-end">{% if act.subtipo and act.subtipo.valor_x_ha_mq %}{{ act.subtipo.valor_x_ha_mq|floatformat:2 }}{% elif act.tipo.valor_x_ha_mq %}{{ act.tipo.valor_x_ha_mq|floatformat:2 }}{% else %}—{% endif %} h/ha</td>
                                                                                                 <td class="text-end">R$ {{ act.valor_h_maq|floatformat:2 }}</td>
                                                                                                 <td class="text-end">R$ {{ act.total_maq|floatformat:2 }}</td>
                                                                                             </tr>
