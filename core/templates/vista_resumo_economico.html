@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block plugin_css %}
+<style>
+@media print {
+  .no-print, .sidebar, nav, .navbar, footer, #layout-wrapper .vertical-menu { display:none !important; }
+  .main-content { margin:0 !important; padding:0 !important; }
+  .card { break-inside: avoid; box-shadow: none !important; border: 1px solid #dee2e6 !important; }
+  body { font-size: 11px; }
+  .page-break { page-break-before: always; }
+}
+.badge-positivo { background:#d1fae5; color:#065f46; border:1px solid #6ee7b7; border-radius:6px; padding:2px 8px; font-weight:600; }
+.badge-negativo { background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; border-radius:6px; padding:2px 8px; font-weight:600; }
+.kpi-card { text-align:center; padding:16px; border-radius:10px; border:1px solid #e5e7eb; }
+.kpi-val  { font-size:1.5rem; font-weight:700; line-height:1.1; }
+.kpi-lbl  { font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:#6b7280; margin-top:4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3 px-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+      <h4 class="mb-0 fw-bold">📊 Resumo Econômico</h4>
+      <p class="text-muted small mb-0">{{ empresa.nombre }} — Análise de resultados por ciclo</p>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" onclick="window.print()">
+      <i class="mdi mdi-printer me-1"></i> Imprimir / PDF
+    </button>
+  </div>
+
+  <!-- Título para impressão -->
+  <div class="d-none d-print-block mb-3">
+    <h4 class="fw-bold mb-0">Resumo Econômico — {{ empresa.nombre }}</h4>
+    <p class="text-muted small">Análise de custo e rentabilidade por ciclo agrícola</p>
+    <hr>
+  </div>
+
+  {% for r in resumo %}
+  {% with c=r.ciclo %}
+  <div class="card mb-4 {% if not forloop.first %}page-break{% endif %}">
+    <div class="card-body">
+
+      <!-- Título do ciclo -->
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h5 class="fw-bold mb-0">🌾 {{ c.cultivo.nombre }} — {{ c.campana.nombre }}</h5>
+          <div class="text-muted small">{{ c.campo.nombre }} · {{ r.sup|floatformat:0 }} ha · {{ c.fecha_inicio|date:"M/Y" }} → {{ c.fecha_fin|date:"M/Y"|default:"em curso" }}</div>
+        </div>
+        <div>
+          {% if r.margen_ha >= 0 %}
+            <span class="badge-positivo">✓ Rentável</span>
+          {% else %}
+            <span class="badge-negativo">✗ Prejuízo</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-2">
+          <div class="kpi-card" style="background:#f0fdf4">
+            <div class="kpi-val text-success">R$ {{ r.ingreso_ha|floatformat:0 }}</div>
+            <div class="kpi-lbl">Receita/ha</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <div class="kpi-card" style="background:#fef2f2">
+            <div class="kpi-val text-danger">R$ {{ r.costo_ha|floatformat:0 }}</div>
+            <div class="kpi-lbl">Custo/ha</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <div class="kpi-card" style="background:{% if r.margen_ha >= 0 %}#ecfdf5{% else %}#fff1f2{% endif %}">
+            <div class="kpi-val {% if r.margen_ha >= 0 %}text-success{% else %}text-danger{% endif %}">R$ {{ r.margen_ha|floatformat:0 }}</div>
+            <div class="kpi-lbl">Margem/ha</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <div class="kpi-card" style="background:#eff6ff">
+            <div class="kpi-val text-primary">{{ r.rend_ha|floatformat:0 }} kg</div>
+            <div class="kpi-lbl">Produtividade/ha</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <div class="kpi-card" style="background:#fafafa">
+            <div class="kpi-val">R$ {{ r.precio_kg|floatformat:2 }}</div>
+            <div class="kpi-lbl">Preço ref. kg</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <div class="kpi-card" style="background:{% if r.roi >= 0 %}#f0fdf4{% else %}#fff1f2{% endif %}">
+            <div class="kpi-val {% if r.roi >= 0 %}text-success{% else %}text-danger{% endif %}">{{ r.roi|floatformat:1 }}%</div>
+            <div class="kpi-lbl">ROI</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <!-- Gráfico composição de custo -->
+        <div class="col-md-4">
+          <div class="border rounded p-3 h-100">
+            <div class="fw-semibold mb-2" style="font-size:.82rem">Composição do Custo/ha</div>
+            <canvas id="chart-custo-{{ forloop.counter }}" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Gráfico receita vs custo -->
+        <div class="col-md-4">
+          <div class="border rounded p-3 h-100">
+            <div class="fw-semibold mb-2" style="font-size:.82rem">Receita vs Custo (total)</div>
+            <canvas id="chart-rvc-{{ forloop.counter }}" height="200"></canvas>
+          </div>
+        </div>
+
+        <!-- Tabela resumo -->
+        <div class="col-md-4">
+          <div class="border rounded p-3 h-100">
+            <div class="fw-semibold mb-2" style="font-size:.82rem">Detalhamento</div>
+            <table class="table table-sm mb-0" style="font-size:.78rem">
+              <tbody>
+                <tr><td class="text-muted">Insumos</td><td class="text-end">R$ {{ r.costo_insumos_ha|floatformat:2 }}/ha</td></tr>
+                <tr><td class="text-muted">Mão de obra</td><td class="text-end">R$ {{ r.costo_mo_ha|floatformat:2 }}/ha</td></tr>
+                <tr><td class="text-muted">Mecânicos</td><td class="text-end">R$ {{ r.costo_maq_ha|floatformat:2 }}/ha</td></tr>
+                <tr class="fw-bold"><td>Custo total/ha</td><td class="text-end text-danger">R$ {{ r.costo_ha|floatformat:2 }}</td></tr>
+                <tr><td colspan="2"><hr class="my-1"></td></tr>
+                <tr><td class="text-muted">Produção total</td><td class="text-end">{{ r.rend_ha|floatformat:0|stringformat:"s" }} kg/ha × {{ r.sup|floatformat:0 }} ha</td></tr>
+                <tr><td class="text-muted">Receita total</td><td class="text-end text-success">R$ {{ r.ingreso_total|floatformat:0 }}</td></tr>
+                <tr><td class="text-muted">Custo total</td><td class="text-end text-danger">R$ {{ r.costo_total|floatformat:0 }}</td></tr>
+                <tr class="fw-bold"><td>Margem total</td>
+                  <td class="text-end {% if r.margen_total >= 0 %}text-success{% else %}text-danger{% endif %}">
+                    R$ {{ r.margen_total|floatformat:0 }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  {% endwith %}
+  {% endfor %}
+
+  <!-- Gráfico comparativo geral -->
+  {% if resumo|length > 1 %}
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="fw-bold mb-3">📈 Comparativo entre Culturas</h5>
+      <div class="row g-4">
+        <div class="col-md-6">
+          <div class="fw-semibold mb-2" style="font-size:.82rem">Custo vs Receita por Cultura (R$/ha)</div>
+          <canvas id="chart-comparativo" height="180"></canvas>
+        </div>
+        <div class="col-md-6">
+          <div class="fw-semibold mb-2" style="font-size:.82rem">Margem por Cultura (R$/ha)</div>
+          <canvas id="chart-margens" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.size = 11;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+
+{% for r in resumo %}
+// Gráfico composição custo
+new Chart(document.getElementById('chart-custo-{{ forloop.counter }}'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Insumos', 'Mão de obra', 'Mecânicos'],
+    datasets: [{
+      data: [{{ r.costo_insumos_ha|floatformat:2 }}, {{ r.costo_mo_ha|floatformat:2 }}, {{ r.costo_maq_ha|floatformat:2 }}],
+      backgroundColor: ['#3b82f6','#10b981','#f59e0b'],
+      borderWidth: 1,
+    }]
+  },
+  options: { responsive:true, plugins:{ legend:{ position:'bottom' } } }
+});
+
+// Gráfico receita vs custo
+new Chart(document.getElementById('chart-rvc-{{ forloop.counter }}'), {
+  type: 'bar',
+  data: {
+    labels: ['Receita', 'Custo', 'Margem'],
+    datasets: [{
+      data: [{{ r.ingreso_total|floatformat:0 }}, {{ r.costo_total|floatformat:0 }}, {{ r.margen_total|floatformat:0 }}],
+      backgroundColor: ['#10b981','#ef4444', '{% if r.margen_total >= 0 %}#3b82f6{% else %}#f97316{% endif %}'],
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive:true,
+    plugins:{ legend:{ display:false } },
+    scales:{ y:{ ticks:{ callback: v => 'R$' + v.toLocaleString('pt-BR') } } }
+  }
+});
+{% endfor %}
+
+{% if resumo|length > 1 %}
+// Comparativo
+new Chart(document.getElementById('chart-comparativo'), {
+  type: 'bar',
+  data: {
+    labels: [{% for r in resumo %}'{{ r.ciclo.cultivo.nombre }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+    datasets: [
+      { label:'Custo/ha',   data:[{% for r in resumo %}{{ r.costo_ha|floatformat:0 }}{% if not forloop.last %},{% endif %}{% endfor %}], backgroundColor:'#ef4444', borderRadius:4 },
+      { label:'Receita/ha', data:[{% for r in resumo %}{{ r.ingreso_ha|floatformat:0 }}{% if not forloop.last %},{% endif %}{% endfor %}], backgroundColor:'#10b981', borderRadius:4 },
+    ]
+  },
+  options:{ responsive:true, plugins:{ legend:{ position:'bottom' } }, scales:{ y:{ ticks:{ callback: v=>'R$'+v.toLocaleString('pt-BR') } } } }
+});
+
+new Chart(document.getElementById('chart-margens'), {
+  type: 'bar',
+  data: {
+    labels: [{% for r in resumo %}'{{ r.ciclo.cultivo.nombre }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+    datasets: [{
+      label: 'Margem/ha',
+      data: [{% for r in resumo %}{{ r.margen_ha|floatformat:0 }}{% if not forloop.last %},{% endif %}{% endfor %}],
+      backgroundColor: [{% for r in resumo %}'{% if r.margen_ha >= 0 %}#3b82f6{% else %}#f97316{% endif %}'{% if not forloop.last %},{% endif %}{% endfor %}],
+      borderRadius: 4,
+    }]
+  },
+  options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ ticks:{ callback: v=>'R$'+v.toLocaleString('pt-BR') } } } }
+});
+{% endif %}
+</script>
+{% endblock %}

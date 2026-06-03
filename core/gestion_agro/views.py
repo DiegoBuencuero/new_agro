@@ -426,6 +426,74 @@ def vista_editar_producto(request, id_prod):
     })
 
 @login_required
+@login_required
+def vista_resumo_economico(request):
+    empresa = request.user.profile.empresa
+    ciclos_qs = (
+        CicloAgricola.objects
+        .filter(campo__empresa=empresa)
+        .select_related("cultivo", "campo", "campana")
+        .prefetch_related("fases__actividades__insumos", "fases__actividades__camposcosecha")
+        .order_by("campana__nombre", "cultivo__nombre")
+    )
+
+    resumo = []
+    for ciclo in ciclos_qs:
+        sup = float(ciclo.superficie_ha)
+        total_insumos = Decimal("0")
+        total_mo      = Decimal("0")
+        total_maq     = Decimal("0")
+        rend_ha       = Decimal("0")
+        cosecha_obj   = None
+
+        for fase in ciclo.fases.all():
+            for act in fase.actividades.all():
+                for ins in act.insumos.all():
+                    total_insumos += ins.costo_total or Decimal("0")
+                total_mo  += act.total_mo  or Decimal("0")
+                total_maq += act.total_maq or Decimal("0")
+                try:
+                    cosecha_obj = act.camposcosecha
+                    rend_ha = cosecha_obj.rendimiento or Decimal("0")
+                except Exception:
+                    pass
+
+        costo_total = total_insumos + total_mo + total_maq
+        costo_ha    = costo_total / Decimal(str(sup)) if sup else Decimal("0")
+
+        # Precio referencia por cultivo (R$/kg)
+        precios = {"Soja": 1.80, "Trigo": 0.85, "Milho": 0.65, "Carinata": 2.20, "Girassol": 2.00}
+        precio_kg = Decimal(str(precios.get(ciclo.cultivo.nombre, 1.0)))
+        ingreso_ha  = rend_ha * precio_kg
+        ingreso_tot = ingreso_ha * Decimal(str(sup))
+        margen_ha   = ingreso_ha - costo_ha
+        margen_tot  = margen_ha * Decimal(str(sup))
+        roi         = float(margen_tot / costo_total * 100) if costo_total else 0
+
+        resumo.append({
+            "ciclo":            ciclo,
+            "sup":              sup,
+            "rend_ha":          float(rend_ha),
+            "costo_insumos_ha": float(total_insumos / Decimal(str(sup))) if sup else 0,
+            "costo_mo_ha":      float(total_mo  / Decimal(str(sup))) if sup else 0,
+            "costo_maq_ha":     float(total_maq / Decimal(str(sup))) if sup else 0,
+            "costo_ha":         float(costo_ha),
+            "costo_total":      float(costo_total),
+            "ingreso_ha":       float(ingreso_ha),
+            "ingreso_total":    float(ingreso_tot),
+            "margen_ha":        float(margen_ha),
+            "margen_total":     float(margen_tot),
+            "roi":              roi,
+            "precio_kg":        float(precio_kg),
+        })
+
+    return render(request, "vista_resumo_economico.html", {
+        "resumo":  resumo,
+        "empresa": empresa,
+    })
+
+
+@login_required
 def vista_lista_ciclos(request):
     empresa = request.user.profile.empresa
 
