@@ -2089,10 +2089,11 @@ def vista_confirmar_factura(request):
         messages.error(request, _("Proveedor no encontrado."))
         return redirect("vista_revisar_factura")
 
-    deposito_destino = Deposito.objects.filter(
-        id=request.POST.get("deposito_destino"),
-        empresa=empresa
-    ).first() or empresa.deposito_insumos_default
+    _dep_id = request.POST.get("deposito_destino") or None
+    deposito_destino = (
+        Deposito.objects.filter(id=_dep_id, empresa=empresa).first()
+        if _dep_id else None
+    ) or empresa.deposito_insumos_default
 
     cabecera_form = FacturaCompraForm({
         "numero": request.POST.get("numero_factura"),
