@@ -214,6 +214,7 @@ class Command(BaseCommand):
                     "deposito_destino": dep,
                     "precio_unitario":  Decimal("0.85"),  # R$0.85/kg trigo
                     "actividad":        a_colh,
+                    "destino":          "C",  # C=Consumo/Venta, M=Semilla
                 }
             )
 
