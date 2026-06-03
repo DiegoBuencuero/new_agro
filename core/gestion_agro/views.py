@@ -2001,6 +2001,10 @@ def vista_revisar_factura(request):
             "producto_existente":        mejor_producto.id if mejor_producto else None,
             "presentacion_existente":    pres_match.id if pres_match else None,
             "cultivo":                   cultivo_inicial,
+            # Versiones con punto decimal para <input type="number">
+            "cantidad_num":              format(cant, 'g') if cant else '',
+            "precio_num":                format(p_u, 'g') if p_u else '',
+            "contenido_num":             format(contenido, 'g') if contenido else '',
         })
 
         match_info.append({
@@ -2053,6 +2057,13 @@ def vista_revisar_factura(request):
         "deposito_default": empresa.deposito_insumos_default,
     }
 
+    from django.template.loader import render_to_string
+    import re as _re
+    rendered = render_to_string("tem_facturas/vista_revisar_factura.html", context, request=request)
+    m = _re.search(r'id="cantidad_0"[^>]*value="([^"]*)"', rendered)
+    print('>>> HTML cantidad_0 value=' + repr(m.group(1) if m else 'NO MATCH'))
+    m2 = _re.search(r'id="precio_0"[^>]*value="([^"]*)"', rendered)
+    print('>>> HTML precio_0 value=' + repr(m2.group(1) if m2 else 'NO MATCH'))
     return render(request, "tem_facturas/vista_revisar_factura.html", context)
 
 @login_required
