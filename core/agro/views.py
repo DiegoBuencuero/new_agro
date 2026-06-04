@@ -562,6 +562,61 @@ def vista_cuenta_suspendida(request):
 
 
 @login_required
+@login_required
+def vista_parametros_actividades(request):
+    from gestion_agro.models import TipoActividad, SubTipoActividad
+    empresa = request.user.profile.empresa
+
+    if request.method == "POST":
+        for key, val in request.POST.items():
+            # keys: tipo_{id}_mo_h, tipo_{id}_maq_h, tipo_{id}_v_mo, tipo_{id}_v_maq
+            #       sub_{id}_mo_h, sub_{id}_maq_h, sub_{id}_v_mo, sub_{id}_v_maq
+            parts = key.split("_")
+            if len(parts) < 3:
+                continue
+            obj_type, obj_id, field = parts[0], parts[1], "_".join(parts[2:])
+            try:
+                obj_id = int(obj_id)
+                val    = None if val == "" else float(val)
+            except (ValueError, TypeError):
+                continue
+
+            campo_map = {
+                "mo_h":  "valor_x_ha_mo",
+                "maq_h": "valor_x_ha_mq",
+                "v_mo":  "valor_mo",
+                "v_maq": "valor_maquina",
+            }
+            campo = campo_map.get(field)
+            if not campo:
+                continue
+
+            if obj_type == "tipo":
+                TipoActividad.objects.filter(id=obj_id).update(**{campo: val})
+            elif obj_type == "sub":
+                SubTipoActividad.objects.filter(id=obj_id).update(**{campo: val})
+
+        # Actualizar también valor empresa si se envió
+        v_mo  = request.POST.get("empresa_v_mo")
+        v_maq = request.POST.get("empresa_v_maq")
+        if v_mo:
+            empresa.valor_mobra   = float(v_mo)
+        if v_maq:
+            empresa.valor_maquina = float(v_maq)
+        empresa.save()
+
+        messages.success(request, "Parâmetros atualizados.")
+        return redirect("vista_parametros_actividades")
+
+    tipos = TipoActividad.objects.prefetch_related("subtipos").order_by("nombre")
+
+    return render(request, "vista_parametros_actividades.html", {
+        "tipos":   tipos,
+        "empresa": empresa,
+    })
+
+
+@login_required
 def vista_configuracion(request):
     empresa = request.user.profile.empresa
 

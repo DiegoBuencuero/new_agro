@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from agro.views import (index, login_page, vista_configuracion, vista_registro, vista_cuenta_suspendida,
+from agro.views import (index, login_page, vista_configuracion, vista_registro, vista_cuenta_suspendida, vista_parametros_actividades,
     ajax_cotizaciones, ajax_dashboard_resumen, ajax_dashboard_calendario, ajax_dashboard_vencimientos)
 from administracion.views import (vista_registrar_venta, vista_lista_ventas, ajax_registrar_cobro,
     vista_gestion_facturas, ajax_indicadores_proveedor,
@@ -87,6 +87,7 @@ urlpatterns = [
     path('mapas/', include('mapas.urls')),
 
     path('configuracion/', vista_configuracion, name='vista_configuracion'),
+    path('configuracion/actividades/', vista_parametros_actividades, name='vista_parametros_actividades'),
 
     path('ventas/', vista_lista_ventas, name='vista_lista_ventas'),
     path('ventas/nueva/', vista_registrar_venta, name='vista_registrar_venta'),
