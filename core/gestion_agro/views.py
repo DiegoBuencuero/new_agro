@@ -426,7 +426,6 @@ def vista_editar_producto(request, id_prod):
     })
 
 @login_required
-@login_required
 def vista_resumo_economico(request):
     empresa = request.user.profile.empresa
     ciclos_qs = (
@@ -491,7 +490,6 @@ def vista_resumo_economico(request):
         "resumo":  resumo,
         "empresa": empresa,
     })
-
 
 @login_required
 def vista_lista_ciclos(request):
@@ -775,8 +773,44 @@ def vista_detalle_ciclo(request, id_ciclo):
 
     return render(request, "vista_detalle_ciclo.html", context)
 
-def vista_editar_ciclo():
-    pass
+@login_required
+def vista_editar_ciclo(request, id_ciclo):
+    empresa = request.user.profile.empresa
+    ciclo   = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa)
+
+    if request.method == "POST":
+        nombre_lote   = request.POST.get("nombre_lote", "").strip()
+        superficie_ha = request.POST.get("superficie_ha")
+        fecha_inicio  = request.POST.get("fecha_inicio")
+        activa        = request.POST.get("activa") == "1"
+
+        try:
+            ciclo.nombre_lote   = nombre_lote or ciclo.nombre_lote
+            if superficie_ha:
+                ciclo.superficie_ha = Decimal(superficie_ha)
+            if fecha_inicio:
+                from datetime import datetime
+                ciclo.fecha_inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d").date()
+            ciclo.activa = activa
+            ciclo.save()
+            messages.success(request, "Ciclo actualizado.")
+            return redirect("vista_lista_ciclos")
+        except Exception as e:
+            messages.error(request, f"Error: {e}")
+
+    return render(request, "vista_editar_ciclo.html", {"ciclo": ciclo, "empresa": empresa})
+
+
+@login_required
+@require_POST
+def ajax_eliminar_ciclo(request, id_ciclo):
+    empresa = request.user.profile.empresa
+    ciclo   = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa)
+    try:
+        ciclo.delete()
+        return JsonResponse({"ok": True})
+    except Exception as e:
+        return JsonResponse({"ok": False, "error": str(e)}, status=400)
 
 @login_required
 def ajax_subtipos_tipo_actividad(request):
