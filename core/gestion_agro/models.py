@@ -389,7 +389,6 @@ class CategoriaProducto(models.Model):
         return self.nombre
 
 class Producto(models.Model):
-
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="productos")
     codigo = models.CharField(max_length=50, verbose_name=_("Código"))
     nombre = models.CharField(max_length=255, verbose_name=_("Nombre"))

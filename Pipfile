@@ -7,11 +7,11 @@ name = "pypi"
 django = "*"
 pillow = "*"
 pdfplumber = "*"
-sentinelhub = "*"
 numpy = "*"
-matplotlib = "*"
 pyshp = "*"
 requests = "*"
+sentinelhub = "*"
+matplotlib = "*"
 
 [dev-packages]
 

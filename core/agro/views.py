@@ -6,6 +6,12 @@ from django.contrib import messages
 from django.db import transaction
 from django.http import JsonResponse
 from .forms import LoginForm, ConfiguracionEmpresaForm, RegistroForm
+import datetime
+from decimal import Decimal
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+from django.db.models.functions import Coalesce, TruncMonth, TruncWeek
+from gestion_agro.models import FacturaCompra
+from administracion.models import FacturaVentaItem
 
 # ── Cotizaciones CBOT / USD ──────────────────────────────────────────────────
 
@@ -144,12 +150,7 @@ def ajax_dashboard_resumen(request):
 
 @login_required
 def ajax_dashboard_calendario(request):
-    import datetime
-    from decimal import Decimal
-    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
-    from django.db.models.functions import Coalesce, TruncMonth, TruncWeek
-    from gestion_agro.models import FacturaCompra
-    from administracion.models import FacturaVentaItem
+
 
     empresa = getattr(request.user.profile, "empresa", None)
     if not empresa:
