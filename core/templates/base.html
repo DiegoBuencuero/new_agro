@@ -96,6 +96,28 @@
     background:#fff !important; border-color:#dee2e6 !important; color:#495057 !important;
 }
 .btn-outline-primary:hover { background:#f8f9fa !important; border-color:#adb5bd !important; }
+/* ── Contraste garantizado en todos los inputs y selects ── */
+.form-control,
+.form-select,
+select.form-control,
+textarea.form-control {
+    color: #212529 !important;
+    background-color: #fff !important;
+}
+.form-control[readonly],
+.form-control:read-only {
+    background-color: #f8f9fa !important;
+    color: #495057 !important;
+}
+.form-control:disabled,
+.form-select:disabled {
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+}
+.form-control::placeholder {
+    color: #adb5bd !important;
+    opacity: 1 !important;
+}
 </style>
     <script>
     function cambiarIdioma(code) {

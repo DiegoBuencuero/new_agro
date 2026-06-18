@@ -773,7 +773,7 @@ def vista_detalle_ciclo(request, id_ciclo):
 
     return render(request, "vista_detalle_ciclo.html", context)
 
-@login_required
+
 def vista_editar_ciclo(request, id_ciclo):
     empresa = request.user.profile.empresa
     ciclo   = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa)

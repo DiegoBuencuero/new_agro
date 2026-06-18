@@ -212,10 +212,13 @@ def _procesar_ndvi_array(ndvi_raw, bbox, area_geojson_str, ciclo_geojson_str=Non
     return promedio, ndvi_min, ndvi_max, nubosidad, buf.read()
 
 
-def buscar_fechas_historicas(bbox, config, n=5, dias_atras=120, max_nubes=80):
-    """Devuelve hasta n fechas únicas con menos nubes en los últimos dias_atras días."""
-    from datetime import date, timedelta
-    from datetime import datetime
+def buscar_fechas_historicas(bbox, config, n=5, dias_atras=365, max_nubes=90):
+    """
+    Devuelve hasta n fechas únicas con menos nubes en los últimos dias_atras días.
+    Si con el umbral de nubes estricto no se encuentran n fechas, amplía el umbral
+    progresivamente hasta 100% para completar la lista.
+    """
+    from datetime import date, timedelta, datetime
     try:
         from sentinelhub import SentinelHubCatalog, DataCollection
         catalog = SentinelHubCatalog(config=config)
@@ -227,23 +230,50 @@ def buscar_fechas_historicas(bbox, config, n=5, dias_atras=120, max_nubes=80):
             time=(str(fecha_desde), str(fecha_hasta)),
             fields={"include": ["id", "properties.datetime", "properties.eo:cloud_cover"]},
         )
-        items = sorted(
-            [i for i in results if i.get("properties", {}).get("eo:cloud_cover", 100) <= max_nubes],
+        # Traer todos los ítems y ordenar por fecha descendente
+        all_items = sorted(
+            list(results),
             key=lambda x: x["properties"]["datetime"],
             reverse=True,
         )
+
         fechas_vistas = set()
         fechas = []
-        for item in items:
+
+        # Primer pase: filtrar por max_nubes
+        for item in all_items:
+            cloud = item.get("properties", {}).get("eo:cloud_cover", 100)
+            if cloud > max_nubes:
+                continue
             dt_str = item["properties"]["datetime"]
             fecha = datetime.strptime(dt_str[:10], "%Y-%m-%d").date()
             if fecha not in fechas_vistas:
                 fechas_vistas.add(fecha)
-                cloud = round(item["properties"].get("eo:cloud_cover", 0), 1)
-                fechas.append((fecha, cloud))
+                fechas.append((fecha, round(cloud, 1)))
             if len(fechas) >= n:
                 break
-        return fechas
+
+        # Si no alcanzamos n, completar con imágenes más nubosas (ordenadas de menos a más nubes)
+        if len(fechas) < n:
+            restantes = sorted(
+                [i for i in all_items
+                 if datetime.strptime(i["properties"]["datetime"][:10], "%Y-%m-%d").date() not in fechas_vistas],
+                key=lambda x: x["properties"].get("eo:cloud_cover", 100),
+            )
+            for item in restantes:
+                cloud = item.get("properties", {}).get("eo:cloud_cover", 100)
+                dt_str = item["properties"]["datetime"]
+                fecha = datetime.strptime(dt_str[:10], "%Y-%m-%d").date()
+                if fecha not in fechas_vistas:
+                    fechas_vistas.add(fecha)
+                    fechas.append((fecha, round(cloud, 1)))
+                if len(fechas) >= n:
+                    break
+
+        # Reordenar el resultado final por fecha descendente
+        fechas.sort(key=lambda x: x[0], reverse=True)
+        return fechas[:n]
+
     except Exception as e:
         logger.warning(f"buscar_fechas_historicas error: {e}")
         return []
@@ -292,7 +322,7 @@ def procesar_campo(campo, fecha_desde, fecha_hasta, config, stdout):
     geojson_str = geojson_union_areas(campo) or campo.contorno
     if not geojson_str:
         stdout.write(f"  SKIP {campo.nombre}: sin contorno ni áreas definidas")
-        return
+        return False
 
     bbox = _bbox_from_geojson(geojson_str)
     size = bbox_to_dimensions(bbox, resolution=10)
@@ -329,7 +359,7 @@ def procesar_campo(campo, fecha_desde, fecha_hasta, config, stdout):
         ndvi_raw = req.get_data()[0]
     except Exception as e:
         stdout.write(f"  ERROR al consultar API: {e}")
-        return
+        return False
 
     stdout.write(f"  Array shape: {ndvi_raw.shape}, dtype: {ndvi_raw.dtype}")
 
@@ -358,12 +388,12 @@ def procesar_campo(campo, fecha_desde, fecha_hasta, config, stdout):
     stdout.write(f"  Nubosidad: {nubosidad}%")
 
     if nubosidad > 80:
-        stdout.write(f"  Saltando — nubosidad {nubosidad}%")
-        return
+        stdout.write(f"  Saltando — nubosidad real {nubosidad}% (umbral 80%)")
+        return False
 
     if promedio is None:
         stdout.write("  Saltando — sin píxeles válidos")
-        return
+        return False
 
     captura, created = CapturaSatelite.objects.update_or_create(
         campo=campo,
@@ -400,3 +430,4 @@ def procesar_campo(campo, fecha_desde, fecha_hasta, config, stdout):
         f"  {accion} — NDVI avg={promedio:.3f} min={ndvi_min:.3f} "
         f"max={ndvi_max:.3f} nubes={nubosidad}%"
     )
+    return True

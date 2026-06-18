@@ -238,7 +238,7 @@
       <div class="modal-header border-0 px-4 py-3" style="background:#1a2e1a">
         <div class="d-flex align-items-center gap-2">
           <i class="mdi mdi-map-marker-radius text-success" style="font-size:1.2rem"></i>
-          <span class="fw-semibold text-white" style="font-size:.95rem">{% translate "Análise do Ponto Selecionado" %}</span>
+          <span class="fw-semibold text-white" style="font-size:.95rem">{% translate "Análisis del Punto Seleccionado" %}</span>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -257,7 +257,7 @@
           <!-- Dados de Plantío -->
           <div id="bloque-plantio" class="px-4 pt-3 pb-2 border-bottom" style="background:#f8faf8;display:none">
             <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
-              <i class="mdi mdi-seed-outline me-1"></i>{% translate "Dados de Plantío" %}
+              <i class="mdi mdi-seed-outline me-1"></i>{% translate "Datos de Plantío" %}
             </div>
             <div class="d-flex flex-wrap gap-3">
               <div>
@@ -265,15 +265,15 @@
                 <div class="fw-semibold" id="pt-cultivo" style="font-size:.85rem">—</div>
               </div>
               <div>
-                <div class="text-muted" style="font-size:.68rem">{% translate "Variedade" %}</div>
+                <div class="text-muted" style="font-size:.68rem">{% translate "Variedad" %}</div>
                 <div class="fw-semibold" id="pt-variedad" style="font-size:.85rem">—</div>
               </div>
               <div>
-                <div class="text-muted" style="font-size:.68rem">{% translate "Data Plantío" %}</div>
+                <div class="text-muted" style="font-size:.68rem">{% translate "Fecha Plantío" %}</div>
                 <div class="fw-semibold" id="pt-fecha" style="font-size:.85rem">—</div>
               </div>
               <div>
-                <div class="text-muted" style="font-size:.68rem">{% translate "Superfície" %}</div>
+                <div class="text-muted" style="font-size:.68rem">{% translate "Superficie" %}</div>
                 <div class="fw-semibold" id="pt-superficie" style="font-size:.85rem">—</div>
               </div>
             </div>
@@ -283,7 +283,7 @@
           <div class="row g-0">
             <div class="col-md-5 px-4 py-3 border-end border-bottom">
               <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
-                <i class="mdi mdi-crosshairs-gps me-1"></i>{% translate "Localização" %}
+                <i class="mdi mdi-crosshairs-gps me-1"></i>{% translate "Localización" %}
               </div>
               <div class="mb-1" style="font-size:.82rem">
                 <span class="text-muted">Lat:</span>
@@ -322,7 +322,7 @@
             <!-- Tabla de variables -->
             <div class="col-md-7 px-4 py-3 border-bottom">
               <div class="text-muted fw-semibold mb-2" style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase">
-                <i class="mdi mdi-flask-outline me-1"></i>{% translate "Análise de Variáveis" %}
+                <i class="mdi mdi-flask-outline me-1"></i>{% translate "Análisis de Variables" %}
               </div>
               <div id="sin-variables" class="text-muted small py-3 text-center" style="display:none">
                 {% translate "Sin datos analíticos para este punto" %}
@@ -333,7 +333,7 @@
                     <th class="ps-0 text-muted fw-normal" style="font-size:.72rem">{% translate "Variable" %}</th>
                     <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Valor" %}</th>
                     <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Máximo" %}</th>
-                    <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Diferença" %}</th>
+                    <th class="text-end text-muted fw-normal" style="font-size:.72rem">{% translate "Diferencia" %}</th>
                   </tr>
                 </thead>
                 <tbody id="tbody-variables"></tbody>

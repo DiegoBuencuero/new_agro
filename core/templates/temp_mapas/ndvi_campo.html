@@ -437,7 +437,10 @@ $('#btn-historico-ndvi').on('click', function () {
       btn.prop('disabled', false).html('<i class="mdi mdi-history me-1"></i>Últimas 5 imágenes');
       if (res.log && res.log.length) $('#log-contenido').text(res.log.join('\n'));
       if (res.ok) {
-        $('#log-titulo').text('✓ ' + res.procesadas + ' imagen/es procesada/s de ' + res.total + ' encontradas');
+        var msg = '✓ ' + res.total_en_db + ' imágenes en total';
+        if (res.procesadas > 0) msg += ' — ' + res.procesadas + ' nuevas procesadas';
+        else msg += ' — sin imágenes nuevas';
+        $('#log-titulo').text(msg);
         cargarNdvi(campoActual);
       } else {
         $('#log-titulo').text('✗ Error');

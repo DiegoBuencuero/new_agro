@@ -271,7 +271,12 @@ def ajax_fetch_ndvi_campo(request, campo_id):
 @login_required
 @require_POST
 def ajax_fetch_ndvi_historico(request, campo_id):
-    """Busca y procesa las últimas N imágenes Sentinel-2 del catálogo."""
+    """
+    Busca y procesa las últimas N imágenes Sentinel-2.
+    Primero intenta recuperar imágenes recientes no indexadas en el catálogo
+    usando el Process API (igual que 'Obter Sentinel-2'), luego completa
+    con el catálogo histórico hasta llegar a N.
+    """
     empresa = request.user.profile.empresa
     campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
 
@@ -284,16 +289,10 @@ def ajax_fetch_ndvi_historico(request, campo_id):
         return JsonResponse({"ok": False, "error": str(e)}, status=400)
 
     from mapas.aux_sentenial import buscar_fechas_historicas, _bbox_from_geojson
-    from gestion_agro.models import CicloAgricola
 
     geojson_str = geojson_union_areas(campo) or campo.contorno
-    bbox = _bbox_from_geojson(geojson_str)
-
-    n = int(request.POST.get("n", 5))
-    fechas = buscar_fechas_historicas(bbox, config, n=n)
-
-    if not fechas:
-        return JsonResponse({"ok": False, "error": "No se encontraron imágenes en el catálogo para los últimos 120 días."})
+    bbox        = _bbox_from_geojson(geojson_str)
+    n           = int(request.POST.get("n", 5))
 
     class Log:
         def __init__(self): self.lines = []
@@ -301,21 +300,67 @@ def ajax_fetch_ndvi_historico(request, campo_id):
 
     log = Log()
     procesadas = 0
+    ya_tenia   = 0
 
-    for fecha, nubes in fechas:
-        ya_existe = CapturaSatelite.objects.filter(campo=campo, fecha=fecha, fuente="sentinel2", estado="procesada").exists()
-        if ya_existe:
-            log.write(f"  {fecha} — ya procesada, salteando")
-            continue
-        log.write(f"  Procesando {fecha} (nubes: {nubes}%)...")
-        from datetime import timedelta
-        try:
-            procesar_campo(campo, fecha, fecha, config, log)
-            procesadas += 1
-        except Exception as e:
-            log.write(f"  ERROR {fecha}: {e}")
+    # ── Paso 1: intentar imágenes recientes via Process API ──────────
+    # Cubre el gap entre la última captura en DB y hoy (catálogo puede tener delay).
+    ultima = (
+        CapturaSatelite.objects
+        .filter(campo=campo, fuente="sentinel2", estado="procesada")
+        .order_by("-fecha")
+        .first()
+    )
+    fecha_hasta = date.today()
+    if ultima:
+        fecha_desde_reciente = ultima.fecha + timedelta(days=1)
+        dias_gap = (fecha_hasta - ultima.fecha).days
+        if fecha_desde_reciente <= fecha_hasta:
+            log.write(f"  Buscando imagen reciente: {fecha_desde_reciente} → {fecha_hasta} ({dias_gap} días sin imagen)...")
+            try:
+                guardado = procesar_campo(campo, fecha_desde_reciente, fecha_hasta, config, log)
+                if guardado:
+                    procesadas += 1
+                else:
+                    log.write(f"  ⚠ Sin imagen disponible para {fecha_desde_reciente} → {fecha_hasta} (nubosidad o sin datos)")
+            except Exception as e:
+                log.write(f"  Sin imagen nueva reciente: {e}")
+        else:
+            log.write(f"  Ya está al día (última: {ultima.fecha})")
 
-    return JsonResponse({"ok": True, "procesadas": procesadas, "total": len(fechas), "log": log.lines})
+    # ── Paso 2: catálogo histórico para completar hasta N ────────────
+    fechas_catalogo = buscar_fechas_historicas(bbox, config, n=n + 5)  # pedir extra por si algunas ya existen
+
+    if not fechas_catalogo:
+        if procesadas == 0:
+            return JsonResponse({"ok": False, "error": "No se encontraron imágenes en el catálogo."})
+    else:
+        for fecha, nubes in fechas_catalogo:
+            ya_existe = CapturaSatelite.objects.filter(
+                campo=campo, fecha=fecha, fuente="sentinel2", estado="procesada"
+            ).exists()
+            if ya_existe:
+                ya_tenia += 1
+                continue
+            log.write(f"  Procesando {fecha} del catálogo (nubes catálogo: {nubes}%)...")
+            try:
+                guardado = procesar_campo(campo, fecha, fecha, config, log)
+                if guardado:
+                    procesadas += 1
+            except Exception as e:
+                log.write(f"  ERROR {fecha}: {e}")
+
+    total_en_db = CapturaSatelite.objects.filter(
+        campo=campo, fuente="sentinel2", estado="procesada"
+    ).count()
+
+    return JsonResponse({
+        "ok": True,
+        "procesadas":        procesadas,
+        "ya_existian":       ya_tenia,
+        "total_encontradas": len(fechas_catalogo) if fechas_catalogo else 0,
+        "total_en_db":       total_en_db,
+        "log":               log.lines,
+    })
 
 
 @login_required
@@ -1634,12 +1679,13 @@ def ajax_analisis_punto(request, campo_id):
     )
     ciclo_data = None
     if ciclo:
+        primera_variedad = ciclo.cultivo.variedades.first() if ciclo.cultivo else None
         ciclo_data = {
-            "cultivo":    ciclo.cultivo.nombre if ciclo.cultivo else None,
-            "variedad":   ciclo.cultivo.variedad if ciclo.cultivo and ciclo.cultivo.variedad else None,
+            "cultivo":      ciclo.cultivo.nombre if ciclo.cultivo else None,
+            "variedad":     primera_variedad.nombre if primera_variedad else None,
             "fecha_inicio": ciclo.fecha_inicio.strftime("%d/%m/%Y") if ciclo.fecha_inicio else None,
-            "superficie": float(ciclo.superficie_ha) if ciclo.superficie_ha else None,
-            "campana":    ciclo.campana if hasattr(ciclo, 'campana') else None,
+            "superficie":   float(ciclo.superficie_ha) if ciclo.superficie_ha else None,
+            "campana":      str(ciclo.campana) if ciclo.campana else None,
         }
 
     # ── Variables analíticas en el punto ────────────────
@@ -1652,18 +1698,22 @@ def ajax_analisis_punto(request, campo_id):
 
     variables = []
     rendimiento = {"punto": None, "maximo": None, "minimo": None, "promedio": None}
+    _debug = []
 
     for a in archivos:
+        _dbg = {"id": a.id, "archivo": a.archivo.name, "tipo": a.tipo_archivo, "estado": a.estado}
         try:
             if a.tipo_archivo == "shapefile":
                 contenido = a.archivo.read()
+                _dbg["bytes"] = len(contenido)
                 with zipfile.ZipFile(_io.BytesIO(contenido)) as z:
                     nombres = z.namelist()
                     shp_n = next((n for n in nombres if n.lower().endswith(".shp")), None)
                     shx_n = next((n for n in nombres if n.lower().endswith(".shx")), None)
                     dbf_n = next((n for n in nombres if n.lower().endswith(".dbf")), None)
                     if not all([shp_n, shx_n, dbf_n]):
-                        continue
+                        _dbg["error"] = "falta shp/shx/dbf"
+                        _debug.append(_dbg); continue
                     def _buf(name):
                         data = z.read(name)
                         b = _io.BytesIO(data); b.name = name
@@ -1673,13 +1723,25 @@ def ajax_analisis_punto(request, campo_id):
                     )
             elif a.tipo_archivo == "geojson":
                 geojson_str = a.archivo.read().decode("utf-8")
+                _dbg["bytes"] = len(geojson_str)
             else:
-                continue
+                _dbg["error"] = f"tipo no soportado: {a.tipo_archivo}"
+                _debug.append(_dbg); continue
 
             gj    = json.loads(geojson_str)
+            n_feat = len(gj.get("features", []))
+            _dbg["features"] = n_feat
+            # Sample first feature coords for debug
+            ff = gj.get("features", [{}])[0] if n_feat else {}
+            ff_geom = ff.get("geometry", {})
+            ff_coords = ff_geom.get("coordinates", [])
+            if ff_coords:
+                _dbg["sample_coord"] = str(ff_coords[0][0] if ff_geom.get("type") == "Polygon" else ff_coords)[:80]
+
             props = buscar_feature_en_punto(gj, lng, lat)
+            _dbg["found"] = props is not None
             if props is None:
-                continue
+                _debug.append(_dbg); continue
 
             valor = None
             for key in ("v", "valor", "rendimiento", "value"):
@@ -1689,8 +1751,10 @@ def ajax_analisis_punto(request, campo_id):
                 for v in props.values():
                     if isinstance(v, (int, float)):
                         valor = v; break
+            _dbg["valor"] = valor
             if valor is None:
-                continue
+                _dbg["error"] = "sin valor numérico en props"
+                _debug.append(_dbg); continue
 
             stats    = a.estadisticas or {}
             val_max  = stats.get("max")
@@ -1705,6 +1769,9 @@ def ajax_analisis_punto(request, campo_id):
             tipo = a.variable.tipo if a.variable else "otro"
             nombre   = a.variable.nombre if a.variable else a.archivo.name.split("/")[-1]
             unidad   = a.variable.unidad if a.variable else ""
+
+            _dbg["tipo_variable"] = tipo; _dbg["nombre"] = nombre
+            _debug.append(_dbg)
 
             if tipo == "cosecha":
                 rendimiento = {
@@ -1725,6 +1792,8 @@ def ajax_analisis_punto(request, campo_id):
                 })
 
         except Exception as e:
+            _dbg["error"] = f"{type(e).__name__}: {e}"
+            _debug.append(_dbg)
             continue
 
     # ── Chuvas: registros manuales del campo ────────────────────
@@ -1775,6 +1844,7 @@ def ajax_analisis_punto(request, campo_id):
         "rendimiento": rendimiento,
         "variables":   variables,
         "chuvas":      chuvas,
+        "_debug":      _debug,
     })
 
 

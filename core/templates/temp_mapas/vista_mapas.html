@@ -514,6 +514,99 @@
     </div>
 </div>
 
+{# ══ Modal análisis de punto (click en mapa de suelo) ══ #}
+<div class="modal fade" id="sueloModalPunto" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow-lg" style="border-radius:14px;overflow:hidden">
+
+      <div class="modal-header border-0 px-4 py-3" style="background:#1e2d1e">
+        <div class="d-flex align-items-center gap-2">
+          <i class="mdi mdi-chart-scatter-plot text-success" style="font-size:1.1rem"></i>
+          <span class="fw-semibold text-white" style="font-size:.9rem">{% translate "Análisis del Punto Seleccionado" %}</span>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-0 bg-white">
+        <div id="suelo-modal-loading" class="text-center py-5">
+          <div class="spinner-border text-success" style="width:1.8rem;height:1.8rem;border-width:2px"></div>
+          <div class="text-muted small mt-2">{% translate "Consultando datos del punto..." %}</div>
+        </div>
+
+        <div id="suelo-modal-contenido" style="display:none">
+
+          <div id="suelo-modal-bloque-plantio" class="px-4 pt-3 pb-3 border-bottom" style="display:none;background:#fafafa">
+            <div class="d-flex align-items-center gap-1 mb-2">
+              <i class="mdi mdi-lightbulb-on-outline text-warning" style="font-size:.95rem"></i>
+              <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Datos de Plantío" %}</span>
+            </div>
+            <div class="d-flex flex-wrap gap-4" style="font-size:.82rem">
+              <div><span class="text-muted">{% translate "Variedad" %}:</span> <strong id="suelo-modal-variedad">—</strong></div>
+              <div><span class="text-muted">{% translate "Cultivo" %}:</span> <strong id="suelo-modal-cultivo">—</strong></div>
+              <div><span class="text-muted">{% translate "Superficie" %}:</span> <strong id="suelo-modal-superficie">—</strong></div>
+              <div><span class="text-muted">{% translate "Fecha de Plantío" %}:</span> <strong id="suelo-modal-fecha">—</strong></div>
+            </div>
+          </div>
+
+          <div class="row g-0">
+            <div class="col-md-4 px-4 py-3 border-end" style="background:#fafafa">
+              <div class="d-flex align-items-center gap-1 mb-2">
+                <i class="mdi mdi-map-marker-outline text-danger" style="font-size:.95rem"></i>
+                <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Localización" %}</span>
+              </div>
+              <div style="font-size:.8rem;color:#555" class="mb-3">
+                {% translate "Coordenadas" %}: <span id="suelo-modal-lat">—</span>, <span id="suelo-modal-lng">—</span>
+              </div>
+              <div id="suelo-modal-bloque-rendimiento" style="display:none">
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimiento en el Punto" %}: <strong id="suelo-modal-rend-punto">—</strong></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimiento Máximo" %}: <span id="suelo-modal-rend-max">—</span></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimiento Medio" %}: <span id="suelo-modal-rend-prom">—</span></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimiento Mínimo" %}: <span id="suelo-modal-rend-min">—</span></div>
+              </div>
+            </div>
+
+            <div class="col-md-8 px-4 py-3">
+              <div class="d-flex align-items-center gap-1 mb-2">
+                <i class="mdi mdi-flask-outline text-primary" style="font-size:.95rem"></i>
+                <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Análisis de Nutrientes" %}</span>
+              </div>
+              <div id="suelo-modal-sin-datos" class="text-muted small py-2 text-center" style="display:none">
+                {% translate "Sin datos analíticos para este punto" %}
+              </div>
+              <table class="table table-sm table-bordered mb-0" id="suelo-modal-tabla" style="font-size:.8rem;display:none">
+                <thead class="table-light">
+                  <tr>
+                    <th style="font-size:.72rem;font-weight:600;color:#555">{% translate "Variable" %}</th>
+                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Valor en el Punto" %}</th>
+                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Valor Máximo" %}</th>
+                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Diferencia" %}</th>
+                  </tr>
+                </thead>
+                <tbody id="suelo-modal-tabla-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="suelo-modal-bloque-chuvas" class="px-4 pt-3 pb-4 border-top" style="display:none">
+            <div class="d-flex align-items-center gap-1 mb-3">
+              <i class="mdi mdi-weather-rainy text-info" style="font-size:.95rem"></i>
+              <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Lluvias Acumuladas Mensuales (mm)" %}</span>
+            </div>
+            <canvas id="suelo-modal-chart-chuvas" height="90"></canvas>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="modal-footer border-0 py-2 px-4" style="background:#fafafa">
+        <small class="text-muted me-auto" id="suelo-modal-coords-footer" style="font-size:.72rem"></small>
+        <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-bs-dismiss="modal">{% translate "Cerrar" %}</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 {# ══ Modal subir datos de suelo ══ #}
 <div class="modal fade" id="modalSubirDatos" tabindex="-1">
     <div class="modal-dialog">
@@ -789,19 +882,27 @@ function subeloCargar() {
 
 {% if campo_sel %}
 // ══════════════════════════════════════════════════════════════════════
+// SUELO — Limpiar marcador de click al cerrar modal
+document.getElementById('sueloModalPunto').addEventListener('hidden.bs.modal', function () {
+    if (sueloClickMarker) { sueloClickMarker.remove(); sueloClickMarker = null; }
+});
+
+// ══════════════════════════════════════════════════════════════════════
 // SUELO — multi-overlay + combinación asíncrona
 // ══════════════════════════════════════════════════════════════════════
 var URL_SUELO_ARCHIVOS    = '{% url "ajax_suelo_archivos"        campo_id=campo_sel.id %}';
 var URL_SUELO_COMBINAR    = '{% url "ajax_suelo_combinar"        campo_id=campo_sel.id %}';
+var URL_ANALISIS_PUNTO    = '{% url "ajax_analisis_punto"        campo_id=campo_sel.id %}';
 var URL_SUELO_ELIM_TPL    = '{% url "ajax_suelo_archivo_eliminar" archivo_id=0 %}';
 var URL_SUELO_CLIC_TPL   = '{% url "ajax_suelo_clic"          archivo_id=0 %}';
 var URL_SUELO_ESTADO_TPL = '{% url "ajax_suelo_archivo_estado" archivo_id=0 %}';
 
-var sueloMapa     = null;
-var sueloOverlays = {};      // { id: L.imageOverlay }
-var sueloActivos  = {};      // { id: datos }  — archivos con overlay visible
-var sueloPending  = null;    // datos a mostrar cuando el mapa esté listo
-var sueloPollTimers = {};    // { id: intervalId } para items en estado 'pendiente'
+var sueloMapa        = null;
+var sueloOverlays    = {};      // { id: L.imageOverlay }
+var sueloActivos     = {};      // { id: datos }  — archivos con overlay visible
+var sueloPending     = null;    // datos a mostrar cuando el mapa esté listo
+var sueloPollTimers  = {};      // { id: intervalId } para items en estado 'pendiente'
+var sueloClickMarker = null;    // marcador de click activo
 
 // ── Altura dinámica ──────────────────────────────────────────────────
 function sueloAjustarAltura() {
@@ -827,34 +928,121 @@ function sueloTabActivar() {
                 { maxZoom: 20, attribution: 'Esri World Imagery' }
             )]
         });
-        // Click: consulta todos los layers activos en orden, muestra el primer hit
+        // Click: abre modal rico con analisis_punto
         sueloMapa.on('click', function (e) {
-            var ids = Object.keys(sueloActivos);
-            if (!ids.length) return;
-            var idx = 0;
-            function consultarSiguiente() {
-                if (idx >= ids.length) return;
-                var id  = ids[idx++];
-                var url = URL_SUELO_CLIC_TPL.replace('/0/', '/' + id + '/') +
-                          '?lng=' + e.latlng.lng + '&lat=' + e.latlng.lat;
-                $.get(url, function (res) {
-                    if (res.ok && res.encontrado) {
-                        var props = res.propiedades;
-                        var html = '<div style="font-size:.78rem;max-height:220px;overflow-y:auto">' +
-                            '<table class="table table-sm mb-0">';
-                        for (var k in props) {
-                            if (k === 'v') continue;
-                            html += '<tr><td class="pe-2 fw-semibold text-nowrap" style="color:#374151">' + k + '</td>' +
-                                    '<td>' + (typeof props[k] === 'number' ? props[k].toFixed(2) : props[k]) + '</td></tr>';
+            if (!Object.keys(sueloActivos).length) return;
+
+            // Marcador visual en el punto
+            if (sueloClickMarker) sueloClickMarker.remove();
+            sueloClickMarker = L.marker([e.latlng.lat, e.latlng.lng], {
+                icon: L.divIcon({
+                    className: '',
+                    html: '<div style="width:22px;height:22px;transform:translate(-50%,-50%);color:#ef4444;font-size:22px;line-height:1">✛</div>',
+                    iconSize: [0, 0],
+                }),
+                pane: 'overlayPane',
+            }).addTo(sueloMapa);
+
+            // Mostrar modal con spinner
+            document.getElementById('suelo-modal-lat').textContent = e.latlng.lat.toFixed(6);
+            document.getElementById('suelo-modal-lng').textContent = e.latlng.lng.toFixed(6);
+            document.getElementById('suelo-modal-coords-footer').textContent =
+                'Lat ' + e.latlng.lat.toFixed(6) + '  Lng ' + e.latlng.lng.toFixed(6);
+            document.getElementById('suelo-modal-loading').style.display = '';
+            document.getElementById('suelo-modal-contenido').style.display = 'none';
+            new bootstrap.Modal(document.getElementById('sueloModalPunto')).show();
+
+            // Llamar analisis_punto
+            $.getJSON(URL_ANALISIS_PUNTO + '?lat=' + e.latlng.lat + '&lng=' + e.latlng.lng, function (d) {
+                document.getElementById('suelo-modal-loading').style.display = 'none';
+                document.getElementById('suelo-modal-contenido').style.display = '';
+
+                // Plantío
+                if (d.ciclo) {
+                    document.getElementById('suelo-modal-cultivo').textContent   = d.ciclo.cultivo    || '—';
+                    document.getElementById('suelo-modal-variedad').textContent  = d.ciclo.variedad   || '—';
+                    document.getElementById('suelo-modal-fecha').textContent     = d.ciclo.fecha_inicio || '—';
+                    document.getElementById('suelo-modal-superficie').textContent = d.ciclo.superficie ? d.ciclo.superficie + ' ha' : '—';
+                    document.getElementById('suelo-modal-bloque-plantio').style.display = '';
+                } else {
+                    document.getElementById('suelo-modal-bloque-plantio').style.display = 'none';
+                }
+
+                // Rendimiento
+                var rend = d.rendimiento || {};
+                if (rend.punto !== null && rend.punto !== undefined) {
+                    var u = rend.unidad || 'kg/ha';
+                    document.getElementById('suelo-modal-rend-punto').textContent = rend.punto + ' ' + u;
+                    document.getElementById('suelo-modal-rend-max').textContent   = rend.maximo  !== null ? rend.maximo  + ' ' + u : '—';
+                    document.getElementById('suelo-modal-rend-prom').textContent  = rend.promedio !== null ? rend.promedio + ' ' + u : '—';
+                    document.getElementById('suelo-modal-rend-min').textContent   = rend.minimo  !== null ? rend.minimo  + ' ' + u : '—';
+                    document.getElementById('suelo-modal-bloque-rendimiento').style.display = '';
+                } else {
+                    document.getElementById('suelo-modal-bloque-rendimiento').style.display = 'none';
+                }
+
+                // Variables
+                var vars = d.variables || [];
+                if (vars.length === 0) {
+                    document.getElementById('suelo-modal-tabla').style.display = 'none';
+                    document.getElementById('suelo-modal-sin-datos').style.display = '';
+                } else {
+                    document.getElementById('suelo-modal-sin-datos').style.display = 'none';
+                    var rows = vars.map(function (v) {
+                        var dif = v.diferencia;
+                        var difHtml = '—';
+                        if (dif !== null && dif !== undefined) {
+                            var color = dif >= 0 ? '#198754' : '#dc3545';
+                            var signo = dif >= 0 ? '+' : '';
+                            difHtml = '<span style="color:' + color + ';font-weight:600">' + signo + dif.toFixed(1) + '</span>';
                         }
-                        html += '</table></div>';
-                        L.popup({ maxWidth: 260 }).setLatLng(e.latlng).setContent(html).openOn(sueloMapa);
-                    } else {
-                        consultarSiguiente();
-                    }
-                });
-            }
-            consultarSiguiente();
+                        return '<tr>' +
+                            '<td>' + v.nombre + (v.unidad ? '<span class="text-muted ms-1" style="font-size:.72rem">(' + v.unidad + ')</span>' : '') + '</td>' +
+                            '<td class="text-center fw-semibold">' + v.valor.toFixed(1) + '</td>' +
+                            '<td class="text-center text-muted">' + (v.val_max !== null ? v.val_max.toFixed(1) : '—') + '</td>' +
+                            '<td class="text-center">' + difHtml + '</td>' +
+                            '</tr>';
+                    }).join('');
+                    document.getElementById('suelo-modal-tabla-body').innerHTML = rows;
+                    document.getElementById('suelo-modal-tabla').style.display = '';
+                }
+
+                // Lluvias
+                var chuvaData = d.chuvas || null;
+                if (chuvaData && chuvaData.labels && chuvaData.este_ano) {
+                    document.getElementById('suelo-modal-bloque-chuvas').style.display = '';
+                    var ctx = document.getElementById('suelo-modal-chart-chuvas').getContext('2d');
+                    if (window._sueloChartChuvas) window._sueloChartChuvas.destroy();
+                    window._sueloChartChuvas = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: chuvaData.labels,
+                            datasets: [
+                                { label: 'Este Año', data: chuvaData.este_ano,
+                                  borderColor: '#4dc9a0', backgroundColor: 'rgba(77,201,160,.15)',
+                                  borderWidth: 2, pointRadius: 3, tension: 0.4, fill: true },
+                                { label: 'Histórico', data: chuvaData.historico,
+                                  borderColor: '#bbb', backgroundColor: 'rgba(180,180,180,.1)',
+                                  borderWidth: 1.5, pointRadius: 2, tension: 0.4, fill: true, borderDash: [4,3] }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { labels: { font: { size: 11 }, boxWidth: 20 } } },
+                            scales: {
+                                y: { beginAtZero: true, ticks: { font: { size: 10 } } },
+                                x: { ticks: { font: { size: 10 } } }
+                            }
+                        }
+                    });
+                } else {
+                    document.getElementById('suelo-modal-bloque-chuvas').style.display = 'none';
+                }
+            }).fail(function () {
+                document.getElementById('suelo-modal-loading').style.display = 'none';
+                document.getElementById('suelo-modal-contenido').style.display = '';
+                document.getElementById('suelo-modal-sin-datos').style.display = '';
+            });
         });
     }
     sueloMapa.invalidateSize();

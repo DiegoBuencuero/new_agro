@@ -123,7 +123,7 @@
       <div class="modal-header border-0 px-4 py-3" style="background:#1e2d1e">
         <div class="d-flex align-items-center gap-2">
           <i class="mdi mdi-chart-scatter-plot text-success" style="font-size:1.1rem"></i>
-          <span class="fw-semibold text-white" style="font-size:.9rem">{% translate "Análise do Ponto Selecionado" %}</span>
+          <span class="fw-semibold text-white" style="font-size:.9rem">{% translate "Análisis del Punto Seleccionado" %}</span>
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
@@ -131,7 +131,7 @@
       <div class="modal-body p-0 bg-white">
         <div id="modal-loading" class="text-center py-5">
           <div class="spinner-border text-success" style="width:1.8rem;height:1.8rem;border-width:2px"></div>
-          <div class="text-muted small mt-2">{% translate "Consultando dados do ponto..." %}</div>
+          <div class="text-muted small mt-2">{% translate "Consultando datos del punto..." %}</div>
         </div>
 
         <div id="modal-contenido" style="display:none">
@@ -140,13 +140,13 @@
           <div id="modal-bloque-plantio" class="px-4 pt-3 pb-3 border-bottom" style="display:none;background:#fafafa">
             <div class="d-flex align-items-center gap-1 mb-2">
               <i class="mdi mdi-lightbulb-on-outline text-warning" style="font-size:.95rem"></i>
-              <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Dados de Plantío" %}</span>
+              <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Datos de Plantío" %}</span>
             </div>
             <div class="d-flex flex-wrap gap-4" style="font-size:.82rem">
-              <div><span class="text-muted">{% translate "Variedade" %}:</span> <strong id="modal-pt-variedad">—</strong></div>
+              <div><span class="text-muted">{% translate "Variedad" %}:</span> <strong id="modal-pt-variedad">—</strong></div>
               <div><span class="text-muted">{% translate "Cultivo" %}:</span> <strong id="modal-pt-cultivo">—</strong></div>
-              <div><span class="text-muted">{% translate "Superfície" %}:</span> <strong id="modal-pt-superficie">—</strong></div>
-              <div><span class="text-muted">{% translate "Data de Plantío" %}:</span> <strong id="modal-pt-fecha">—</strong></div>
+              <div><span class="text-muted">{% translate "Superficie" %}:</span> <strong id="modal-pt-superficie">—</strong></div>
+              <div><span class="text-muted">{% translate "Fecha de Plantío" %}:</span> <strong id="modal-pt-fecha">—</strong></div>
             </div>
           </div>
 
@@ -155,23 +155,23 @@
             <div class="col-md-4 px-4 py-3 border-end" style="background:#fafafa">
               <div class="d-flex align-items-center gap-1 mb-2">
                 <i class="mdi mdi-map-marker-outline text-danger" style="font-size:.95rem"></i>
-                <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Localização" %}</span>
+                <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Localización" %}</span>
               </div>
               <div style="font-size:.8rem;color:#555" class="mb-3">
                 {% translate "Coordenadas" %}: <span id="modal-lat">—</span>, <span id="modal-lng">—</span>
               </div>
               <div id="modal-bloque-rendimiento" style="display:none">
-                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimento no Ponto" %}: <strong id="modal-rend-punto">—</strong></div>
-                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimento Máximo" %}: <span id="modal-rend-max">—</span></div>
-                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimento Médio" %}: <span id="modal-rend-prom">—</span></div>
-                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimento Mínimo" %}: <span id="modal-rend-min">—</span></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimiento en el Punto" %}: <strong id="modal-rend-punto">—</strong></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimiento Máximo" %}: <span id="modal-rend-max">—</span></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimiento Medio" %}: <span id="modal-rend-prom">—</span></div>
+                <div style="font-size:.8rem;color:#555" class="mb-1">{% translate "Rendimiento Mínimo" %}: <span id="modal-rend-min">—</span></div>
               </div>
             </div>
 
             <div class="col-md-8 px-4 py-3">
               <div class="d-flex align-items-center gap-1 mb-2">
                 <i class="mdi mdi-flask-outline text-primary" style="font-size:.95rem"></i>
-                <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Análise de Nutrientes" %}</span>
+                <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Análisis de Nutrientes" %}</span>
               </div>
               <div id="modal-sin-datos" class="text-muted small py-2 text-center" style="display:none">
                 {% translate "Sin datos analíticos para este punto" %}
@@ -179,10 +179,10 @@
               <table class="table table-sm table-bordered mb-0" id="modal-tabla" style="font-size:.8rem;display:none">
                 <thead class="table-light">
                   <tr>
-                    <th style="font-size:.72rem;font-weight:600;color:#555">{% translate "Variável" %}</th>
-                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Valor do Ponto" %}</th>
+                    <th style="font-size:.72rem;font-weight:600;color:#555">{% translate "Variable" %}</th>
+                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Valor en el Punto" %}</th>
                     <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Valor Máximo" %}</th>
-                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Diferença" %}</th>
+                    <th class="text-center" style="font-size:.72rem;font-weight:600;color:#555">{% translate "Diferencia" %}</th>
                   </tr>
                 </thead>
                 <tbody id="modal-tabla-body"></tbody>
@@ -194,7 +194,7 @@
           <div id="modal-bloque-chuvas" class="px-4 pt-3 pb-4 border-top" style="display:none">
             <div class="d-flex align-items-center gap-1 mb-3">
               <i class="mdi mdi-weather-rainy text-info" style="font-size:.95rem"></i>
-              <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Chuvas Acumuladas Mensais (mm)" %}</span>
+              <span class="fw-semibold" style="font-size:.78rem;color:#444">{% translate "Lluvias Acumuladas Mensuales (mm)" %}</span>
             </div>
             <canvas id="modal-chart-chuvas" height="90"></canvas>
           </div>
