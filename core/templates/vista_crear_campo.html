@@ -136,7 +136,8 @@ href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css
 
                         <div class="d-flex gap-2">
                             {% if modificacion %}
-                                <button type="submit" name="ok" class="btn btn-success btn-sm">
+                                <button type="submit" name="ok" class="btn btn-success btn-sm"
+                                        onclick="return confirmarSinContorno()">
                                     <i class="mdi mdi-check me-1"></i>{% translate "Actualizar" %}
                                 </button>
                                 <button type="submit" name="borrar" class="btn btn-danger btn-sm"
@@ -144,7 +145,8 @@ href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css
                                     <i class="mdi mdi-delete me-1"></i>{% translate "Eliminar" %}
                                 </button>
                             {% else %}
-                                <button type="submit" name="ok" class="btn btn-success btn-sm">
+                                <button type="submit" name="ok" class="btn btn-success btn-sm"
+                                        onclick="return confirmarSinContorno()">
                                     <i class="mdi mdi-content-save me-1"></i>{% translate "Guardar campo" %}
                                 </button>
                             {% endif %}
@@ -424,6 +426,18 @@ function actualizarContorno() {
 
 mapa.on(L.Draw.Event.EDITED, actualizarContorno);
 mapa.on('draw:editvertex', actualizarContorno);
+
+/* ========================= */
+/* CONFIRMACIÓN SIN CONTORNO */
+/* ========================= */
+
+function confirmarSinContorno() {
+    var contorno = document.getElementById('id_contorno').value;
+    if (contorno) return true;
+    return confirm(
+        '{% translate "Este campo no tiene un contorno definido. Lo vamos a necesitar para gestionar mapas (NDVI, suelo, comparación de capas). ¿Guardar igual y definirlo más tarde?" %}'
+    );
+}
 
 /* ========================= */
 /* BORRAR */

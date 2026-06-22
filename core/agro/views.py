@@ -7,7 +7,7 @@ from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import transaction
-from django.db.models import Sum, F, ExpressionWrapper, DecimalField, DateField
+from django.db.models import Sum, F, Q, ExpressionWrapper, DecimalField, DateField
 from django.db.models.functions import Coalesce, TruncMonth, TruncWeek
 from django.http import JsonResponse
 from django.shortcuts import render, redirect
@@ -454,6 +454,12 @@ def index(request):
                     "caida":    round((anterior - actual) / anterior * 100, 1),
                 })
 
+    # ── Alerta: campos sin contorno (necesario para gestionar mapas) ──
+    alertas_sin_contorno = [
+        {"campo": c.nombre, "id": c.id}
+        for c in Campo.objects.filter(empresa=empresa).filter(Q(contorno__isnull=True) | Q(contorno=""))
+    ]
+
     # ── Últimas actividades ───────────────────────────────────────────
     ultimas_actividades = (
         ActividadProductiva.objects
@@ -462,7 +468,7 @@ def index(request):
         .order_by("-fecha")[:8]
     )
 
-    total_alertas = len(alertas_facturas) + len(alertas_inactivos) + len(alertas_ndvi)
+    total_alertas = len(alertas_facturas) + len(alertas_inactivos) + len(alertas_ndvi) + len(alertas_sin_contorno)
 
     # Ciclos cerrados para el panel lateral
     ciclos_cerrados_data = [
@@ -483,10 +489,11 @@ def index(request):
         "deuda_total":         deuda_total,
         "deuda_vencida":       deuda_vencida,
         "deuda_proxima":       deuda_proxima,
-        "alertas_facturas":    alertas_facturas,
-        "alertas_inactivos":   alertas_inactivos,
-        "alertas_ndvi":        alertas_ndvi,
-        "total_alertas":       total_alertas,
+        "alertas_facturas":      alertas_facturas,
+        "alertas_inactivos":     alertas_inactivos,
+        "alertas_ndvi":          alertas_ndvi,
+        "alertas_sin_contorno":  alertas_sin_contorno,
+        "total_alertas":         total_alertas,
         "ultimas_actividades": ultimas_actividades,
     })
 

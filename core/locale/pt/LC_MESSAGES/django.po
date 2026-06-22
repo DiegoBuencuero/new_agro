@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-22 19:26-0300\n"
+"POT-Creation-Date: 2026-06-22 19:49-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -220,7 +220,7 @@ msgstr "Observações"
 msgid "Pago"
 msgstr "Pagamento"
 
-#: administracion/models.py:30 templates/index.html:399
+#: administracion/models.py:30 templates/index.html:414
 msgid "Pagos"
 msgstr "Pagamentos"
 
@@ -504,7 +504,7 @@ msgstr "Unidade padrão para quantidade aprovada na inspeção (ex: sementes)"
 #: templates/tem_facturas/vista_cargar_factura_manual.html:346
 #: templates/tem_facturas/vista_cargar_factura_manual.html:411
 #: templates/vista_crear_campana.html:144 templates/vista_crear_campo.html:113
-#: templates/vista_crear_campo.html:191 templates/vista_crear_cultivo.html:121
+#: templates/vista_crear_campo.html:193 templates/vista_crear_cultivo.html:121
 #: templates/vista_crear_deposito.html:51
 #: templates/vista_crear_deposito.html:144 templates/vista_producto.html:80
 #: templates/vista_producto.html:177
@@ -562,29 +562,29 @@ msgstr "Conversões de unidades"
 msgid "Usuario o contraseña incorrectos"
 msgstr "Usuário ou senha incorretos"
 
-#: agro/views.py:505
+#: agro/views.py:512
 msgid "El sistema no tiene monedas configuradas. Contacte al administrador."
 msgstr "O sistema não tem moedas configuradas. Contate o administrador."
 
-#: agro/views.py:526
+#: agro/views.py:533
 msgid "Cuenta creada correctamente. Podés ingresar ahora."
 msgstr "Conta criada com sucesso. Você já pode entrar."
 
-#: agro/views.py:529
+#: agro/views.py:536
 msgid "Error al crear la cuenta. Intentá nuevamente."
 msgstr "Erro ao criar a conta. Tente novamente."
 
-#: agro/views.py:582
+#: agro/views.py:589
 #, fuzzy
 #| msgid "Producto actualizado."
 msgid "Parámetros actualizados."
 msgstr "Produto atualizado."
 
-#: agro/views.py:601
+#: agro/views.py:608
 msgid "Configuración guardada correctamente"
 msgstr "Produto salvo com sucesso."
 
-#: agro/views.py:604
+#: agro/views.py:611
 msgid "Corrija los errores del formulario"
 msgstr "Verifique os erros do formulário."
 
@@ -1287,7 +1287,7 @@ msgstr "Movimentações de estoque"
 msgid "Número factura"
 msgstr "Número da nota"
 
-#: gestion_agro/models.py:499 templates/index.html:559
+#: gestion_agro/models.py:499 templates/index.html:574
 #: templates/tem_administracion/_tabla_facturas.html:19
 #: templates/tem_administracion/cargar_factura_venta.html:205
 #: templates/tem_administracion/cuenta_corriente_cliente.html:193
@@ -2074,52 +2074,60 @@ msgid "NDVI en caída"
 msgstr ""
 
 #: templates/index.html:274
+msgid "Campos sin contorno definido"
+msgstr "Campos sem contorno definido"
+
+#: templates/index.html:280
+msgid "Definir contorno"
+msgstr "Definir contorno"
+
+#: templates/index.html:289
 #, fuzzy
 #| msgid "Saldo pendiente"
 msgid "Sin alertas pendientes"
 msgstr "Saldo pendente"
 
-#: templates/index.html:381
+#: templates/index.html:396
 #, fuzzy
 #| msgid "Ver pagos"
 msgid "Cobros y pagos"
 msgstr "Ver pagamentos"
 
-#: templates/index.html:391
+#: templates/index.html:406
 #, fuzzy
 #| msgid "Cobrado"
 msgid "Cobros"
 msgstr "Encerrado"
 
-#: templates/index.html:489
+#: templates/index.html:504
 #, fuzzy
 #| msgid "Movimientos de producto"
 msgid "Sin vencimientos en el período"
 msgstr "Movimentações do produto"
 
-#: templates/index.html:495
+#: templates/index.html:510
 msgid "hoy"
 msgstr ""
 
-#: templates/index.html:495
+#: templates/index.html:510
 msgid "en"
 msgstr ""
 
-#: templates/index.html:530
+#: templates/index.html:545
 msgid "Necesitás"
 msgstr ""
 
-#: templates/index.html:547 templates/vista_agregar_actividad.html:148
+#: templates/index.html:562 templates/vista_agregar_actividad.html:148
 #: templates/vista_detalle_ciclo.html:76 templates/vista_detalle_ciclo.html:269
 msgid "Mano de obra"
 msgstr "Mão de obra"
 
-#: templates/index.html:551 templates/vista_agregar_actividad.html:177
+#: templates/index.html:566 templates/vista_agregar_actividad.html:177
 #: templates/vista_detalle_ciclo.html:80 templates/vista_detalle_ciclo.html:300
 msgid "Maquinaria"
 msgstr "Maquinário"
 
-#: templates/index.html:555 templates/vista_detalle_ciclo.html:84
+#: templates/index.html:570 templates/vista_detalle_ciclo.html:84
 #: templates/vista_lista_stock.html:159
 msgid "Insumos"
 msgstr "Insumos"
@@ -2345,8 +2353,8 @@ msgstr "Salvar nota fiscal"
 #: templates/tem_facturas/vista_cargar_factura_manual.html:431
 #: templates/temp_mapas/vista_mapas.html:673
 #: templates/vista_agregar_actividad.html:454
-#: templates/vista_crear_campana.html:123 templates/vista_crear_campo.html:151
-#: templates/vista_crear_campo.html:269 templates/vista_crear_ciclo.html:274
+#: templates/vista_crear_campana.html:123 templates/vista_crear_campo.html:153
+#: templates/vista_crear_campo.html:271 templates/vista_crear_ciclo.html:274
 #: templates/vista_crear_cultivo.html:103
 #: templates/vista_crear_cultivo.html:252
 #: templates/vista_crear_deposito.html:126 templates/vista_editar_ciclo.html:42
@@ -2538,7 +2546,7 @@ msgstr "Filtrar"
 #: templates/tem_administracion/cuenta_corriente_proveedor.html:121
 #: templates/tem_administracion/lista_ventas.html:54
 #: templates/temp_mapas/vista_mapas.html:100
-#: templates/vista_crear_campo.html:260 templates/vista_lista_stock.html:100
+#: templates/vista_crear_campo.html:262 templates/vista_lista_stock.html:100
 #: templates/vista_movimientos_producto.html:125
 msgid "Limpiar"
 msgstr "Limpar"
@@ -2674,7 +2682,7 @@ msgstr "Erro ao conectar com o servidor."
 #: templates/tem_administracion/cuenta_corriente_cliente.html:538
 #: templates/tem_administracion/cuenta_corriente_proveedor.html:560
 #: templates/tem_administracion/lista_ventas.html:224
-#: templates/vista_crear_campo.html:630 templates/vista_lista_stock.html:713
+#: templates/vista_crear_campo.html:644 templates/vista_lista_stock.html:713
 msgid "Error de conexión."
 msgstr "Fator de conversão"
 
@@ -3027,7 +3035,7 @@ msgstr "Obter Sentinel-2"
 
 #: templates/temp_mapas/ndvi_campo.html:60
 #: templates/vista_agregar_actividad.html:442
-#: templates/vista_crear_campana.html:111 templates/vista_crear_campo.html:140
+#: templates/vista_crear_campana.html:111 templates/vista_crear_campo.html:141
 #: templates/vista_crear_ciclo.html:269 templates/vista_crear_cultivo.html:90
 #: templates/vista_crear_deposito.html:114 templates/vista_producto.html:141
 msgid "Actualizar"
@@ -3132,7 +3140,7 @@ msgstr "Dados da atividade"
 #: templates/temp_mapas/vista_comparacion.html:148
 #: templates/temp_mapas/vista_mapas.html:546
 #: templates/vista_agregar_actividad.html:61
-#: templates/vista_crear_campo.html:192 templates/vista_detalle_ciclo.html:53
+#: templates/vista_crear_campo.html:194 templates/vista_detalle_ciclo.html:53
 msgid "Superficie"
 msgstr "Área"
 
@@ -3427,7 +3435,7 @@ msgid "Sin análisis cargados. Usá el botón Subir datos."
 msgstr "Sem análises carregadas. Use o botão Enviar dados."
 
 #: templates/temp_mapas/vista_mapas.html:1116
-#: templates/vista_crear_campo.html:575
+#: templates/vista_crear_campo.html:589
 msgid "Procesando..."
 msgstr "Carregando..."
 
@@ -3443,7 +3451,7 @@ msgstr "Registrar venda"
 #: templates/temp_mapas/vista_mapas.html:1160
 #: templates/temp_mapas/vista_registros_lluvia.html:79
 #: templates/vista_agregar_actividad.html:446
-#: templates/vista_crear_campana.html:115 templates/vista_crear_campo.html:144
+#: templates/vista_crear_campana.html:115 templates/vista_crear_campo.html:145
 #: templates/vista_crear_cultivo.html:94
 #: templates/vista_crear_deposito.html:118 templates/vista_producto.html:145
 msgid "Eliminar"
@@ -3642,7 +3650,7 @@ msgstr "Fim"
 msgid "Acciones"
 msgstr "Ações"
 
-#: templates/vista_crear_campana.html:159 templates/vista_crear_campo.html:214
+#: templates/vista_crear_campana.html:159 templates/vista_crear_campo.html:216
 #: templates/vista_crear_cultivo.html:164
 #: templates/vista_crear_deposito.html:163
 msgid "Editar"
@@ -3656,68 +3664,78 @@ msgstr "Nenhuma safra registrada"
 msgid "Creación y edición de campos"
 msgstr "Cadastro de campos"
 
-#: templates/vista_crear_campo.html:143
+#: templates/vista_crear_campo.html:144
 msgid "¿Eliminar campo?"
 msgstr "Selecione o campo"
 
-#: templates/vista_crear_campo.html:148
+#: templates/vista_crear_campo.html:150
 msgid "Guardar campo"
 msgstr "Salvar"
 
-#: templates/vista_crear_campo.html:163
+#: templates/vista_crear_campo.html:165
 msgid "Contorno del campo"
 msgstr "Contorno do campo (GeoJSON)"
 
-#: templates/vista_crear_campo.html:168
+#: templates/vista_crear_campo.html:170
 msgid "Subir archivo"
 msgstr "Importar Nota Fiscal"
 
-#: templates/vista_crear_campo.html:185
+#: templates/vista_crear_campo.html:187
 msgid "Campos registrados"
 msgstr "Sem pagamentos registrados ainda."
 
-#: templates/vista_crear_campo.html:193
+#: templates/vista_crear_campo.html:195
 msgid "Contorno"
 msgstr "Conteúdo"
 
-#: templates/vista_crear_campo.html:205
+#: templates/vista_crear_campo.html:207
 msgid "Definido"
 msgstr "Definido"
 
-#: templates/vista_crear_campo.html:209
+#: templates/vista_crear_campo.html:211
 msgid "Sin contorno"
 msgstr "Sem contorno"
 
-#: templates/vista_crear_campo.html:218
+#: templates/vista_crear_campo.html:220
 msgid "No hay campos cargados"
 msgstr "Nenhum campo cadastrado"
 
-#: templates/vista_crear_campo.html:235
+#: templates/vista_crear_campo.html:237
 msgid "Cargar contorno desde archivo"
 msgstr "Importar Nota Fiscal"
 
-#: templates/vista_crear_campo.html:248
+#: templates/vista_crear_campo.html:250
 msgid "Arrastrá los archivos acá o hacé click"
 msgstr "Arraste os arquivos aqui"
 
-#: templates/vista_crear_campo.html:249
+#: templates/vista_crear_campo.html:251
 msgid "Shapefile (.shp + .dbf + .shx), KML, KMZ, ZIP"
 msgstr "Shapefile (.shp + .dbf + .shx), KML, KMZ, ZIP"
 
-#: templates/vista_crear_campo.html:258
+#: templates/vista_crear_campo.html:260
 msgid "Archivos cargados"
 msgstr "Nenhuma cultura cadastrada"
 
-#: templates/vista_crear_campo.html:271 templates/vista_crear_campo.html:608
-#: templates/vista_crear_campo.html:629
+#: templates/vista_crear_campo.html:273 templates/vista_crear_campo.html:622
+#: templates/vista_crear_campo.html:643
 msgid "Cargar en el mapa"
 msgstr "Entrada manual"
 
-#: templates/vista_crear_campo.html:559 templates/vista_crear_campo.html:561
+#: templates/vista_crear_campo.html:438
+msgid ""
+"Este campo no tiene un contorno definido. Lo vamos a necesitar para "
+"gestionar mapas (NDVI, suelo, comparación de capas). ¿Guardar igual y "
+"definirlo más tarde?"
+msgstr ""
+"Este campo não tem um contorno definido. Vamos precisar dele para "
+"gerenciar mapas (NDVI, solo, comparação de camadas). Salvar mesmo assim e "
+"defini-lo mais tarde?"
+
+#: templates/vista_crear_campo.html:573 templates/vista_crear_campo.html:575
 msgid "Falta el archivo"
 msgstr "Importar Nota Fiscal"
 
-#: templates/vista_crear_campo.html:713
+#: templates/vista_crear_campo.html:727
 msgid "Error al procesar el archivo."
 msgstr "Erro ao conectar com o servidor."
 

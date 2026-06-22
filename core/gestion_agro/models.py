@@ -15,7 +15,7 @@ class Campo(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE,verbose_name=_("Empresa"), )
     nombre = models.CharField( max_length=100, verbose_name=_("Nombre del campo"),)
     ciudad =models.ForeignKey("agro.Ciudad", on_delete=models.CASCADE, verbose_name=_("Ciudad / Localidad"), )
-    descripcion = models.CharField( max_length=100, verbose_name=_("Descripción"), )
+    descripcion = models.CharField( max_length=100, blank=True, verbose_name=_("Descripción"), )
     superficie_ha = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_("Superficie productiva (ha)"),
         help_text=_("Superficie productiva del campo expresada en hectáreas"),
     )

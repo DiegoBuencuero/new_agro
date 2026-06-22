@@ -268,6 +268,21 @@
           {% endfor %}
         </div>
         {% endif %}
+        {% if alertas_sin_contorno %}
+        <div class="px-3 pt-2 pb-2" style="border-top:1px solid #dbeafe">
+          <div class="small fw-semibold mb-2" style="color:#1e40af">
+            <i class="mdi mdi-map-marker-alert-outline me-1"></i>{% translate "Campos sin contorno definido" %}
+          </div>
+          {% for a in alertas_sin_contorno %}
+          <div class="d-flex justify-content-between py-1" style="font-size:.82rem;border-bottom:1px solid #eff6ff">
+            <span><strong>{{ a.campo }}</strong></span>
+            <a href="{% url 'vista_editar_campo' a.id %}" class="text-nowrap" style="color:#1e40af">
+              {% translate "Definir contorno" %}
+            </a>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
         {% if not total_alertas %}
         <div class="text-center py-4">
           <i class="mdi mdi-check-circle-outline text-success" style="font-size:2rem"></i>
