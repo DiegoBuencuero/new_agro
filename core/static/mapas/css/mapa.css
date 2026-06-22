@@ -1,0 +1,188 @@
+/* Cancelar padding y footer para páginas de mapa */
+.page-mapa .content-wrapper {
+  padding: 0 !important;
+  background: #fff !important;
+  overflow: hidden;
+}
+.page-mapa .footer {
+  display: none !important;
+}
+
+/* Layout 30/70 full-height */
+.mapa-wrapper {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 70px);
+  min-height: 600px;
+  overflow: hidden;
+}
+
+.mapa-sidebar {
+  width: 30%;
+  min-width: 300px;
+  max-width: 420px;
+  height: 100%;
+  background: #fff;
+  border-right: 1px solid #e3e6ec;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.mapa-main {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 600px;
+}
+
+.mapa-toolbar {
+  display: flex;
+  gap: .5rem;
+  padding: .5rem .75rem;
+  background: #f8f9fb;
+  border-bottom: 1px solid #e3e6ec;
+  z-index: 500;
+}
+
+#mapa {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 600px;
+  background: #e8eef3;
+}
+
+/* Cursor del mapa */
+#mapa,
+#mapa.leaflet-grab,
+#mapa.leaflet-grabbing,
+#mapa .leaflet-container,
+#mapa .leaflet-pane,
+#mapa .leaflet-interactive {
+  cursor: pointer !important;
+}
+
+/* Sidebar */
+.sidebar-section {
+  padding: .75rem 0;
+  border-bottom: 1px solid #f0f1f4;
+}
+
+.sidebar-section:last-child {
+  border-bottom: none;
+}
+
+.sidebar-section h5,
+.sidebar-section h6 {
+  margin-bottom: .75rem;
+  font-weight: 600;
+  color: #2b2f38;
+}
+
+.icon-agro {
+  color: #2e8b57;
+}
+
+.lista-capas {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.capa-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem;
+  border: 1px solid #e8eaf0;
+  border-radius: 6px;
+  margin-bottom: .35rem;
+  background: #fafbfc;
+  font-size: .85rem;
+}
+
+.capa-item.active {
+  border-color: #2e8b57;
+  background: #e9f7ef;
+}
+
+.capa-item label {
+  flex: 1;
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.capa-item .capa-meta {
+  font-size: .7rem;
+  color: #6c7280;
+  display: block;
+}
+
+.capa-item .btn-eliminar {
+  color: #c92a2a;
+  background: none;
+  border: none;
+  padding: 0 .25rem;
+  cursor: pointer;
+}
+
+/* Leyenda */
+#leyenda {
+  font-size: .8rem;
+}
+
+.leyenda-item {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .15rem 0;
+}
+
+.leyenda-color {
+  width: 18px;
+  height: 14px;
+  border-radius: 2px;
+  border: 1px solid rgba(0,0,0,.1);
+}
+
+/* Leaflet panes */
+.leaflet-map-pane {
+  z-index: 1 !important;
+}
+
+.leaflet-tile-pane {
+  z-index: 200 !important;
+}
+
+.leaflet-overlay-pane {
+  z-index: 400 !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .mapa-wrapper {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+  }
+
+  .mapa-sidebar {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    max-height: 40vh;
+    border-right: none;
+    border-bottom: 1px solid #e3e6ec;
+  }
+
+  .mapa-main {
+    height: 60vh;
+    min-height: 400px;
+  }
+
+  #mapa {
+    min-height: 400px;
+  }
+}

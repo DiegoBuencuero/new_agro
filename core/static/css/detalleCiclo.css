@@ -1,0 +1,192 @@
+/* ─── Core line ─── */
+.timeline-container {
+    position: relative;
+    padding: 10px 0 40px 0;
+    width: 100%;
+}
+
+.timeline-vertical-line {
+    position: absolute;
+    left: 20px;
+    top: 0; bottom: 0;
+    width: 1px;
+    background: #e9ecef;
+    z-index: 1;
+}
+
+/* ─── Phase header (INICIO DE FASE) ─── */
+.timeline-phase-header {
+    position: relative;
+    padding-left: 50px;
+    margin: 36px 0 16px 0;
+    z-index: 2;
+}
+.timeline-phase-header:first-child { margin-top: 0; }
+
+.phase-flag-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 26px;
+    height: 26px;
+    background: #f8f9fa;
+    border: 1.5px solid #ced4da;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #198754;
+    font-size: 13px;
+}
+
+.phase-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.phase-date {
+    font-size: 0.75rem;
+    color: #adb5bd;
+    font-weight: 400;
+}
+
+/* ─── Activity items ─── */
+.timeline-item {
+    position: relative;
+    padding-left: 60px;
+    margin-bottom: 10px;
+    z-index: 2;
+}
+
+.activity-icon {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1.5px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    z-index: 3;
+}
+
+/* Activity icon accent colors — muted */
+.activity-icon.siembra       { border-color: #a3cfbb; color: #2d6a4f; }
+.activity-icon.aplicacion    { border-color: #9ec5fe; color: #3d6ea8; }
+.activity-icon.fertilizacion { border-color: #a3cfbb; color: #2d6a4f; }
+.activity-icon.cosecha       { border-color: #d3bfe8; color: #6f42c1; }
+.activity-icon.inspeccion    { border-color: #b6d4fe; color: #3d6ea8; }
+.activity-icon.vistoria      { border-color: #ced4da; color: #6c757d; }
+
+/* ─── Activity card ─── */
+.activity-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: box-shadow .15s ease, border-color .15s ease;
+    box-shadow: none;
+}
+
+.activity-card:hover {
+    border-color: #dee2e6;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+/* Left accent per type — all muted */
+.activity-card.siembra       { border-left: 3px solid #a3cfbb; }
+.activity-card.aplicacion    { border-left: 3px solid #9ec5fe; }
+.activity-card.fertilizacion { border-left: 3px solid #a3cfbb; }
+.activity-card.cosecha       { border-left: 3px solid #d3bfe8; }
+.activity-card.inspeccion    { border-left: 3px solid #b6d4fe; }
+.activity-card.vistoria      { border-left: 3px solid #ced4da; }
+
+.activity-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    cursor: pointer;
+}
+
+.activity-type {
+    font-weight: 600;
+    color: #212529;
+    font-size: 0.88rem;
+}
+
+.activity-subtype {
+    color: #868e96;
+    font-weight: 400;
+}
+
+.activity-date {
+    font-size: 0.78rem;
+    color: #adb5bd;
+}
+
+.activity-obs {
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    font-size: 0.83rem;
+    color: #6c757d;
+    border: 1px dashed #dee2e6;
+}
+
+/* ─── Phase footer (FIN / EN CURSO) ─── */
+.timeline-phase-footer {
+    position: relative;
+    padding-left: 50px;
+    margin: 16px 0 36px 0;
+}
+
+.phase-checkered-icon {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 22px;
+    height: 22px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #adb5bd;
+    font-size: 11px;
+}
+
+/* ─── Badges ─── */
+.badge-fase-agro {
+    background: #f0faf4 !important;
+    color: #2d6a4f !important;
+    border: 1px solid #c3e6cb !important;
+    font-weight: 600;
+    font-size: .7rem;
+    letter-spacing: .04em;
+}
+
+.badge-fase-agro-secondary {
+    background: #f8f9fa !important;
+    color: #6c757d !important;
+    border: 1px solid #dee2e6 !important;
+    font-weight: 600;
+    font-size: .7rem;
+    letter-spacing: .04em;
+}
+
+.phase-label-agro { color: #2d6a4f !important; }
