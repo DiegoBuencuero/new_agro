@@ -2979,7 +2979,7 @@ msgstr "Notas fiscais registradas"
 
 #: templates/tem_facturas/vista_lista_facturas.html:38
 msgid "Cargar PDF"
-msgstr "Importar Nota Fiscal"
+msgstr "Carregar PDF"
 
 #: templates/tem_facturas/vista_lista_facturas.html:41
 msgid "Carga manual"
@@ -3702,7 +3702,7 @@ msgstr "Nenhum campo cadastrado"
 
 #: templates/vista_crear_campo.html:237
 msgid "Cargar contorno desde archivo"
-msgstr "Importar Nota Fiscal"
+msgstr "Carregar contorno"
 
 #: templates/vista_crear_campo.html:250
 msgid "Arrastrá los archivos acá o hacé click"
@@ -3733,7 +3733,7 @@ msgstr ""
 
 #: templates/vista_crear_campo.html:573 templates/vista_crear_campo.html:575
 msgid "Falta el archivo"
-msgstr "Importar Nota Fiscal"
+msgstr "Falta o arquivo"
 
 #: templates/vista_crear_campo.html:727
 msgid "Error al procesar el archivo."
@@ -4415,17 +4415,12 @@ msgstr "Nenhum produto cadastrado."
 #~ msgid "Dibujar área"
 #~ msgstr "Desenhar área"
 
-#~ msgid "Cargar archivo"
-#~ msgstr "Importar Nota Fiscal"
 
 #~ msgid "Completá el polígono con doble click"
 #~ msgstr "Complete o polígono com duplo clique"
 
 #~ msgid "Área:"
 #~ msgstr "Área:"
-
-#~ msgid "Cargar área"
-#~ msgstr "Importar Nota Fiscal"
 
 #~ msgid "Arrastrá los archivos acá"
 #~ msgstr "Arraste os arquivos aqui"
