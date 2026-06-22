@@ -3678,7 +3678,7 @@ msgstr "Contorno do campo (GeoJSON)"
 
 #: templates/vista_crear_campo.html:170
 msgid "Subir archivo"
-msgstr "Importar Nota Fiscal"
+msgstr "Carregar contorno"
 
 #: templates/vista_crear_campo.html:187
 msgid "Campos registrados"

@@ -3670,7 +3670,7 @@ msgstr "Nombre del campo"
 
 #: templates/vista_crear_campo.html:170
 msgid "Subir archivo"
-msgstr "Subir archivo"
+msgstr "Subir contorno"
 
 #: templates/vista_crear_campo.html:187
 msgid "Campos registrados"
