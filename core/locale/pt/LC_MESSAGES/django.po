@@ -3662,7 +3662,7 @@ msgstr "Selecione o campo"
 
 #: templates/vista_crear_campo.html:148
 msgid "Guardar campo"
-msgstr "Salvar nota fiscal"
+msgstr "Salvar"
 
 #: templates/vista_crear_campo.html:163
 msgid "Contorno del campo"

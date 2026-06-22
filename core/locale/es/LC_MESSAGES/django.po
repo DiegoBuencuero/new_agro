@@ -3654,7 +3654,7 @@ msgstr "Eliminar"
 
 #: templates/vista_crear_campo.html:148
 msgid "Guardar campo"
-msgstr "Guardar factura"
+msgstr "Guardar"
 
 #: templates/vista_crear_campo.html:163
 msgid "Contorno del campo"
