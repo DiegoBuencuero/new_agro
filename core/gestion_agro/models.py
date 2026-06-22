@@ -16,8 +16,8 @@ class Campo(models.Model):
     nombre = models.CharField( max_length=100, verbose_name=_("Nombre del campo"),)
     ciudad =models.ForeignKey("agro.Ciudad", on_delete=models.CASCADE, verbose_name=_("Ciudad / Localidad"), )
     descripcion = models.CharField( max_length=100, verbose_name=_("Descripción"), )
-    superficie_ha = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_("Superficie total"),
-        help_text=_("Superficie total del campo expresada en hectáreas"),
+    superficie_ha = models.DecimalField(max_digits=10, decimal_places=2, verbose_name=_("Superficie productiva (ha)"),
+        help_text=_("Superficie productiva del campo expresada en hectáreas"),
     )
     image = models.ImageField( default="default.jpg", upload_to="campos", verbose_name=_("Imagen"),)
     observaciones = models.TextField(null=True, blank=True, verbose_name=_("Observaciones"),)
