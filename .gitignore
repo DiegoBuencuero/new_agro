@@ -19,5 +19,8 @@ venv/
 # Media uploads
 media/
 
+# collectstatic (STATIC_ROOT): se regenera en cada entorno, no es código fuente
+core/static/
+
 # Logs
 *.log
