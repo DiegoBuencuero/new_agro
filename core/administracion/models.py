@@ -1,9 +1,11 @@
+from datetime import date
+
 from django.db import models
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
-from gestion_agro.models import FacturaCompra, Proveedor, Cliente
+
 from agro.models import Empresa
-from gestion_agro.models import Producto
+from gestion_agro.models import DESTINO_CHOICES, FacturaCompra, Proveedor, Cliente, Producto
 
 
 class Pago(models.Model):
@@ -49,7 +51,7 @@ class AplicacionPago(models.Model):
         return f"${self.monto_aplicado} → {self.factura}"
 
 
-class FacturaVenta(models.Model): #VER TEMA IMPUESTO
+class FacturaVenta(models.Model):
     empresa  = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
     cliente  = models.ForeignKey(Cliente, on_delete=models.CASCADE, verbose_name=_("Cliente"))
     numero   = models.CharField(max_length=20, verbose_name=_("NF-e número"))
@@ -67,8 +69,6 @@ class FacturaVenta(models.Model): #VER TEMA IMPUESTO
 
 
 class FacturaVentaItem(models.Model):
-    DESTINO_CHOICES = [("M", "Semilla (Multiplicación)"), ("C", "Consumo")]
-
     factura         = models.ForeignKey(FacturaVenta, related_name="items", on_delete=models.CASCADE)
     producto        = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad        = models.DecimalField(max_digits=12, decimal_places=3)
@@ -105,7 +105,7 @@ class Recibo(models.Model):
     empresa       = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
     cliente       = models.ForeignKey(Cliente, on_delete=models.CASCADE, verbose_name=_("Cliente"))
     numero        = models.PositiveIntegerField(default=0, verbose_name=_("N° recibo"))
-    fecha         = models.DateField(default=__import__('datetime').date.today, verbose_name=_("Fecha"))
+    fecha         = models.DateField(default=date.today, verbose_name=_("Fecha"))
     medio_cobro   = models.CharField(max_length=3, choices=MEDIO_COBRO, default="TRF", verbose_name=_("Medio de cobro"))
     referencia    = models.CharField(max_length=100, blank=True, default="", verbose_name=_("Referencia"))
     observaciones = models.TextField(blank=True, null=True, verbose_name=_("Observaciones"))

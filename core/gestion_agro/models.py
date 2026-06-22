@@ -1,12 +1,15 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from agro.models import Empresa
-import re
-from decimal import Decimal
-from django.db import transaction
-from django.core.exceptions import ValidationError
-from agro.models import Empresa, Unidad, Moneda
+
+from agro.models import Empresa, Unidad
+
+DESTINO_CHOICES = [
+    ("M", _("Semilla (Multiplicación)")),
+    ("C", _("Consumo")),
+]
+
 
 class Campo(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE,verbose_name=_("Empresa"), )
@@ -67,24 +70,21 @@ class AreaCampo(models.Model):
         return f"{self.campo.nombre} — {self.nombre}"
 
 class Lote(models.Model):
-    class Meta:
-        pass
-    def __str__(self):
-        return self.nombre
-
-    campo = models.ForeignKey("Campo", verbose_name=("Campo"), on_delete=models.CASCADE)
+    campo = models.ForeignKey("Campo", verbose_name=_("Campo"), on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
     image = models.ImageField(default='default.jpg', upload_to='lotes')
     ha_totales = models.DecimalField(max_digits=6, decimal_places=2)
     ha_productivas = models.DecimalField(max_digits=6, decimal_places=2)
 
-class Actividad(models.Model):
-    class Meta:
-        pass
     def __str__(self):
         return self.nombre
+
+class Actividad(models.Model):
     nombre = models.CharField(max_length=50)
     codigo = models.CharField(max_length=2)
+
+    def __str__(self):
+        return self.nombre
 
 class Cultivo(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="cultivos")
@@ -114,7 +114,7 @@ class Cultivo(models.Model):
 
 class Variedad(models.Model):
     cultivo = models.ForeignKey(Cultivo, on_delete=models.CASCADE, related_name="variedades", verbose_name=_("Cultura"))
-    nombre  = models.CharField(max_length=100, verbose_name=_("Variedade"))
+    nombre  = models.CharField(max_length=100, verbose_name=_("Variedad"))
     pmg     = models.DecimalField(
         max_digits=8, decimal_places=2,
         null=True, blank=True,
@@ -123,7 +123,7 @@ class Variedad(models.Model):
     )
 
     class Meta:
-        verbose_name = _("Variedade")
+        verbose_name = _("Variedad")
         verbose_name_plural = _("Variedades")
         ordering = ["cultivo__nombre", "nombre"]
         unique_together = ("cultivo", "nombre")
@@ -236,12 +236,12 @@ class CicloAgricola(models.Model):
 
 class FaseAgricola(models.Model):
     TIPO_FASE_CHOICES = [
-        ('COB', 'Cobertura'),
-        ('PRI', 'Cultivo principal'),
+        ('COB', _('Cobertura')),
+        ('PRI', _('Cultivo principal')),
     ]
-        
-    ESTADO_FASE_CHOICES = [('abierto','Abierto'),('cerrado','Cerrado')]
-    
+
+    ESTADO_FASE_CHOICES = [('abierto', _('Abierto')), ('cerrado', _('Cerrado'))]
+
     ciclo = models.ForeignKey(CicloAgricola, on_delete=models.CASCADE, related_name='fases')
     tipo = models.CharField(max_length=20, choices=TIPO_FASE_CHOICES, default='COB')
     fecha_inicio = models.DateField()
@@ -250,8 +250,8 @@ class FaseAgricola(models.Model):
 
     class Meta:
         ordering = ['fecha_inicio']
-        verbose_name = "Fase agrícola"
-        verbose_name_plural = "Fases agrícolas"
+        verbose_name = _("Fase agrícola")
+        verbose_name_plural = _("Fases agrícolas")
 
     def __str__(self):
         return f"{self.ciclo} - {self.get_tipo_display()} ({self.estado})"
@@ -468,7 +468,7 @@ class MovimientoStock(models.Model):
     factura_item       = models.ForeignKey("FacturaCompraItem", on_delete=models.CASCADE, null=True, blank=True)
     factura_venta_item = models.ForeignKey("administracion.FacturaVentaItem", on_delete=models.SET_NULL, null=True, blank=True, related_name="movimientos_stock", verbose_name=_("Ítem venta"))
     cosecha = models.ForeignKey("CamposCosecha", on_delete=models.SET_NULL, null=True, blank=True, related_name="movimientos_stock", verbose_name=_("Cosecha"))
-    destino = models.CharField(max_length=1, blank=True, null=True, choices=[("M", "Multiplicacion"), ("C", "Consumo")], verbose_name=_("Destino"))
+    destino = models.CharField(max_length=1, blank=True, null=True, choices=DESTINO_CHOICES, verbose_name=_("Destino"))
     es_semilla_cosecha = models.BooleanField(default=False, verbose_name=_("Es porción semilla de cosecha"))
     precio_unitario = models.DecimalField(max_digits=14, decimal_places=6, help_text=_("Precio promedio aplicado al momento del consumo"), null=True, blank=False)
     deposito_origen  = models.ForeignKey(Deposito, on_delete=models.CASCADE, null=True, blank=True, related_name="salidas")
@@ -490,39 +490,6 @@ class TipoActividadCategoriaProducto(models.Model):
         if self.subtipo_actividad:
             return f"{self.tipo_actividad} / {self.subtipo_actividad} → {self.categoria_producto}"
         return f"{self.tipo_actividad} → {self.categoria_producto}"
-
-class ListaPrecio(models.Model):
-    TIPO_CHOICES = [("CP", "Compra"), ("V", "Venta")]
-
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="listas_precios")
-    codigo = models.CharField(max_length=20)
-    nombre = models.CharField(max_length=100)
-    tipo = models.CharField(max_length=2, choices=TIPO_CHOICES)
-    moneda = models.ForeignKey(Moneda, on_delete=models.PROTECT, related_name="listas_precios")
-    unidad = models.ForeignKey(Unidad, on_delete=models.PROTECT, related_name="listas_precios")
-    activa = models.BooleanField(default=True)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["empresa", "codigo"], name="uq_lista_precio_empresa_codigo")
-        ]
-
-    def __str__(self):
-        return f"{self.codigo} - {self.nombre}"
-
-class ListaPrecioDetalle(models.Model):
-    lista_precio = models.ForeignKey(ListaPrecio, on_delete=models.CASCADE, related_name="detalles")
-    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="precios")
-    unidad = models.ForeignKey(Unidad, on_delete=models.PROTECT, related_name="precios_lista")
-    precio = models.DecimalField(max_digits=18, decimal_places=4)
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(fields=["lista_precio", "producto", "unidad"], name="uq_lista_precio_producto_unidad")
-        ]
-
-    def __str__(self):
-        return f"{self.lista_precio} - {self.producto} - {self.precio}"
 
 class FacturaCompra(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, verbose_name=_("Empresa"))
@@ -658,33 +625,3 @@ class ProductoNormalizado(models.Model):
     
     def __str__(self):
         return f"{self.nombre} - {self.envase_desc}"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

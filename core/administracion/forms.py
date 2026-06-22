@@ -5,7 +5,7 @@ from django.db.models.functions import Coalesce
 from django.utils.translation import gettext_lazy as _
 from django.forms import formset_factory
 
-from gestion_agro.models import Proveedor, FacturaCompra, Cliente, Deposito, Producto
+from gestion_agro.models import DESTINO_CHOICES, Proveedor, FacturaCompra, Cliente, Deposito, Producto
 from agro.models import Unidad
 from .models import AplicacionPago, FacturaVenta, FacturaVentaItem, AplicacionRecibo
 
@@ -179,8 +179,6 @@ class ProductoFinalChoiceField(forms.ModelChoiceField):
 
 
 class FacturaVentaManualItemForm(forms.Form):
-    DESTINO_CHOICES = [("", "— Todos —"), ("M", _("Semilla (M)")), ("C", _("Consumo (C)"))]
-
     producto = ProductoFinalChoiceField(
         queryset=Producto.objects.none(),
         required=True,
@@ -188,7 +186,7 @@ class FacturaVentaManualItemForm(forms.Form):
         label=_("Producto"),
     )
     destino = forms.ChoiceField(
-        choices=DESTINO_CHOICES,
+        choices=[("", _("— Sin especificar —"))] + list(DESTINO_CHOICES),
         required=False,
         label=_("Destino"),
     )

@@ -16,18 +16,18 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     empresa = models.ForeignKey("Empresa", on_delete=models.CASCADE, null=True, blank=True)
     image = models.ImageField(default='default.jpg', upload_to='profile_pics')
-    tipo = models.CharField(max_length=1, default='A') 
+    tipo = models.CharField(max_length=1, choices=[('A', _("Administrador"))], default='A')
     direccion = models.CharField(max_length=100, default='')
     direccion2 = models.CharField(max_length=100, default='')
     pais = models.ForeignKey("Pais", on_delete=models.CASCADE, null=True, blank=True)
-    provincia = models.ForeignKey("Provincia", verbose_name=("Provincia"), on_delete=models.CASCADE, null=True, blank=True)
-    ciudad = models.ForeignKey("Ciudad", verbose_name=("Ciudad"), on_delete=models.CASCADE, null=True, blank=True)
+    provincia = models.ForeignKey("Provincia", verbose_name=_("Provincia"), on_delete=models.CASCADE, null=True, blank=True)
+    ciudad = models.ForeignKey("Ciudad", verbose_name=_("Ciudad"), on_delete=models.CASCADE, null=True, blank=True)
     cp = models.CharField(max_length=10, default='')
     telefono = models.CharField(max_length=30, default='', null=True, blank=True)
     celular = models.CharField(max_length=30, default='', null=True, blank=True)
-    nacionalidad = models.ForeignKey("Nacionalidad", verbose_name=("Nacionalidad"), on_delete=models.CASCADE, null=True, blank=True)
-    genero = models.ForeignKey("Genero", verbose_name=("Genero"), on_delete=models.CASCADE, null=True, blank=True)
-    tipodoc = models.ForeignKey("Tipodoc", verbose_name=("Tipo documento"), on_delete=models.CASCADE, null=True, blank=True)
+    nacionalidad = models.ForeignKey("Nacionalidad", verbose_name=_("Nacionalidad"), on_delete=models.CASCADE, null=True, blank=True)
+    genero = models.ForeignKey("Genero", verbose_name=_("Género"), on_delete=models.CASCADE, null=True, blank=True)
+    tipodoc = models.ForeignKey("Tipodoc", verbose_name=_("Tipo documento"), on_delete=models.CASCADE, null=True, blank=True)
     documento = models.CharField(max_length=50, default='')
     fecha_nacimiento = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=1, choices=[('N', 'Ingresado'), ('A', 'Aprobado'), ('S', 'Suspendido'), ], default='N')
@@ -48,17 +48,6 @@ class Moneda(models.Model):
         return self.nombre
     nombre = models.CharField(max_length=50)
     corto = models.CharField(max_length=3)
-
-class Cotizacion(models.Model):
-    empresa = models.ForeignKey("Empresa", on_delete=models.CASCADE, null=True, blank=True)
-    moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
-    fecha = models.DateTimeField()
-    cotizacion = models.DecimalField(max_digits=12, decimal_places=3)
-
-class Cotizacion_general(models.Model):
-    moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
-    fecha = models.DateTimeField()
-    cotizacion = models.DecimalField(max_digits=12, decimal_places=3)
 
 class Tipodoc(models.Model):
     def __str__(self):
@@ -101,14 +90,6 @@ class Ciudad(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.provincia})"
 
-class Lista_de_precios(models.Model):
-    def __str__(self):
-        return self.nombre
-
-    class Meta:
-        verbose_name = "Lista de precios"
-        verbose_name_plural = "Listas de precios"
-
 class Empresa(models.Model):
     def __str__(self):
         return self.nombre
@@ -121,7 +102,6 @@ class Empresa(models.Model):
     add_date = models.DateTimeField(default=timezone.now)
     moneda = models.ForeignKey(Moneda, on_delete=models.CASCADE)
     unidad_default = models.ForeignKey("Unidad", on_delete=models.PROTECT, related_name="empresas", null=True, blank=True)
-    lista_precio = models.ForeignKey(Lista_de_precios, on_delete=models.CASCADE, related_name="lista_de_precios", null=True, blank=True)
     valor_mobra = models.DecimalField(max_digits=18, decimal_places=2, default=0, verbose_name=_("Costo MO"))
     valor_maquina = models.DecimalField(max_digits=18, decimal_places=2, default=0, verbose_name=_("Costo Maquina"))
     calculo_costo = models.CharField(max_length=1, choices=[('F', 'FIFO'), ('L', 'LIFO'),('P','PONDERADO') ], default='F', verbose_name=_("Cálculo de costo"))  

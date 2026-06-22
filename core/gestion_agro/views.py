@@ -1,38 +1,42 @@
-from datetime import datetime
-import os, re
 import base64
-from urllib import request
-from django import forms
-from django.core.files.base import ContentFile
+import os
+import re
+import tempfile
+from datetime import datetime
 from decimal import Decimal
-from django.shortcuts import get_object_or_404, redirect, render
-from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.decorators import login_required
+
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Prefetch, Q, Sum
 from django.db.models.functions import Coalesce
-from django.urls import reverse
 from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.utils import timezone
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
-import tempfile as tempfile
-from .funciones_aux import parse_nfe_pdf, br_to_float, _buscar_candidatos, _score, _detectar_contenido_unidad, convertir_unidad
-from agro.models import (ConversionUM, Unidad, Pais, Provincia, Ciudad, Nacionalidad, Genero, Tipodoc, Empresa)
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_POST
 
-from .funciones_aux import ( registrar_actividad_aux, obtener_valores_costos, _detectar_contenido_unidad  )
-from gestion_agro.forms import ( CampoForm, CampanaForm, CicloForm, CicloFiltroForm, ProductoForm, ProductoModalForm, VariedadPMGForm, PresentacionProductoForm,
-                                ActividadProductivaForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm, CamposInspeccionForm,
-                                StockFiltroForm, CultivoProductoFinalForm, FacturaCompraForm, FacturaCompraItemFormSet, FacturaManualItemFormSet,
-                                CultivoForm, CultivoEditarForm, CultivoProductoFinalForm, CultivoEditarForm, DepositoForm
-                                )
-from gestion_agro.models import ( Campo, AreaCampo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
-                                ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
-                                ActividadInsumo, CategoriaProducto, MovimientoStock,
-                                FacturaCompra, Proveedor, PresentacionProducto, FacturaCompraItem, Variedad,
-                                Proveedor, Cultivo, ProductoSemilla, Deposito, CamposCosecha,CamposInspeccion
-        )
+from agro.models import ConversionUM, Unidad
+from .funciones_aux import (
+    parse_nfe_pdf, br_to_float, _buscar_candidatos, _score, _detectar_contenido_unidad,
+    convertir_unidad, registrar_actividad_aux, obtener_valores_costos,
+)
+from gestion_agro.forms import (
+    CampoForm, CampanaForm, CicloForm, CicloFiltroForm, ProductoForm, ProductoModalForm, VariedadPMGForm, PresentacionProductoForm,
+    ActividadProductivaForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm, CamposInspeccionForm,
+    StockFiltroForm, CultivoProductoFinalForm, FacturaCompraForm, FacturaCompraItemFormSet, FacturaManualItemFormSet,
+    CultivoForm, CultivoEditarForm, DepositoForm,
+)
+from gestion_agro.models import (
+    Campo, AreaCampo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
+    ActividadProductiva, Producto, TipoActividad, TipoActividadCategoriaProducto,
+    ActividadInsumo, CategoriaProducto, MovimientoStock,
+    FacturaCompra, Proveedor, PresentacionProducto, FacturaCompraItem, Variedad,
+    Cultivo, ProductoSemilla, Deposito, CamposCosecha, CamposInspeccion, Cliente,
+)
 
 @login_required
 def vista_crear_campo(request):
@@ -59,36 +63,30 @@ def vista_crear_campo(request):
 
 @login_required
 def vista_editar_campo(request, id_campo):
-    campos = Campo.objects.filter(empresa = request.user.profile.empresa)
-    try:
-        campo = Campo.objects.get(id = id_campo)
-    except:
-        return redirect('vista_crear_campo')
     empresa = request.user.profile.empresa
-    if campo.empresa ==empresa:
-        if request.method == 'POST':
-            form = CampoForm(request.POST, request.FILES, instance=campo)
-            if form.is_valid():
-                campo = form.save(commit=False)
-                if request.POST.get('borrar') == '':
-                    campo.delete()
-                else:
-                    campo.empresa = empresa
-                    campo.save()
-                return redirect('vista_crear_campo')
+    campos = Campo.objects.filter(empresa=empresa)
+    campo = get_object_or_404(Campo, id=id_campo, empresa=empresa)
+
+    if request.method == 'POST':
+        form = CampoForm(request.POST, request.FILES, instance=campo)
+        if form.is_valid():
+            campo = form.save(commit=False)
+            if request.POST.get('borrar') == '':
+                campo.delete()
             else:
-                messages.error(request, form.errors.as_data() )
+                campo.empresa = empresa
+                campo.save()
+            return redirect('vista_crear_campo')
         else:
-            form = CampoForm(instance = campo)
-        return render(request, 'vista_crear_campo.html', {'form': form, 'campos': campos, 'empresa': empresa, 'modificacion': 'S'})
+            messages.error(request, form.errors.as_text())
     else:
-        return redirect('vista_crear_campo')
+        form = CampoForm(instance=campo)
+    return render(request, 'vista_crear_campo.html', {'form': form, 'campos': campos, 'empresa': empresa, 'modificacion': 'S'})
 
 @login_required
 def vista_crear_campana(request):
     empresa = request.user.profile.empresa
     campanas = Campana.objects.filter(empresa=empresa)
-    print(empresa)
 
     if request.method == "POST":
         form = CampanaForm(request.POST)
@@ -196,27 +194,22 @@ def vista_editar_deposito(request, id_deposito):
 
 @login_required
 def vista_editar_campana(request, id_campana):
-    campanas = Campana.objects.filter(empresa = request.user.profile.empresa)
-    try:
-        camp = Campana.objects.get(id = id_campana)
-    except:
-        return redirect('vista_crear_campana')
     empresa = request.user.profile.empresa
-    if camp.empresa == empresa:
-        if request.method == 'POST':
-            form = CampanaForm(request.POST, instance = camp)
-            if form.is_valid():
-                campana = form.save(commit=False)
-                if request.POST.get('borrar') == '':
-                    campana.delete()
-                else:
-                    campana.save()
-                return redirect('vista_crear_campana')
-        else:
-            form = CampanaForm(instance = camp)
-        return render(request, 'vista_crear_campana.html', {'form': form, 'empresa': empresa, 'campanas':campanas, 'modificacion': 'S'})
+    campanas = Campana.objects.filter(empresa=empresa)
+    camp = get_object_or_404(Campana, id=id_campana, empresa=empresa)
+
+    if request.method == 'POST':
+        form = CampanaForm(request.POST, instance=camp)
+        if form.is_valid():
+            campana = form.save(commit=False)
+            if request.POST.get('borrar') == '':
+                campana.delete()
+            else:
+                campana.save()
+            return redirect('vista_crear_campana')
     else:
-        return redirect('vista_crear_campana')
+        form = CampanaForm(instance=camp)
+    return render(request, 'vista_crear_campana.html', {'form': form, 'empresa': empresa, 'campanas': campanas, 'modificacion': 'S'})
 
 @login_required
 def vista_crear_cultivo(request):
@@ -241,7 +234,6 @@ def vista_crear_cultivo(request):
             messages.success(request, _("Cultivo creado correctamente"))
             return redirect("vista_crear_cultivo")
         else:
-            print("ERRORES CREAR CULTIVO:", form.errors)
             messages.error(request, _("Revisá los datos del formulario."))
     else:
         form = CultivoForm()
@@ -292,7 +284,6 @@ def vista_editar_cultivo(request, id_cultivo):
 
             return redirect("vista_crear_cultivo")
         else:
-            print("ERRORES EDITAR CULTIVO:", form.errors)
             messages.error(request, _("Revisá los datos del formulario."))
     else:
         form = CultivoEditarForm(instance=cultivo)
@@ -706,13 +697,11 @@ def vista_detalle_ciclo(request, id_ciclo):
     )
 
     # desglose de costos
-    from django.db.models import Sum as _Sum
-    from gestion_agro.models import ActividadInsumo as _AI
     costo_mo_ciclo  = sum(act.total_mo  or Decimal("0") for act in actividades)
     costo_maq_ciclo = sum(act.total_maq or Decimal("0") for act in actividades)
-    costo_ins_ciclo = _AI.objects.filter(
+    costo_ins_ciclo = ActividadInsumo.objects.filter(
         actividad__fase__ciclo=ciclo
-    ).aggregate(t=Coalesce(_Sum("costo_total"), Decimal("0")))["t"]
+    ).aggregate(t=Coalesce(Sum("costo_total"), Decimal("0")))["t"]
     costo_total_ciclo = costo_mo_ciclo + costo_maq_ciclo + costo_ins_ciclo
 
     ha = ciclo.superficie_ha or Decimal("1")
@@ -742,8 +731,8 @@ def vista_detalle_ciclo(request, id_ciclo):
         else:
             key = None
         if key:
-            cents, _ = _stooq_price(_STOOQ[key])
-            usd, _, _ = _usd_brl()
+            cents, _fecha = _stooq_price(_STOOQ[key])
+            usd, _fecha_usd, _fuente_usd = _usd_brl()
             if cents and usd:
                 usd_bushel = cents / 100
                 precio_saco = Decimal(str(round(usd_bushel * (60 / kg_bushel) * usd, 2)))
@@ -774,6 +763,7 @@ def vista_detalle_ciclo(request, id_ciclo):
     return render(request, "vista_detalle_ciclo.html", context)
 
 
+@login_required
 def vista_editar_ciclo(request, id_ciclo):
     empresa = request.user.profile.empresa
     ciclo   = get_object_or_404(CicloAgricola, id=id_ciclo, campo__empresa=empresa)
@@ -789,14 +779,13 @@ def vista_editar_ciclo(request, id_ciclo):
             if superficie_ha:
                 ciclo.superficie_ha = Decimal(superficie_ha)
             if fecha_inicio:
-                from datetime import datetime
                 ciclo.fecha_inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d").date()
             ciclo.activa = activa
             ciclo.save()
-            messages.success(request, "Ciclo actualizado.")
+            messages.success(request, _("Ciclo actualizado."))
             return redirect("vista_lista_ciclos")
         except Exception as e:
-            messages.error(request, f"Error: {e}")
+            messages.error(request, _("Error: %(error)s") % {"error": e})
 
     return render(request, "vista_editar_ciclo.html", {"ciclo": ciclo, "empresa": empresa})
 
@@ -1334,7 +1323,6 @@ def vista_lista_stock(request):
 
         if producto.producto_final:
             # Separar movimientos por destino (M=Semilla, C=Consumo, None=compras/otros)
-            from django.db.models import Sum, Q as DQ
             movs_list = list(movimientos.select_related("um", "deposito_origen", "deposito_destino", "cosecha"))
 
             def _build_final_item(destino_cod, destino_label):
@@ -1411,7 +1399,6 @@ def vista_lista_stock(request):
     lista_productos = lista_insumos + lista_productos_finales
 
     depositos = Deposito.objects.filter(empresa=empresa).order_by("nombre")
-    from gestion_agro.models import Cliente
     clientes_venta = Cliente.objects.filter(empresa=empresa).order_by("razon_social")
 
     context = {
@@ -1597,28 +1584,7 @@ def vista_lista_facturas(request):
 
 @login_required
 def vista_cargar_factura(request):
-    if request.method == "POST":
-        empresa = request.user.profile.empresa
-        
-        try:
-            factura = FacturaCompra.objects.create(
-                empresa=empresa,
-                proveedor_id=request.POST.get("proveedor"),
-                numero=request.POST.get("numero"),
-                fecha=request.POST.get("fecha"),
-                total=request.POST.get("total"),
-                archivo_pdf=request.FILES.get("archivo_pdf"),  # <-- salva o PDF
-            )
-            messages.success(request, "Factura cargada correctamente.")
-            return redirect("vista_lista_facturas")
-
-        except Exception as e:
-            messages.error(request, f"Error al guardar: {e}")
-
-    proveedores = Proveedor.objects.filter(empresa=request.user.profile.empresa)
-    return render(request, "tem_facturas/vista_cargar_factura.html", {
-        "proveedores": proveedores
-    })
+    return render(request, "tem_facturas/vista_cargar_factura.html")
 
 @login_required
 def vista_cargar_factura_manual(request):
@@ -2106,7 +2072,7 @@ def vista_revisar_factura(request):
     nombre    = (proveedor_data or "").upper()[:255] or "PROVEEDOR SIN IDENTIFICAR"
     documento = re.sub(r"[^\d]", "", proveedor_data or "") or "00000000000"
 
-    proveedor_obj, _ = Proveedor.objects.get_or_create(
+    proveedor_obj, _creado = Proveedor.objects.get_or_create(
         empresa=empresa,
         razon_social=nombre,
         defaults={"identificador": documento},
@@ -2123,15 +2089,12 @@ def vista_revisar_factura(request):
     initial_data = []
     match_info   = []
 
-    print('=== ITEMS PARSEADOS ===', items)
-
     for item in items:
         desc         = item.get("descricao", "")
         unid_factura = item.get("unidade", "")
         cant         = _br_to_float(item.get("quantidade", 0)) or 0
         p_u          = _br_to_float(item.get("v_unit", 0)) or 0
         contenido, unidad, pres_nombre = _detectar_contenido_unidad(desc, unid_factura)
-        print(f'  desc={desc!r} unid={unid_factura!r} cant={cant} p_u={p_u} contenido={contenido} unidad={unidad}')
 
         # Buscar candidatos — filtro simple por la primera palabra significativa
         palabras = [p for p in desc.split() if len(p) >= 4]
@@ -2211,10 +2174,6 @@ def vista_revisar_factura(request):
         form_kwargs={"empresa": empresa},
     )
 
-    print(f'=== FORMSET total_forms={formset.total_form_count()} initial_len={len(initial_data)}')
-    for i, f in enumerate(formset):
-        print(f'  form[{i}].initial={f.initial}')
-
     # Pre-cargar presentaciones y variedades en el form según el candidato principal
     for i, form in enumerate(formset):
         prod = initial_data[i].get("producto_existente")
@@ -2243,13 +2202,6 @@ def vista_revisar_factura(request):
         "deposito_default": empresa.deposito_insumos_default,
     }
 
-    from django.template.loader import render_to_string
-    import re as _re
-    rendered = render_to_string("tem_facturas/vista_revisar_factura.html", context, request=request)
-    m = _re.search(r'id="cantidad_0"[^>]*value="([^"]*)"', rendered)
-    print('>>> HTML cantidad_0 value=' + repr(m.group(1) if m else 'NO MATCH'))
-    m2 = _re.search(r'id="precio_0"[^>]*value="([^"]*)"', rendered)
-    print('>>> HTML precio_0 value=' + repr(m2.group(1) if m2 else 'NO MATCH'))
     return render(request, "tem_facturas/vista_revisar_factura.html", context)
 
 @login_required
@@ -2293,11 +2245,6 @@ def vista_confirmar_factura(request):
     )
 
     if not cabecera_form.is_valid() or not formset.is_valid():
-        print("ERRORES CABECERA:", cabecera_form.errors)
-        for i, f in enumerate(formset):
-            if f.errors:
-                print(f"ERRORES FORM {i}:", f.errors)
-        print("ERRORES FORMSET NON FORM:", formset.non_form_errors())
         messages.error(request, _("Hay errores en la factura. Revisá los campos marcados."))
         return render(request, "tem_facturas/vista_revisar_factura.html", {
             "cabecera_form":   cabecera_form,
@@ -2322,12 +2269,11 @@ def vista_confirmar_factura(request):
     ).exists():
         messages.warning(
             request,
-            _(f"La factura {numero_factura} ya fue ingresada para este proveedor.")
+            _("La factura %(numero)s ya fue ingresada para este proveedor.") % {"numero": numero_factura}
         )
         request.session.pop("factura_temporal", None)
         request.session.pop("proveedor_seleccionado", None)
         return redirect("vista_lista_facturas")
-
 
     # ── Guardar cabecera ───────────────────────────────────────────────────
     factura = cabecera_form.save(commit=False)
@@ -2398,7 +2344,6 @@ def vista_confirmar_factura(request):
             ).first()
 
             if not producto:
-                import re
                 codigo_base = re.sub(r"[^A-Z0-9]", "", nombre_producto.upper())[:20]
                 codigo = codigo_base or "PROD"
                 sufijo = 1
@@ -2486,7 +2431,7 @@ def vista_confirmar_factura(request):
     request.session.pop("factura_temporal", None)
     request.session.pop("proveedor_seleccionado", None)
 
-    messages.success(request, _(f"Factura {factura.numero} guardada correctamente."))
+    messages.success(request, _("Factura %(numero)s guardada correctamente.") % {"numero": factura.numero})
     return redirect("vista_lista_facturas")
 
 @login_required
@@ -2565,8 +2510,7 @@ def ajax_transferir_stock(request):
 
     if unidad_ingresada != producto.unidad_base:
         try:
-            from .funciones_aux import convertir_unidad as _convertir
-            cantidad = _convertir(cantidad, unidad_ingresada, producto.unidad_base)
+            cantidad = convertir_unidad(cantidad, unidad_ingresada, producto.unidad_base)
         except ValueError as e:
             return JsonResponse({"ok": False, "error": str(e)}, status=400)
 

@@ -1,17 +1,27 @@
-from django.shortcuts import render, redirect
-from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, authenticate, update_session_auth_hash
-from django.contrib import messages
-from django.db import transaction
-from django.http import JsonResponse
-from .forms import LoginForm, ConfiguracionEmpresaForm, RegistroForm
 import datetime
+import json
 from decimal import Decimal
-from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+
+from django.contrib import messages
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.db.models import Sum, F, ExpressionWrapper, DecimalField, DateField
 from django.db.models.functions import Coalesce, TruncMonth, TruncWeek
-from gestion_agro.models import FacturaCompra
-from administracion.models import FacturaVentaItem
+from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+from agro.models import Empresa, Moneda
+from administracion.models import FacturaVenta, FacturaVentaItem
+from gestion_agro.models import (
+    ActividadInsumo, ActividadProductiva, Campo, CicloAgricola, FacturaCompra,
+    MovimientoStock, Producto, SubTipoActividad, TipoActividad,
+)
+from mapas.models import IndiceVegetacion
+from .forms import LoginForm, ConfiguracionEmpresaForm, RegistroForm
 
 # ── Cotizaciones CBOT / USD ──────────────────────────────────────────────────
 
@@ -23,7 +33,7 @@ _STOOQ = {
 
 def _stooq_price(url):
     try:
-        import requests, json
+        import requests
         r = requests.get(url, timeout=5)
         if r.status_code != 200:
             return None, None
@@ -42,7 +52,7 @@ def _stooq_price(url):
 
 def _usd_brl():
     try:
-        import requests, datetime
+        import requests
         session = requests.Session()
         session.get("https://finance.yahoo.com", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
         r = session.get(
@@ -101,13 +111,6 @@ def ajax_cotizaciones(request):
 
 @login_required
 def ajax_dashboard_resumen(request):
-    import datetime
-    from decimal import Decimal
-    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
-    from django.db.models.functions import Coalesce
-    from gestion_agro.models import FacturaCompra
-    from administracion.models import FacturaVenta, AplicacionRecibo
-
     empresa = getattr(request.user.profile, "empresa", None)
     if not empresa:
         return JsonResponse({"ok": False})
@@ -150,8 +153,6 @@ def ajax_dashboard_resumen(request):
 
 @login_required
 def ajax_dashboard_calendario(request):
-
-
     empresa = getattr(request.user.profile, "empresa", None)
     if not empresa:
         return JsonResponse({"ok": False})
@@ -177,7 +178,6 @@ def ajax_dashboard_calendario(request):
             .annotate(total=Coalesce(Sum("total"), Decimal("0")))
             .order_by("semana")
         )
-        from django.db.models import DateField
         cobros_qs = (
             FacturaVentaItem.objects
             .filter(factura__empresa=empresa)
@@ -207,7 +207,6 @@ def ajax_dashboard_calendario(request):
         .annotate(total=Coalesce(Sum("total"), Decimal("0")))
         .order_by("mes")
     )
-    from django.db.models import DateField
     cobros_qs = (
         FacturaVentaItem.objects
         .filter(factura__empresa=empresa)
@@ -238,13 +237,6 @@ def ajax_dashboard_calendario(request):
 
 @login_required
 def ajax_dashboard_vencimientos(request):
-    import datetime
-    from decimal import Decimal
-    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
-    from django.db.models.functions import Coalesce
-    from gestion_agro.models import FacturaCompra
-    from administracion.models import FacturaVenta
-
     empresa = getattr(request.user.profile, "empresa", None)
     if not empresa:
         return JsonResponse({"ok": False})
@@ -316,22 +308,8 @@ def login_page(request):
     return render(request, 'login.html', {'form': form})
 
 
-
 @login_required
 def index(request):
-    import json
-    import datetime
-    from decimal import Decimal
-    from django.db.models import Sum
-    from django.db.models.functions import Coalesce
-    from django.utils import timezone
-    from gestion_agro.models import (
-        CicloAgricola, ActividadProductiva, ActividadInsumo,
-        MovimientoStock, Producto, FacturaCompra, Campo,
-    )
-    from administracion.models import AplicacionPago
-    from mapas.models import IndiceVegetacion
-
     empresa = getattr(request.user.profile, "empresa", None)
     if not empresa:
         return render(request, "index.html", {})
@@ -522,14 +500,12 @@ def vista_registro(request):
         if form.is_valid():
             cd = form.cleaned_data
             try:
-                from agro.models import Moneda
                 moneda = Moneda.objects.first()
                 if not moneda:
                     messages.error(request, _("El sistema no tiene monedas configuradas. Contacte al administrador."))
                     return render(request, "registro.html", {"form": form})
 
                 with transaction.atomic():
-                    from agro.models import Empresa
                     empresa = Empresa.objects.create(
                         nombre=cd["empresa_nombre"],
                         razon_social=cd["empresa_razon_social"],
@@ -537,7 +513,6 @@ def vista_registro(request):
                         moneda=moneda,
                         status="O",
                     )
-                    from django.contrib.auth.models import User
                     user = User.objects.create_user(
                         username=cd["username"],
                         email=cd["email"],
@@ -563,9 +538,7 @@ def vista_cuenta_suspendida(request):
 
 
 @login_required
-@login_required
 def vista_parametros_actividades(request):
-    from gestion_agro.models import TipoActividad, SubTipoActividad
     empresa = request.user.profile.empresa
 
     if request.method == "POST":
@@ -606,7 +579,7 @@ def vista_parametros_actividades(request):
             empresa.valor_maquina = float(v_maq)
         empresa.save()
 
-        messages.success(request, "Parâmetros atualizados.")
+        messages.success(request, _("Parámetros actualizados."))
         return redirect("vista_parametros_actividades")
 
     tipos = TipoActividad.objects.prefetch_related("subtipos").order_by("nombre")

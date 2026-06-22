@@ -1,12 +1,11 @@
-from django import forms
 from decimal import Decimal
 
-from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy as _
-from django.forms import inlineformset_factory, formset_factory, BaseFormSet, BaseInlineFormSet
+from django import forms
+from django.forms import ModelForm, inlineformset_factory, formset_factory, BaseInlineFormSet
 from django.utils import timezone
-from django.forms import ModelForm
-from agro.models import Ciudad, Unidad
+from django.utils.translation import gettext_lazy as _
+
+from agro.models import Unidad
 from gestion_agro.funciones_aux import convertir_unidad
 from gestion_agro.models import (AreaCampo, Campo, Campana, CicloAgricola, Cultivo, ActividadProductiva, TipoActividad, SubTipoActividad,
                                 ActividadInsumo, CamposVistoria, CamposCosecha, CamposInspeccion, Producto, ProductoSemilla,
@@ -66,11 +65,6 @@ class CultivoForm(BaseForm):
             cultivo.save()
 
         return cultivo
-
-class CultivoEditarForm(BaseForm):
-    class Meta:
-        model = Cultivo
-        fields = ["nombre"]
 
 class CultivoProductoFinalForm(BaseSimpleForm):
     codigo = forms.CharField(

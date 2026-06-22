@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import threading
 import zipfile
@@ -16,13 +17,15 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_POST
 
 from agro.models import Empresa
-from gestion_agro.models import Campo, AreaCampo
+from gestion_agro.models import Campo, AreaCampo, CicloAgricola
 from mapas.models import CapturaSatelite, IndiceVegetacion, ArchivoAnalitico, MedicionCampo, VariableAnalitica
 from mapas.forms import CapaMapaForm, LluviaForm
 from mapas.aux_shapefile import procesar_shapefile_a_geojson, procesar_kml_a_geojson
 from mapas.aux_geo import geojson_union_areas, extraer_bbox
-from mapas.aux_sentenial import _get_sh_config, procesar_campo
+from mapas.aux_sentenial import _get_sh_config, procesar_campo, buscar_fechas_historicas, _bbox_from_geojson
 from mapas.aux_raster import colorear_geojson, rasterizar_a_png, buscar_feature_en_punto, calcular_bbox
+
+logger = logging.getLogger(__name__)
 
 
 # =====================================================
@@ -199,7 +202,6 @@ def vista_ndvi_procesar(request, campo_id):
 @login_required
 def ajax_ndvi_data(request, campo_id):
     """Datos de capturas NDVI de un campo: capturas + bbox + geojson."""
-    import json as _json
     empresa = request.user.profile.empresa
     campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
 
@@ -236,7 +238,7 @@ def ajax_ndvi_data(request, campo_id):
     geojson_str = geojson_union_areas(campo) or campo.contorno
     if geojson_str:
         try:
-            gj = _json.loads(geojson_str) if isinstance(geojson_str, str) else geojson_str
+            gj = json.loads(geojson_str) if isinstance(geojson_str, str) else geojson_str
             area_geojson = gj
             coords = []
             def _collect(obj):
@@ -287,8 +289,6 @@ def ajax_fetch_ndvi_historico(request, campo_id):
         config = _get_sh_config()
     except RuntimeError as e:
         return JsonResponse({"ok": False, "error": str(e)}, status=400)
-
-    from mapas.aux_sentenial import buscar_fechas_historicas, _bbox_from_geojson
 
     geojson_str = geojson_union_areas(campo) or campo.contorno
     bbox        = _bbox_from_geojson(geojson_str)
@@ -662,37 +662,29 @@ def ajax_suelo_listar(request, campo_id):
 @login_required
 @require_POST
 def ajax_suelo_cargar(request, campo_id):
-    print(f"\n>>> SUELO CARGAR campo_id={campo_id} FILES={list(request.FILES.keys())} POST-area={request.POST.get('area')}")
     empresa = request.user.profile.empresa
     campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
-    print(f"    campo={campo.nombre}")
 
     area_id = request.POST.get("area")
     area    = None
     if area_id:
         area = AreaCampo.objects.filter(id=area_id, campo=campo).first()
-        print(f"    area={area}")
 
     geojson_str  = None
     stats        = {}
 
     # ── Modo shapefile suelto (.shp + .shx + .dbf) ──────────────────
     if request.FILES.get("shp"):
-        print("    modo: 3 archivos sueltos")
         partes = {}
         for ext in ("shp", "shx", "dbf"):
             f = request.FILES.get(ext)
             if not f:
-                print(f"    ERROR: falta .{ext}")
                 return JsonResponse({"ok": False, "error": f"Falta el archivo .{ext}"}, status=400)
             partes[ext] = f
-            print(f"    .{ext} = {f.name} ({f.size} bytes)")
 
         try:
             geojson_str, stats = procesar_shapefile_a_geojson(partes)
-            print(f"    shapefile OK → {stats.get('num_features')} features  bbox={stats.get('bbox_min_lng')},{stats.get('bbox_min_lat')},{stats.get('bbox_max_lng')},{stats.get('bbox_max_lat')}")
         except Exception as e:
-            print(f"    ERROR procesar_shapefile: {e}")
             return JsonResponse({"ok": False, "error": f"Error procesando shapefile: {e}"}, status=400)
 
         buf  = _io.BytesIO()
@@ -709,27 +701,21 @@ def ajax_suelo_cargar(request, campo_id):
     else:
         archivo = request.FILES.get("archivo")
         if not archivo:
-            print("    ERROR: no se recibió archivo")
             return JsonResponse({"ok": False, "error": "No se recibió ningún archivo"}, status=400)
 
         nombre = archivo.name.lower()
-        print(f"    modo: archivo único → {archivo.name} ({archivo.size} bytes)")
 
         if nombre.endswith(".zip"):
             tipo_archivo = "shapefile"
             try:
                 contenido = archivo.read()
-                print(f"    ZIP leído ({len(contenido)} bytes)")
                 with zipfile.ZipFile(_io.BytesIO(contenido)) as z:
                     nombres_zip = z.namelist()
-                    print(f"    ZIP contenido: {nombres_zip}")
                     shp_n = next((n for n in nombres_zip if n.lower().endswith(".shp")), None)
                     shx_n = next((n for n in nombres_zip if n.lower().endswith(".shx")), None)
                     dbf_n = next((n for n in nombres_zip if n.lower().endswith(".dbf")), None)
-                    print(f"    shp={shp_n}  shx={shx_n}  dbf={dbf_n}")
                     if not all([shp_n, shx_n, dbf_n]):
                         faltantes = [f".{e}" for e, n in [("shp", shp_n), ("shx", shx_n), ("dbf", dbf_n)] if not n]
-                        print(f"    ERROR faltan: {faltantes}")
                         return JsonResponse({"ok": False, "error": f"El ZIP debe contener: {', '.join(faltantes)}"}, status=400)
 
                     def _buf(name):
@@ -742,13 +728,10 @@ def ajax_suelo_cargar(request, campo_id):
                     geojson_str, stats = procesar_shapefile_a_geojson(
                         {"shp": _buf(shp_n), "shx": _buf(shx_n), "dbf": _buf(dbf_n)}
                     )
-                    print(f"    ZIP shapefile OK → {stats.get('num_features')} features  bbox={stats.get('bbox_min_lng')},{stats.get('bbox_min_lat')},{stats.get('bbox_max_lng')},{stats.get('bbox_max_lat')}")
                 archivo.seek(0)
             except zipfile.BadZipFile:
-                print("    ERROR: ZIP dañado")
                 return JsonResponse({"ok": False, "error": "El archivo ZIP está dañado"}, status=400)
             except Exception as e:
-                print(f"    ERROR procesando ZIP: {e}")
                 return JsonResponse({"ok": False, "error": f"Error procesando shapefile: {e}"}, status=400)
 
         elif nombre.endswith(".kml") or nombre.endswith(".kmz"):
@@ -787,18 +770,15 @@ def ajax_suelo_cargar(request, campo_id):
             stats.get("bbox_max_lng"), stats.get("bbox_max_lat"),
         ]
         gj = json.loads(geojson_str)
-        print(f"    rasterizando {len(gj.get('features',[]))} features...")
         try:
             gj, leyenda, estadisticas = colorear_geojson(gj)
             png_bytes = rasterizar_a_png(gj, bbox_list)
             base_name = archivo_final.name.rsplit(".", 1)[0] if hasattr(archivo_final, "name") else "suelo"
             png_name  = f"{base_name}.png"
-            print(f"    PNG generado: {len(png_bytes)} bytes")
         except Exception as e:
-            print(f"    ERROR rasterizando: {e}")
+            logger.warning("ajax_suelo_cargar: error rasterizando campo=%s: %s", campo_id, e)
             png_bytes = None
 
-    print(f"    guardando ArchivoAnalitico tipo={tipo_archivo} estado={'procesado' if geojson_str else 'pendiente'}")
     registro = ArchivoAnalitico.objects.create(
         campo=campo,
         area_campo=area,
@@ -814,19 +794,13 @@ def ajax_suelo_cargar(request, campo_id):
     if geojson_str and png_bytes and png_name:
         registro.imagen_png.save(png_name, ContentFile(png_bytes), save=True)
 
-    print(f"    guardado id={registro.id} path={registro.archivo.name}")
-
     respuesta = {"ok": True, "id": registro.id, "msg": "Archivo procesado correctamente."}
     if geojson_str and registro.imagen_png:
         respuesta["imagen_url"]   = registro.imagen_png.url
         respuesta["bbox"]         = bbox_list
         respuesta["leyenda"]      = leyenda
         respuesta["estadisticas"] = estadisticas
-        print(f"    imagen_url={respuesta['imagen_url']}  bbox={bbox_list}")
-    else:
-        print("    sin imagen (CSV o error de parseo/rasterización)")
 
-    print(f"<<< SUELO CARGAR ok={respuesta['ok']}\n")
     return JsonResponse(respuesta)
 
 
@@ -911,31 +885,27 @@ def ajax_suelo_clic(request, archivo_id):
 
 def _regenerar_png_bg(archivo_id):
     from django.db import connection
-    print(f"\n>>> REGEN_PNG id={archivo_id}")
     try:
         a = ArchivoAnalitico.objects.get(id=archivo_id)
         a.estado = "pendiente"
         a.save(update_fields=["estado"])
 
         features, bbox = _leer_features_archivo(a)
-        print(f"    features={len(features)}  bbox={bbox}")
         if not features:
-            print("    ERROR: sin features")
+            logger.warning("_regenerar_png_bg: sin features para archivo_id=%s", archivo_id)
             ArchivoAnalitico.objects.filter(id=archivo_id).update(estado="error")
             return
 
         if not bbox or any(v is None for v in bbox):
             bbox = calcular_bbox(features)
         if not bbox:
-            print("    ERROR: no se pudo calcular bbox")
+            logger.warning("_regenerar_png_bg: no se pudo calcular bbox para archivo_id=%s", archivo_id)
             ArchivoAnalitico.objects.filter(id=archivo_id).update(estado="error")
             return
 
         gj = {"type": "FeatureCollection", "features": features}
         gj_col, leyenda, estadisticas = colorear_geojson(gj)
-        print(f"    colorizado OK  leyenda={len(leyenda)} items")
         png_bytes = rasterizar_a_png(gj_col, bbox)
-        print(f"    PNG generado: {len(png_bytes)} bytes")
 
         a.refresh_from_db()
         a.imagen_png.save(f"suelo_{archivo_id}.png", ContentFile(png_bytes), save=False)
@@ -944,10 +914,8 @@ def _regenerar_png_bg(archivo_id):
         a.estadisticas = estadisticas
         a.estado       = "procesado"
         a.save()
-        print(f"<<< REGEN_PNG id={archivo_id} OK")
-    except Exception as e:
-        print(f"<<< REGEN_PNG id={archivo_id} ERROR: {e}")
-        import traceback; traceback.print_exc()
+    except Exception:
+        logger.exception("_regenerar_png_bg: error procesando archivo_id=%s", archivo_id)
         ArchivoAnalitico.objects.filter(id=archivo_id).update(estado="error")
     finally:
         connection.close()
@@ -1334,7 +1302,7 @@ def ajax_cosecha_cargar(request, campo_id):
             base_name = archivo_final.name.rsplit(".", 1)[0] if hasattr(archivo_final, "name") else "cosecha"
             png_name  = f"{base_name}.png"
         except Exception as e:
-            print(f"    ERROR rasterizando cosecha: {e}")
+            logger.warning("ajax_cosecha_cargar: error rasterizando campo=%s: %s", campo_id, e)
             png_bytes = None
 
     registro = ArchivoAnalitico.objects.create(
@@ -1430,7 +1398,7 @@ def ajax_cosecha_simular(request, campo_id):
         png_bytes = rasterizar_a_png(gj_col, bbox_list)
         png_ok    = True
     except Exception as e:
-        print(f"    ERROR rasterizando simulacion: {e}")
+        logger.warning("ajax_cosecha_simular: error rasterizando campo=%s: %s", campo_id, e)
         png_ok    = False
         leyenda   = []
         estadisticas = {}
@@ -1638,7 +1606,7 @@ def ajax_comparacion_punto(request, campo_id):
             }
 
         except Exception as e:
-            print(f"    ajax_comparacion_punto: error en archivo {a.id}: {e}")
+            logger.warning("ajax_comparacion_punto: error en archivo %s: %s", a.id, e)
             continue
 
     return JsonResponse({
@@ -1658,8 +1626,6 @@ def ajax_analisis_punto(request, campo_id):
     - Variables analíticas con valor en el punto, máximo de la capa y diferencia
     - Separadas por tipo (suelo, rendimiento, satélite)
     """
-    from gestion_agro.models import CicloAgricola
-
     empresa = request.user.profile.empresa
     campo   = get_object_or_404(Campo, id=campo_id, empresa=empresa)
 
@@ -1698,22 +1664,18 @@ def ajax_analisis_punto(request, campo_id):
 
     variables = []
     rendimiento = {"punto": None, "maximo": None, "minimo": None, "promedio": None}
-    _debug = []
 
     for a in archivos:
-        _dbg = {"id": a.id, "archivo": a.archivo.name, "tipo": a.tipo_archivo, "estado": a.estado}
         try:
             if a.tipo_archivo == "shapefile":
                 contenido = a.archivo.read()
-                _dbg["bytes"] = len(contenido)
                 with zipfile.ZipFile(_io.BytesIO(contenido)) as z:
                     nombres = z.namelist()
                     shp_n = next((n for n in nombres if n.lower().endswith(".shp")), None)
                     shx_n = next((n for n in nombres if n.lower().endswith(".shx")), None)
                     dbf_n = next((n for n in nombres if n.lower().endswith(".dbf")), None)
                     if not all([shp_n, shx_n, dbf_n]):
-                        _dbg["error"] = "falta shp/shx/dbf"
-                        _debug.append(_dbg); continue
+                        continue
                     def _buf(name):
                         data = z.read(name)
                         b = _io.BytesIO(data); b.name = name
@@ -1723,25 +1685,13 @@ def ajax_analisis_punto(request, campo_id):
                     )
             elif a.tipo_archivo == "geojson":
                 geojson_str = a.archivo.read().decode("utf-8")
-                _dbg["bytes"] = len(geojson_str)
             else:
-                _dbg["error"] = f"tipo no soportado: {a.tipo_archivo}"
-                _debug.append(_dbg); continue
+                continue
 
             gj    = json.loads(geojson_str)
-            n_feat = len(gj.get("features", []))
-            _dbg["features"] = n_feat
-            # Sample first feature coords for debug
-            ff = gj.get("features", [{}])[0] if n_feat else {}
-            ff_geom = ff.get("geometry", {})
-            ff_coords = ff_geom.get("coordinates", [])
-            if ff_coords:
-                _dbg["sample_coord"] = str(ff_coords[0][0] if ff_geom.get("type") == "Polygon" else ff_coords)[:80]
-
             props = buscar_feature_en_punto(gj, lng, lat)
-            _dbg["found"] = props is not None
             if props is None:
-                _debug.append(_dbg); continue
+                continue
 
             valor = None
             for key in ("v", "valor", "rendimiento", "value"):
@@ -1751,17 +1701,14 @@ def ajax_analisis_punto(request, campo_id):
                 for v in props.values():
                     if isinstance(v, (int, float)):
                         valor = v; break
-            _dbg["valor"] = valor
             if valor is None:
-                _dbg["error"] = "sin valor numérico en props"
-                _debug.append(_dbg); continue
+                continue
 
             stats    = a.estadisticas or {}
             val_max  = stats.get("max")
             val_min  = stats.get("min")
             val_prom = stats.get("prom")
             rng_max  = a.variable.rango_maximo if a.variable else None
-            rng_min  = a.variable.rango_minimo if a.variable else None
 
             referencia = rng_max or val_max
             diferencia = round(valor - referencia, 3) if referencia is not None else None
@@ -1769,9 +1716,6 @@ def ajax_analisis_punto(request, campo_id):
             tipo = a.variable.tipo if a.variable else "otro"
             nombre   = a.variable.nombre if a.variable else a.archivo.name.split("/")[-1]
             unidad   = a.variable.unidad if a.variable else ""
-
-            _dbg["tipo_variable"] = tipo; _dbg["nombre"] = nombre
-            _debug.append(_dbg)
 
             if tipo == "cosecha":
                 rendimiento = {
@@ -1792,15 +1736,13 @@ def ajax_analisis_punto(request, campo_id):
                 })
 
         except Exception as e:
-            _dbg["error"] = f"{type(e).__name__}: {e}"
-            _debug.append(_dbg)
+            logger.warning("ajax_analisis_punto: error en archivo %s: %s", a.id, e)
             continue
 
     # ── Chuvas: registros manuales del campo ────────────────────
     chuvas = None
     try:
-        import datetime as _dt
-        hoy = _dt.date.today()
+        hoy = date.today()
         ano_actual = hoy.year
         lluvia_var = VariableAnalitica.objects.filter(tipo="clima").first()
         if lluvia_var:
@@ -1844,7 +1786,6 @@ def ajax_analisis_punto(request, campo_id):
         "rendimiento": rendimiento,
         "variables":   variables,
         "chuvas":      chuvas,
-        "_debug":      _debug,
     })
 
 

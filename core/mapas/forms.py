@@ -1,15 +1,9 @@
 from django import forms
-from decimal import Decimal
-
-from django.utils.translation import gettext as _
-from django.utils.translation import gettext_lazy as _
-from django.forms import inlineformset_factory, formset_factory, BaseFormSet, BaseInlineFormSet
-from django.utils import timezone
 from django.forms import ModelForm
-from agro.models import Ciudad, Unidad
-from gestion_agro.funciones_aux import convertir_unidad
-from gestion_agro.models import (AreaCampo, Campo, CicloAgricola, )
-from mapas.models import MedicionCampo, VariableAnalitica
+from django.utils.translation import gettext_lazy as _
+
+from gestion_agro.models import AreaCampo, Campo, CicloAgricola
+from mapas.models import MedicionCampo
 
 
 class BaseForm(ModelForm):
@@ -35,13 +29,9 @@ class CapaMapaForm(BaseSimpleForm):
     archivo = forms.FileField(label=_("Archivo"), widget=forms.FileInput(attrs={"accept":".zip,.shp,.dbf,.shx,.prj,.kml,.kmz,.geojson,.json"}))
 
     def __init__(self, *args, **kwargs):
-
         empresa = kwargs.pop("empresa", None)
-
         super().__init__(*args, **kwargs)
-
         if empresa:
-
             self.fields["campo"].queryset = Campo.objects.filter(empresa=empresa).order_by("nombre")
 
 

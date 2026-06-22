@@ -22,10 +22,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-#slkw6b*t!0im%(ohw+@&o7u!*18w%6l654-9rdaln@y_j_6on'
+# Configurable vía variable de entorno DJANGO_SECRET_KEY (ej. en PythonAnywhere)
+# sin tocar este archivo. El valor de respaldo es el que ya estaba hardcodeado,
+# para no romper el deploy actual — se recomienda definir la variable de entorno
+# con una clave nueva y rotar esta cuanto antes.
+SECRET_KEY = os.environ.get(
+    'DJANGO_SECRET_KEY',
+    'django-insecure-#slkw6b*t!0im%(ohw+@&o7u!*18w%6l654-9rdaln@y_j_6on',
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Configurable vía DJANGO_DEBUG=False sin tocar este archivo. Se mantiene True
+# por defecto para no cambiar el comportamiento actual del deploy en producción;
+# antes de poner DJANGO_DEBUG=False ahí, agregar templates 404.html/500.html y
+# un LOGGING básico, porque sin eso los errores quedarían sin traza visible.
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['www.agroinnova.agr.br', 'agroinnova.agr.br', 'www.innobrar.com.br', 'innobrar.com.br', 'Innobrar.pythonanywhere.com', '127.0.0.1', 'localhost']
 
@@ -43,8 +54,6 @@ INSTALLED_APPS = [
     'gestion_agro',
     'mapas',
     'administracion',
-
-
 ]
 
 MIDDLEWARE = [
@@ -86,19 +95,17 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-import os as _os
-
-_DB_ENGINE = _os.environ.get('DB_ENGINE', 'sqlite3')
+_DB_ENGINE = os.environ.get('DB_ENGINE', 'sqlite3')
 
 if _DB_ENGINE == 'mysql':
     DATABASES = {
         'default': {
             'ENGINE':   'django.db.backends.mysql',
-            'NAME':     _os.environ['DB_NAME'],
-            'USER':     _os.environ['DB_USER'],
-            'PASSWORD': _os.environ['DB_PASSWORD'],
-            'HOST':     _os.environ.get('DB_HOST', 'localhost'),
-            'PORT':     _os.environ.get('DB_PORT', '3306'),
+            'NAME':     os.environ['DB_NAME'],
+            'USER':     os.environ['DB_USER'],
+            'PASSWORD': os.environ['DB_PASSWORD'],
+            'HOST':     os.environ.get('DB_HOST', 'localhost'),
+            'PORT':     os.environ.get('DB_PORT', '3306'),
             'OPTIONS':  {'charset': 'utf8mb4'},
         }
     }
@@ -133,8 +140,6 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'pt'
 
 TIME_ZONE = 'America/Sao_Paulo'
-
-USE_L10N = True
 
 USE_I18N = True
 
@@ -181,6 +186,14 @@ LOGOUT_REDIRECT_URL = "/login/"
 # Registro en https://dataspace.copernicus.eu/ (solo email, sin tarjeta)
 # Luego crear OAuth client en el dashboard y pegar los valores aquí
 # o usar variables de entorno: CDSE_CLIENT_ID / CDSE_CLIENT_SECRET
-import os
 CDSE_CLIENT_ID     = os.environ.get("CDSE_CLIENT_ID", "sh-7f292d5f-e56e-493f-8555-c8e3fb93e3af")
 CDSE_CLIENT_SECRET = os.environ.get("CDSE_CLIENT_SECRET", "lfTHEgJFwzOagijfscUkQw6zwYY2k1aK")
+
+# Los 0001_initial.py de las 4 apps ya registraron las PK como BigAutoField (así
+# se creó la base real), pero nada en el proyecto fijaba DEFAULT_AUTO_FIELD, así que
+# Django asumía AutoField como estado "actual" del modelo: esto generaba tanto el
+# warning models.W042 en 52 modelos como un drift real con el historial de migraciones
+# (makemigrations proponía AlterField de BigAutoField a AutoField en todas las tablas).
+# Fijarlo en BigAutoField alinea el estado actual con lo ya migrado: no agrega ninguna
+# migración nueva ni toca la base de datos.
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

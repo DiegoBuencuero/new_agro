@@ -121,7 +121,6 @@ textarea.form-control {
 </style>
     <script>
     function cambiarIdioma(code) {
-        console.log('cambiarIdioma:', code);
         var csrf = '';
         var match = document.cookie.match(/csrftoken=([^;]+)/);
         if (match) csrf = match[1];
@@ -148,7 +147,6 @@ textarea.form-control {
         document.body.appendChild(form);
         form.submit();
     }
-    console.log('cambiarIdioma definido OK');
     </script>
 <style>
 .navbar.default-layout {
@@ -368,7 +366,7 @@ textarea.form-control {
                   <li class="nav-item"><a class="nav-link" href="#">{% translate "Gastos" %}</a></li>
                   <li class="nav-item"><a class="nav-link" href="#">{% translate "Inversiones" %}</a></li>
                   <li class="nav-item"><a class="nav-link" href="#">{% translate "Costos por Ciclo" %}</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_resumo_economico' %}">{% translate "Resumo Econômico" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_resumo_economico' %}">{% translate "Resumen Económico" %}</a></li>
                 </ul>
               </div>
             </li>
@@ -402,7 +400,7 @@ textarea.form-control {
                 <ul class="nav flex-column sub-menu">
                   <li class="nav-item"><a class="nav-link" href="#">{% translate "Usuarios" %}</a></li>
                   <li class="nav-item"><a class="nav-link" href="{% url 'vista_configuracion' %}">{% translate "Parámetros del sistema" %}</a></li>
-                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_parametros_actividades' %}">{% translate "Custos por Atividade" %}</a></li>
+                  <li class="nav-item"><a class="nav-link" href="{% url 'vista_parametros_actividades' %}">{% translate "Costos por Actividad" %}</a></li>
                 </ul>
               </div>
             </li>

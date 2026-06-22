@@ -12,11 +12,11 @@ from administracion.views import (vista_registrar_venta, vista_lista_ventas, aja
     vista_comprobante_pago, vista_comprobante_recibo)
 from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_areas_por_campo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo, ajax_eliminar_insumo, ajax_editar_insumo, vista_resumo_economico, ajax_eliminar_actividad, vista_editar_ciclo, ajax_eliminar_ciclo,
 vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
-vista_lista_ciclos, vista_detalle_ciclo, vista_editar_ciclo, ajax_get_ciclos_data, vista_agregar_actividad,
+vista_lista_ciclos, vista_detalle_ciclo, ajax_get_ciclos_data, vista_agregar_actividad,
 ajax_subtipos_tipo_actividad, ajax_productos_por_actividad, ajax_valores_actividad, vista_lista_stock,
 vista_lista_facturas, vista_cargar_factura, vista_cargar_factura_manual, vista_procesar_pdf_factura,
 vista_revisar_factura, vista_confirmar_factura, ajax_unidades_conversion, vista_producto, vista_editar_producto,
-ajax_presentaciones_producto, ajax_crear_producto, ajax_crear_presentacion, ajax_crear_producto, vista_movimientos_producto,
+ajax_presentaciones_producto, ajax_crear_producto, ajax_crear_presentacion, vista_movimientos_producto,
 vista_crear_cultivo, vista_editar_cultivo, vista_crear_deposito, vista_editar_deposito, ajax_transferir_stock
 )
 
@@ -65,7 +65,7 @@ urlpatterns = [
 
     path("stock/", vista_lista_stock, name="vista_lista_stock"),
     path("stock/producto/<int:producto_id>/movimientos/", vista_movimientos_producto, name="vista_movimientos_producto"),
-   
+
     path('facturas/', vista_lista_facturas, name='vista_lista_facturas'),
     path('facturas/add/', vista_cargar_factura, name='vista_cargar_factura'),
     path('facturas/add-manual/', vista_cargar_factura_manual, name='vista_cargar_factura_manual'),
@@ -82,7 +82,6 @@ urlpatterns = [
     path("ajax/insumo/<int:insumo_id>/editar/",   ajax_editar_insumo,     name="ajax_editar_insumo"),
     path("resultados/resumo/",                      vista_resumo_economico,  name="vista_resumo_economico"),
     path("ajax/actividad/<int:actividad_id>/eliminar/", ajax_eliminar_actividad, name="ajax_eliminar_actividad"),
-  
 
     path('mapas/', include('mapas.urls')),
 

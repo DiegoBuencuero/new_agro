@@ -1,10 +1,11 @@
 from django import forms
-from django.utils.translation import gettext as _
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
 from django.contrib.auth.models import User
-from django.forms import ModelForm
-from agro.models import Pais, Profile, Empresa
 from django.core.exceptions import ValidationError
+from django.forms import ModelForm
+from django.utils.translation import gettext_lazy as _
+
+from agro.models import Empresa, Unidad
+from gestion_agro.models import Deposito
 
 
 class BaseForm(ModelForm):
@@ -71,8 +72,6 @@ class ConfiguracionEmpresaForm(ModelForm):
 
     def __init__(self, empresa, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from gestion_agro.models import Deposito
-        from agro.models import Unidad
         depositos = Deposito.objects.filter(empresa=empresa)
         self.fields["deposito_insumos_default"].queryset = depositos
         self.fields["deposito_producto_final_default"].queryset = depositos

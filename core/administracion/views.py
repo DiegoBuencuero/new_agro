@@ -1,21 +1,24 @@
-from decimal import Decimal, InvalidOperation
-from django.shortcuts import render
-from django.template.loader import render_to_string
-from django.contrib.auth.decorators import login_required
-from django.utils.translation import gettext_lazy as _
-from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
-from django.db import transaction
-from django.db.models import Sum
-from django.db.models.functions import Coalesce
-from django.utils import timezone
+import datetime
+from decimal import Decimal
 
-from decimal import Decimal as _Decimal
 from django.contrib import messages
-from django.shortcuts import redirect
-from gestion_agro.models import FacturaCompra, Proveedor, Producto, MovimientoStock, Cliente
-from .models import Pago, AplicacionPago, FacturaVenta, FacturaVentaItem, Recibo, AplicacionRecibo
-from .forms import FiltroFacturasForm, AplicacionPagoForm, FacturaVentaForm, FacturaVentaItemForm, AplicacionReciboForm, FacturaVentaManualForm, FacturaVentaManualItemFormSet
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.db.models import DateField, Max, Sum
+from django.db.models.functions import Coalesce
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+from gestion_agro.funciones_aux import convertir_unidad
+from gestion_agro.models import Cliente, Deposito, FacturaCompra, MovimientoStock, Producto, Proveedor
+from .forms import (
+    AplicacionPagoForm, AplicacionReciboForm, FacturaVentaForm, FacturaVentaItemForm,
+    FacturaVentaManualForm, FacturaVentaManualItemFormSet, FiltroFacturasForm,
+)
+from .models import AplicacionPago, AplicacionRecibo, FacturaVenta, FacturaVentaItem, Pago, Recibo
 
 
 @login_required
@@ -30,8 +33,6 @@ def vista_registrar_venta(request):
     except Producto.DoesNotExist:
         messages.error(request, _("Producto no encontrado."))
         return redirect("vista_lista_stock")
-
-    is_ajax = request.headers.get("x-requested-with") == "XMLHttpRequest"
 
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": _("Método no permitido.")}, status=405)
@@ -54,18 +55,16 @@ def vista_registrar_venta(request):
     um              = item_form.cleaned_data.get("um") or producto.unidad_base
 
     # — conversión de unidad —
-    from gestion_agro.funciones_aux import convertir_unidad
     try:
         cantidad_base = convertir_unidad(cantidad, um, producto.unidad_base)
     except ValueError as e:
         return JsonResponse({"ok": False, "error": str(e)}, status=400)
 
     # — stock disponible para ese producto + destino (total, sin filtrar por depósito) —
-    from decimal import Decimal as _D
     unidad_base = producto.unidad_base
     movs = MovimientoStock.objects.filter(producto=producto).select_related("um", "cosecha")
-    ing = _D("0")
-    con = _D("0")
+    ing = Decimal("0")
+    con = Decimal("0")
     for mov in movs:
         cant = convertir_unidad(mov.cantidad, mov.um, unidad_base)
         if mov.tipo == "ENTRADA":
@@ -120,9 +119,6 @@ def vista_registrar_venta(request):
 def ajax_registrar_cobro(request):
     if request.method != "POST":
         return JsonResponse({"ok": False, "error": "Método no permitido."}, status=405)
-
-    import datetime
-    from django.db.models import Max
 
     empresa      = request.user.profile.empresa
     cliente_id   = request.POST.get("cliente_id")
@@ -198,7 +194,6 @@ def vista_lista_ventas(request):
     venc_desde  = request.GET.get("venc_desde")
     venc_hasta  = request.GET.get("venc_hasta")
 
-    from gestion_agro.models import Cliente
     clientes = Cliente.objects.filter(empresa=empresa).order_by("razon_social")
 
     if cliente_id:
@@ -208,9 +203,7 @@ def vista_lista_ventas(request):
     if fecha_hasta:
         qs = qs.filter(fecha__lte=fecha_hasta)
     if venc_desde or venc_hasta:
-        from django.db.models.functions import Coalesce as _Coalesce
-        from django.db.models import DateField as _DateField
-        qs = qs.annotate(_fecha_ef=_Coalesce("fecha_vencimiento", "fecha", output_field=_DateField()))
+        qs = qs.annotate(_fecha_ef=Coalesce("fecha_vencimiento", "fecha", output_field=DateField()))
         if venc_desde:
             qs = qs.filter(_fecha_ef__gte=venc_desde)
         if venc_hasta:
@@ -219,7 +212,7 @@ def vista_lista_ventas(request):
     facturas = []
     for f in qs:
         total = sum(i.cantidad * i.precio_unitario for i in f.items.all())
-        cobrado = f.aplicaciones.aggregate(t=Coalesce(Sum("monto_aplicado"), _Decimal("0")))["t"]
+        cobrado = f.aplicaciones.aggregate(t=Coalesce(Sum("monto_aplicado"), Decimal("0")))["t"]
         saldo = total - cobrado
         facturas.append({
             "obj":     f,
@@ -256,65 +249,40 @@ def ajax_indicadores_proveedor(request):
         )
 
     empresa = request.user.profile.empresa
-    proveedor_id = request.POST.get("proveedor_id" )
-    facturas = FacturaCompra.objects.filter( empresa=empresa )
+    proveedor_id = request.POST.get("proveedor_id")
 
-    # Si eligieron proveedor, filtrar
+    facturas = (
+        FacturaCompra.objects
+        .filter(empresa=empresa)
+        .annotate(pagado=Coalesce(Sum("aplicaciones__monto_aplicado"), Decimal("0")))
+        .order_by("fecha_vencimiento")
+    )
     if proveedor_id:
-        facturas = facturas.filter( proveedor_id=proveedor_id  )
-
-    facturas = facturas.annotate( pagado=Sum("aplicaciones__monto_aplicado" ))
+        facturas = facturas.filter(proveedor_id=proveedor_id)
 
     hoy = timezone.now().date()
-    total_facturas = facturas.count()
+    total_facturas = 0
     saldo_pendiente = Decimal("0")
-
-    for factura in facturas:
-
-        pagado = factura.pagado or Decimal("0")
-        deuda = factura.total - pagado
-        if deuda > 0:
-            saldo_pendiente += deuda
-
     vencidas = 0
-
-    for factura in facturas:
-
-        pagado = factura.pagado or Decimal("0")
-        deuda = factura.total - pagado
-
-        if deuda > 0:
-
-            if factura.fecha_vencimiento:
-
-                # Ya venció
-                if factura.fecha_vencimiento < hoy:
-                    vencidas += 1
-
     prox_venc = None
 
-    facturas_ordenadas = facturas.order_by("fecha_vencimiento")
-
-    for factura in facturas_ordenadas:
-        pagado = factura.pagado or Decimal("0")
-        deuda = factura.total - pagado
-
-        if deuda > 0:
-            if factura.fecha_vencimiento:
-                if factura.fecha_vencimiento >= hoy:
-                    prox_venc = factura.fecha_vencimiento
-                    break
+    for factura in facturas:
+        total_facturas += 1
+        deuda = factura.total - factura.pagado
+        if deuda <= 0:
+            continue
+        saldo_pendiente += deuda
+        if factura.fecha_vencimiento:
+            if factura.fecha_vencimiento < hoy:
+                vencidas += 1
+            elif prox_venc is None:
+                prox_venc = factura.fecha_vencimiento
 
     return JsonResponse({
         "total_facturas": total_facturas,
-        "saldo_pendiente": str(
-            saldo_pendiente
-        ),
+        "saldo_pendiente": str(saldo_pendiente),
         "vencidas": vencidas,
-        "prox_vencimiento":
-            prox_venc.strftime("%d/%m/%Y")
-            if prox_venc
-            else "—",
+        "prox_vencimiento": prox_venc.strftime("%d/%m/%Y") if prox_venc else "—",
     })
 
 
@@ -401,9 +369,6 @@ def ajax_buscar_facturas(request):
 def ajax_registrar_pago(request):
     if request.method != "POST":
         return JsonResponse({"error": "method not allowed"}, status=405)
-
-    import datetime
-    from django.db.models import Max
 
     empresa      = request.user.profile.empresa
     proveedor_id = request.POST.get("proveedor_id")
@@ -534,21 +499,17 @@ def ajax_info_producto_venta(request):
     except Producto.DoesNotExist:
         return JsonResponse({"ok": False}, status=404)
 
-    from django.db.models import Sum
-    from django.db.models.functions import Coalesce
-    from decimal import Decimal as D
-
     destinos_disponibles = []
     for valor, etiqueta in [("M", str(_("Semilla (M)"))), ("C", str(_("Consumo (C)")))]:
         entradas = (
             MovimientoStock.objects
             .filter(producto=producto, tipo="ENTRADA", destino=valor)
-            .aggregate(t=Coalesce(Sum("cantidad"), D("0")))["t"]
+            .aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
         )
         ventas = (
             MovimientoStock.objects
             .filter(producto=producto, tipo="VENTA", destino=valor)
-            .aggregate(t=Coalesce(Sum("cantidad"), D("0")))["t"]
+            .aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
         )
         stock = entradas - ventas
         if stock > 0:
@@ -579,11 +540,6 @@ def ajax_depositos_producto_destino(request):
     except Producto.DoesNotExist:
         return JsonResponse({"ok": False}, status=404)
 
-    from django.db.models import Sum
-    from django.db.models.functions import Coalesce
-    from decimal import Decimal as D
-    from gestion_agro.models import Deposito
-
     depositos_ids_entradas = (
         MovimientoStock.objects
         .filter(producto=producto, tipo="ENTRADA", destino=destino, deposito_destino__isnull=False)
@@ -596,12 +552,12 @@ def ajax_depositos_producto_destino(request):
         entradas = (
             MovimientoStock.objects
             .filter(producto=producto, tipo="ENTRADA", destino=destino, deposito_destino=dep)
-            .aggregate(t=Coalesce(Sum("cantidad"), D("0")))["t"]
+            .aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
         )
         ventas = (
             MovimientoStock.objects
             .filter(producto=producto, tipo="VENTA", destino=destino, deposito_origen=dep)
-            .aggregate(t=Coalesce(Sum("cantidad"), D("0")))["t"]
+            .aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
         )
         stock = entradas - ventas
         if stock > 0:
@@ -636,7 +592,6 @@ def _productos_venta(empresa):
 @login_required
 def vista_cargar_factura_venta_manual(request):
     empresa = request.user.profile.empresa
-    from gestion_agro.models import Deposito
 
     TEMPLATE = "tem_administracion/cargar_factura_venta.html"
 
@@ -686,11 +641,8 @@ def vista_cargar_factura_venta_manual(request):
                         qs_entradas = qs_entradas.filter(deposito_destino=deposito_orig)
                         qs_ventas   = qs_ventas.filter(deposito_origen=deposito_orig)
 
-                    from django.db.models import Sum as _Sum
-                    from django.db.models.functions import Coalesce as _Coalesce
-                    from decimal import Decimal as _D
-                    total_entradas = qs_entradas.aggregate(t=_Coalesce(_Sum("cantidad"), _D("0")))["t"]
-                    total_ventas   = qs_ventas.aggregate(t=_Coalesce(_Sum("cantidad"), _D("0")))["t"]
+                    total_entradas = qs_entradas.aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
+                    total_ventas   = qs_ventas.aggregate(t=Coalesce(Sum("cantidad"), Decimal("0")))["t"]
                     stock_disp     = total_entradas - total_ventas
 
                     if cantidad > stock_disp:
@@ -753,9 +705,8 @@ def vista_cargar_factura_venta_manual(request):
 
 @login_required
 def vista_cuenta_corriente_proveedor(request):
-    from datetime import date
     empresa = request.user.profile.empresa
-    hoy = date.today()
+    hoy = datetime.date.today()
 
     proveedores = Proveedor.objects.filter(empresa=empresa).order_by("razon_social")
 
@@ -848,7 +799,6 @@ def vista_cuenta_corriente_proveedor(request):
 
 
 @login_required
-@login_required
 def vista_comprobante_recibo(request, recibo_id):
     empresa = request.user.profile.empresa
     recibo = get_object_or_404(
@@ -860,9 +810,8 @@ def vista_comprobante_recibo(request, recibo_id):
 
 @login_required
 def vista_cuenta_corriente_cliente(request):
-    from datetime import date
     empresa = request.user.profile.empresa
-    hoy = date.today()
+    hoy = datetime.date.today()
 
     clientes = Cliente.objects.filter(empresa=empresa).order_by("razon_social")
 
