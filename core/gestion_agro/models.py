@@ -1,7 +1,11 @@
+import json
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+from shapely.geometry import shape
 
 from agro.models import Empresa, Unidad
 
@@ -222,8 +226,44 @@ class CicloAgricola(models.Model):
                 if not self.cultivo.productos_finales.filter(id=self.producto_final_id).exists():
                     errores["producto_final"] = _("El producto final no corresponde al cultivo seleccionado.")
 
+        if self.campo_id and self.campana_id and self.activa and self.superficie_ha is not None:
+            otros_ciclos = list(
+                CicloAgricola.objects.filter(
+                    campo_id=self.campo_id, campana_id=self.campana_id, activa=True
+                ).exclude(pk=self.pk)
+            )
+
+            suma_otros = sum((c.superficie_ha for c in otros_ciclos), Decimal("0"))
+            if suma_otros + self.superficie_ha > self.campo.superficie_ha:
+                errores["superficie_ha"] = _(
+                    "La superficie de los ciclos activos de esta campaña (%(suma)s ha) "
+                    "superaría la superficie productiva del campo (%(total)s ha)."
+                ) % {"suma": suma_otros + self.superficie_ha, "total": self.campo.superficie_ha}
+
+            geom_propia = self._geom_contorno()
+            if geom_propia is not None:
+                for otro in otros_ciclos:
+                    geom_otro = otro._geom_contorno()
+                    if geom_otro is None:
+                        continue
+                    if geom_propia.intersects(geom_otro) and geom_propia.intersection(geom_otro).area > 0:
+                        errores["contorno"] = _(
+                            "El área de este ciclo se solapa con el ciclo \"%(otro)s\", "
+                            "de la misma campaña."
+                        ) % {"otro": otro}
+                        break
+
         if errores:
             raise ValidationError(errores)
+
+    def _geom_contorno(self):
+        if not self.contorno:
+            return None
+        try:
+            geom = shape(json.loads(self.contorno))
+        except (ValueError, TypeError, AttributeError):
+            return None
+        return geom if geom.is_valid else None
 
     def save(self, *args, **kwargs):
         if self.cultivo and not self.producto_final_id and self.cultivo.producto_default:
