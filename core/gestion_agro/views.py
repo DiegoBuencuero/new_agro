@@ -28,7 +28,7 @@ from gestion_agro.forms import (
     CampoForm, CampanaForm, CicloForm, CicloFiltroForm, ProductoForm, ProductoModalForm, VariedadPMGForm, PresentacionProductoForm,
     ActividadProductivaForm, ActividadInsumoFormSet, CamposVistoriaForm, CamposCosechaForm, CamposInspeccionForm,
     StockFiltroForm, CultivoProductoFinalForm, FacturaCompraForm, FacturaCompraItemFormSet, FacturaManualItemFormSet,
-    CultivoForm, CultivoEditarForm, DepositoForm,
+    CultivoForm, CultivoEditarForm, DepositoForm, UnidadForm,
 )
 from gestion_agro.models import (
     Campo, AreaCampo, Campana, CicloAgricola, FaseAgricola, SubTipoActividad,
@@ -414,6 +414,28 @@ def ajax_crear_campana(request):
     return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
 
 @login_required
+def ajax_crear_unidad(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido"}, status=405)
+
+    form = UnidadForm(request.POST)
+
+    if form.is_valid():
+        unidad = form.save()
+        return JsonResponse({
+            "ok": True,
+            "message": "Unidad creada correctamente",
+            "unidad": {"id": unidad.id, "nombre": str(unidad)},
+        })
+
+    errores = []
+    for field, field_errors in form.errors.items():
+        for error in field_errors:
+            errores.append(str(field) + ": " + str(error))
+
+    return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
+
+@login_required
 def vista_producto(request):
     empresa = request.user.profile.empresa
     productos = Producto.objects.filter(empresa=empresa).select_related("categoria", "unidad_base")
@@ -657,6 +679,7 @@ def vista_crear_ciclo(request):
         "cultivo_form": CultivoForm(),
         "campana_form": CampanaForm(),
         "producto_final_form": CultivoProductoFinalForm(),
+        "unidad_form": UnidadForm(),
     }
     return render(request, "vista_crear_ciclo.html", context)
 

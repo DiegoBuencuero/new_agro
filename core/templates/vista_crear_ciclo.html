@@ -426,7 +426,14 @@
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">{% translate "Unidad base" %} *</label>
-                                {{ producto_final_form.unidad_base }}
+                                <div class="d-flex gap-2 align-items-start">
+                                    <div class="flex-grow-1">{{ producto_final_form.unidad_base }}</div>
+                                    <span title="{% translate 'Crear una unidad de medida nueva' %}">
+                                        <button type="button" id="btn-agregar-unidad" class="btn btn-outline-success">
+                                            <i class="mdi mdi-plus"></i>
+                                        </button>
+                                    </span>
+                                </div>
                             </div>
                         </div>
                         <div class="mt-3">
@@ -434,6 +441,51 @@
                             {{ producto_final_form.detalle }}
                         </div>
                         <div id="modalProductoFinalErrores" class="text-danger small mt-3"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                        <button type="submit" class="btn btn-success btn-sm"><i class="mdi mdi-check me-1"></i>{% translate "Guardar" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# ── Modal: nueva unidad de medida ── #}
+    <div class="modal fade" id="modalUnidad" tabindex="-1" aria-labelledby="modalUnidadLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="formUnidadModal" method="post">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalUnidadLabel">
+                            <i class="mdi mdi-plus-circle me-1"></i>{% translate "Nueva unidad de medida" %}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Cerrar' %}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">{% translate "Nombre" %} *</label>
+                                {{ unidad_form.nombre }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{% translate "Abreviatura" %} *</label>
+                                {{ unidad_form.abreviatura }}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">{% translate "Factor a unidad base" %} *</label>
+                            {{ unidad_form.factor_a_base }}
+                            <div class="ciclo-help">{% translate "Cuántas unidades base equivalen a 1 unidad de ésta." %}</div>
+                        </div>
+                        <div class="form-check mt-3">
+                            {{ unidad_form.requiere_pmg }}
+                            <label class="form-check-label" for="{{ unidad_form.requiere_pmg.id_for_label }}">
+                                {% translate "Requiere PMG" %}
+                            </label>
+                        </div>
+                        <div id="modalUnidadErrores" class="text-danger small mt-3"></div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
@@ -715,6 +767,34 @@ function guardarProductoFinalCiclo(){
     });
 }
 
+function guardarUnidad(){
+    $("#modalUnidadErrores").html("");
+    $.ajax({
+        url: "{% url 'ajax_crear_unidad' %}",
+        type: "POST",
+        data: $("#formUnidadModal").serialize(),
+        success(resp){
+            if(!resp.ok){
+                $("#modalUnidadErrores").html(escapeHtml(resp.error || "Error al guardar."));
+                return;
+            }
+            $("#id_unidad_base").append(
+                $("<option>").val(resp.unidad.id).text(resp.unidad.nombre)
+            ).val(resp.unidad.id);
+
+            bootstrap.Modal.getInstance(document.getElementById("modalUnidad")).hide();
+            $("#formUnidadModal")[0].reset();
+            mostrarToast(resp.message);
+
+            new bootstrap.Modal(document.getElementById("modalProductoFinal")).show();
+        },
+        error(xhr){
+            var msg = (xhr.responseJSON && xhr.responseJSON.error) || "Error al guardar.";
+            $("#modalUnidadErrores").html(escapeHtml(msg));
+        }
+    });
+}
+
 function mostrarMapa(campoId){
     $("#mapa-placeholder").addClass("d-none");
     $("#seccion-mapa").removeClass("d-none");
@@ -771,6 +851,16 @@ $(function(){
     $("#formProductoFinalModal").on("submit",function(e){
         e.preventDefault();
         guardarProductoFinalCiclo();
+    });
+
+    $("#formUnidadModal").on("submit",function(e){
+        e.preventDefault();
+        guardarUnidad();
+    });
+
+    $("#btn-agregar-unidad").on("click",function(){
+        bootstrap.Modal.getInstance(document.getElementById("modalProductoFinal")).hide();
+        new bootstrap.Modal(document.getElementById("modalUnidad")).show();
     });
 
     $("#id_tipo_area_0").on("change",function(){

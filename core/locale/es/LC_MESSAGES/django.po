@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: AgroInnova\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-22 22:04-0300\n"
+"POT-Creation-Date: 2026-06-22 22:32-0300\n"
 "PO-Revision-Date: 2026-05-07 00:00-0300\n"
 "Language-Team: Spanish\n"
 "Language: es\n"
@@ -64,8 +64,8 @@ msgid ""
 msgstr ""
 "Factura %(num)s: el monto $%(monto)s supera el saldo disponible $%(saldo)s"
 
-#: administracion/forms.py:186 gestion_agro/forms.py:406
-#: gestion_agro/forms.py:609 gestion_agro/forms.py:839
+#: administracion/forms.py:186 gestion_agro/forms.py:411
+#: gestion_agro/forms.py:614 gestion_agro/forms.py:844
 #: gestion_agro/models.py:405 gestion_agro/models.py:416
 #: gestion_agro/models.py:526
 #: templates/tem_administracion/cargar_factura_venta.html:106
@@ -93,8 +93,8 @@ msgstr "Destino"
 msgid "Depósito origen"
 msgstr "Depósito destino"
 
-#: administracion/forms.py:201 gestion_agro/forms.py:710
-#: gestion_agro/forms.py:855
+#: administracion/forms.py:201 gestion_agro/forms.py:715
+#: gestion_agro/forms.py:860
 #: templates/tem_administracion/cargar_factura_venta.html:109
 #: templates/tem_facturas/vista_cargar_factura_manual.html:158
 #: templates/vista_detalle_ciclo.html:276
@@ -103,8 +103,8 @@ msgstr "Depósito destino"
 msgid "Cantidad"
 msgstr "Cantidad"
 
-#: administracion/forms.py:206 gestion_agro/forms.py:725
-#: gestion_agro/forms.py:861
+#: administracion/forms.py:206 gestion_agro/forms.py:730
+#: gestion_agro/forms.py:866
 #: templates/tem_administracion/cargar_factura_venta.html:110
 #: templates/tem_facturas/vista_cargar_factura_manual.html:159
 #: templates/tem_facturas/vista_revisar_factura.html:154
@@ -199,14 +199,14 @@ msgid "Referencia"
 msgstr ""
 
 #: administracion/models.py:25 administracion/models.py:111
-#: gestion_agro/forms.py:327 gestion_agro/models.py:23
+#: gestion_agro/forms.py:332 gestion_agro/models.py:23
 #: gestion_agro/models.py:140 gestion_agro/models.py:372
 #: templates/tem_administracion/comprobante_pago.html:114
 #: templates/tem_administracion/comprobante_recibo.html:114
 #: templates/tem_administracion/lista_ventas.html:161
 #: templates/vista_agregar_actividad.html:137
 #: templates/vista_crear_campana.html:72 templates/vista_crear_campo.html:129
-#: templates/vista_crear_ciclo.html:392 templates/vista_detalle_ciclo.html:260
+#: templates/vista_crear_ciclo.html:393 templates/vista_detalle_ciclo.html:260
 msgid "Observaciones"
 msgstr "Observaciones"
 
@@ -319,7 +319,7 @@ msgstr "Edición de cultivo"
 msgid "Aplicaciones de recibo"
 msgstr "Aplicaciones de recibo"
 
-#: administracion/views.py:34 gestion_agro/views.py:439
+#: administracion/views.py:34 gestion_agro/views.py:461
 msgid "Producto no encontrado."
 msgstr "Producto no encontrado."
 
@@ -379,7 +379,7 @@ msgstr "Ítem %(n)s (%(p)s): stock insuficiente. Disponible: %(s)s %(u)s."
 msgid "Factura de venta cargada correctamente."
 msgstr "Factura cargada correctamente."
 
-#: administracion/views.py:698 gestion_agro/views.py:1742
+#: administracion/views.py:698 gestion_agro/views.py:1765
 msgid "Revisá los errores del formulario."
 msgstr "Revisá los errores del formulario."
 
@@ -498,23 +498,23 @@ msgstr "Unidad por defecto para cantidad aprobada en inspección (ej: semillas)"
 #: templates/tem_facturas/vista_cargar_factura_manual.html:346
 #: templates/tem_facturas/vista_cargar_factura_manual.html:411
 #: templates/vista_crear_campana.html:144 templates/vista_crear_campo.html:113
-#: templates/vista_crear_campo.html:193 templates/vista_crear_ciclo.html:355
-#: templates/vista_crear_cultivo.html:121
+#: templates/vista_crear_campo.html:193 templates/vista_crear_ciclo.html:356
+#: templates/vista_crear_ciclo.html:469 templates/vista_crear_cultivo.html:121
 #: templates/vista_crear_deposito.html:51
 #: templates/vista_crear_deposito.html:144 templates/vista_producto.html:80
 #: templates/vista_producto.html:177
 msgid "Nombre"
 msgstr "Nombre"
 
-#: agro/models.py:117
+#: agro/models.py:117 templates/vista_crear_ciclo.html:473
 msgid "Abreviatura"
 msgstr "Abreviatura"
 
-#: agro/models.py:118
+#: agro/models.py:118 templates/vista_crear_ciclo.html:478
 msgid "Factor a unidad base"
 msgstr "Factor a unidad base"
 
-#: agro/models.py:119
+#: agro/models.py:119 templates/vista_crear_ciclo.html:485
 msgid "Requiere PMG"
 msgstr "Requiere PMG"
 
@@ -526,8 +526,8 @@ msgstr ""
 "Si es verdadero, la conversión a kg usa el PMG de la variedad en lugar de un "
 "factor fijo."
 
-#: agro/models.py:124 gestion_agro/forms.py:408 gestion_agro/forms.py:535
-#: gestion_agro/forms.py:592 gestion_agro/forms.py:720
+#: agro/models.py:124 gestion_agro/forms.py:413 gestion_agro/forms.py:540
+#: gestion_agro/forms.py:597 gestion_agro/forms.py:725
 #: gestion_agro/models.py:343 mapas/models.py:9
 #: templates/tem_facturas/vista_cargar_factura_manual.html:419
 #: templates/tem_facturas/vista_revisar_factura.html:152
@@ -591,152 +591,152 @@ msgstr "Português"
 msgid "Español"
 msgstr "Español"
 
-#: gestion_agro/forms.py:71 gestion_agro/models.py:380
+#: gestion_agro/forms.py:76 gestion_agro/models.py:380
 #: gestion_agro/models.py:393
 #: templates/tem_facturas/vista_cargar_factura_manual.html:328
-#: templates/vista_crear_ciclo.html:423 templates/vista_crear_cultivo.html:218
+#: templates/vista_crear_ciclo.html:424 templates/vista_crear_cultivo.html:218
 #: templates/vista_movimientos_producto.html:39
 #: templates/vista_producto.html:72 templates/vista_producto.html:176
 msgid "Código"
 msgstr "Código"
 
-#: gestion_agro/forms.py:81 templates/vista_crear_ciclo.html:432
+#: gestion_agro/forms.py:86 templates/vista_crear_ciclo.html:440
 #: templates/vista_crear_cultivo.html:228
 msgid "Detalle"
 msgstr "Detalle"
 
-#: gestion_agro/forms.py:91 gestion_agro/models.py:396
+#: gestion_agro/forms.py:96 gestion_agro/models.py:396
 #: templates/tem_facturas/vista_cargar_factura_manual.html:351
-#: templates/vista_crear_ciclo.html:427 templates/vista_crear_cultivo.html:222
+#: templates/vista_crear_ciclo.html:428 templates/vista_crear_cultivo.html:222
 #: templates/vista_movimientos_producto.html:47
 #: templates/vista_producto.html:96 templates/vista_producto.html:179
 msgid "Unidad base"
 msgstr "Unidad base"
 
-#: gestion_agro/forms.py:170
+#: gestion_agro/forms.py:175
 msgid "PMG (g) — Peso de mil granos"
 msgstr "PMG (g) — Peso de mil granos"
 
-#: gestion_agro/forms.py:216 templates/vista_crear_ciclo.html:194
+#: gestion_agro/forms.py:221 templates/vista_crear_ciclo.html:194
 msgid "Área del ciclo"
 msgstr "Área del ciclo"
 
-#: gestion_agro/forms.py:218 templates/temp_mapas/vista_mapas.html:635
+#: gestion_agro/forms.py:223 templates/temp_mapas/vista_mapas.html:635
 msgid "Todo el campo"
 msgstr "Todo el campo"
 
-#: gestion_agro/forms.py:219
+#: gestion_agro/forms.py:224
 msgid "Usar área existente"
 msgstr "Usar área existente"
 
-#: gestion_agro/forms.py:220
+#: gestion_agro/forms.py:225
 msgid "Dibujar nueva área"
 msgstr "Dibujar nueva área"
 
-#: gestion_agro/forms.py:262
+#: gestion_agro/forms.py:267
 msgid "Debe seleccionar un área."
 msgstr "Debe seleccionar un área."
 
-#: gestion_agro/forms.py:267
+#: gestion_agro/forms.py:272
 msgid "Debe dibujar un área."
 msgstr "Debe dibujar un área."
 
-#: gestion_agro/forms.py:311 gestion_agro/forms.py:332
+#: gestion_agro/forms.py:316 gestion_agro/forms.py:337
 msgid "Horas de mano de obra"
 msgstr "Horas de mano de obra"
 
-#: gestion_agro/forms.py:315 gestion_agro/forms.py:323
-#: gestion_agro/forms.py:333 gestion_agro/forms.py:335
+#: gestion_agro/forms.py:320 gestion_agro/forms.py:328
+#: gestion_agro/forms.py:338 gestion_agro/forms.py:340
 msgid "Costo por hora"
 msgstr "Costo por hora"
 
-#: gestion_agro/forms.py:319 gestion_agro/forms.py:334
+#: gestion_agro/forms.py:324 gestion_agro/forms.py:339
 msgid "Horas de máquina"
 msgstr "Horas de máquina"
 
-#: gestion_agro/forms.py:392
+#: gestion_agro/forms.py:397
 msgid "El subtipo no corresponde al tipo seleccionado."
 msgstr "El subtipo no corresponde al tipo seleccionado."
 
-#: gestion_agro/forms.py:407 templates/vista_agregar_actividad.html:224
+#: gestion_agro/forms.py:412 templates/vista_agregar_actividad.html:224
 #: templates/vista_detalle_ciclo.html:341
 msgid "Dosis"
 msgstr "Dosis"
 
-#: gestion_agro/forms.py:444
+#: gestion_agro/forms.py:449
 msgid "Debe seleccionar un producto."
 msgstr "Debe seleccionar un producto."
 
-#: gestion_agro/forms.py:446
+#: gestion_agro/forms.py:451
 msgid "Debe ingresar la dosis."
 msgstr "Debe ingresar la dosis."
 
-#: gestion_agro/forms.py:448
+#: gestion_agro/forms.py:453
 msgid "Debe seleccionar la unidad."
 msgstr "Debe seleccionar la unidad."
 
-#: gestion_agro/forms.py:500
+#: gestion_agro/forms.py:505
 #, python-format
 msgid "Stock insuficiente. Necesario: %(n)s %(u)s, disponible: %(d)s %(u)s."
 msgstr "Stock insuficiente. Necesario: %(n)s %(u)s, disponible: %(d)s %(u)s."
 
-#: gestion_agro/forms.py:524
+#: gestion_agro/forms.py:529
 msgid "Plantas por m²"
 msgstr "Plantas por m²"
 
-#: gestion_agro/forms.py:525
+#: gestion_agro/forms.py:530
 msgid "Malezas"
 msgstr "Malezas"
 
-#: gestion_agro/forms.py:526
+#: gestion_agro/forms.py:531
 msgid "Insectos"
 msgstr "Insectos"
 
-#: gestion_agro/forms.py:527
+#: gestion_agro/forms.py:532
 msgid "Enfermedades"
 msgstr "Enfermedades"
 
-#: gestion_agro/forms.py:528 gestion_agro/models.py:22
+#: gestion_agro/forms.py:533 gestion_agro/models.py:22
 #: templates/vista_crear_campo.html:133
 msgid "Imagen"
 msgstr "Imagen"
 
-#: gestion_agro/forms.py:541 templates/vista_agregar_actividad.html:369
+#: gestion_agro/forms.py:546 templates/vista_agregar_actividad.html:369
 #: templates/vista_agregar_actividad.html:421
 msgid "Depósito consumo"
 msgstr "Depósitos"
 
-#: gestion_agro/forms.py:547
+#: gestion_agro/forms.py:552
 msgid "Depósito semilla"
 msgstr "Depósitos"
 
-#: gestion_agro/forms.py:562 gestion_agro/funciones_aux.py:210
+#: gestion_agro/forms.py:567 gestion_agro/funciones_aux.py:210
 msgid "El rendimiento es obligatorio y debe ser mayor a 0."
 msgstr "El rendimiento es obligatorio y debe ser mayor a 0."
 
-#: gestion_agro/forms.py:568 gestion_agro/funciones_aux.py:214
+#: gestion_agro/forms.py:573 gestion_agro/funciones_aux.py:214
 msgid "Debe seleccionar la unidad de medida del rendimiento."
 msgstr "Debe seleccionar la unidad."
 
-#: gestion_agro/forms.py:591
+#: gestion_agro/forms.py:596
 msgid "Semillas aprobadas (por ha)"
 msgstr "Semillas aprobadas (por ha)"
 
-#: gestion_agro/forms.py:593 gestion_agro/models.py:344
+#: gestion_agro/forms.py:598 gestion_agro/models.py:344
 #: templates/vista_detalle_ciclo.html:433
 msgid "Resultado"
 msgstr "Resultados"
 
-#: gestion_agro/forms.py:594 gestion_agro/models.py:345
+#: gestion_agro/forms.py:599 gestion_agro/models.py:345
 #: templates/vista_detalle_ciclo.html:450
 msgid "Responsable"
 msgstr "Disponible"
 
-#: gestion_agro/forms.py:609
+#: gestion_agro/forms.py:614
 msgid "Nombre o código del producto"
 msgstr "Nombre o código del producto"
 
-#: gestion_agro/forms.py:610 gestion_agro/forms.py:663
+#: gestion_agro/forms.py:615 gestion_agro/forms.py:668
 #: gestion_agro/models.py:395
 #: templates/tem_facturas/vista_cargar_factura_manual.html:333
 #: templates/tem_facturas/vista_revisar_factura.html:147
@@ -746,33 +746,33 @@ msgstr "Nombre o código del producto"
 msgid "Categoría"
 msgstr "Categoría"
 
-#: gestion_agro/forms.py:610 templates/temp_mapas/vista_mapas.html:77
+#: gestion_agro/forms.py:615 templates/temp_mapas/vista_mapas.html:77
 #: templates/vista_lista_stock.html:74
 msgid "Todas"
 msgstr "Todas"
 
-#: gestion_agro/forms.py:611
+#: gestion_agro/forms.py:616
 msgid "Fecha entrada desde"
 msgstr "Fecha entrada desde"
 
-#: gestion_agro/forms.py:612
+#: gestion_agro/forms.py:617
 msgid "Fecha entrada hasta"
 msgstr "Fecha entrada hasta"
 
-#: gestion_agro/forms.py:621
+#: gestion_agro/forms.py:626
 msgid "La fecha hasta no puede ser menor que la fecha desde."
 msgstr "La fecha hasta no puede ser menor que la fecha desde."
 
-#: gestion_agro/forms.py:648
+#: gestion_agro/forms.py:653
 msgid "Producto existente"
 msgstr "Producto existente"
 
-#: gestion_agro/forms.py:654
+#: gestion_agro/forms.py:659
 #: templates/tem_facturas/vista_revisar_factura.html:248
 msgid "Crear nuevo"
 msgstr "Crear nuevo"
 
-#: gestion_agro/forms.py:669 gestion_agro/models.py:417
+#: gestion_agro/forms.py:674 gestion_agro/models.py:417
 #: templates/tem_facturas/vista_cargar_factura_manual.html:368
 #: templates/tem_facturas/vista_revisar_factura.html:200
 #: templates/temp_mapas/vista_comparacion.html:147
@@ -783,7 +783,7 @@ msgstr "Crear nuevo"
 msgid "Cultivo"
 msgstr "Cultivo"
 
-#: gestion_agro/forms.py:675 gestion_agro/models.py:117
+#: gestion_agro/forms.py:680 gestion_agro/models.py:117
 #: gestion_agro/models.py:126 gestion_agro/models.py:418
 #: templates/tem_facturas/vista_cargar_factura_manual.html:378
 #: templates/tem_facturas/vista_revisar_factura.html:202
@@ -792,51 +792,51 @@ msgstr "Cultivo"
 msgid "Variedad"
 msgstr "Variedad"
 
-#: gestion_agro/forms.py:681
+#: gestion_agro/forms.py:686
 msgid "Nueva variedad"
 msgstr "Nueva variedad"
 
-#: gestion_agro/forms.py:682
+#: gestion_agro/forms.py:687
 msgid "Nombre de la variedad"
 msgstr "Nombre de la variedad"
 
-#: gestion_agro/forms.py:689
+#: gestion_agro/forms.py:694
 msgid "PMG (g/1000 sem)"
 msgstr "PMG (g/1000 sem)"
 
-#: gestion_agro/forms.py:698 gestion_agro/forms.py:846
+#: gestion_agro/forms.py:703 gestion_agro/forms.py:851
 #: templates/tem_facturas/vista_cargar_factura_manual.html:157
 #: templates/tem_facturas/vista_cargar_factura_manual.html:407
 #: templates/tem_facturas/vista_revisar_factura.html:149
 msgid "Presentación"
 msgstr "Presentación"
 
-#: gestion_agro/forms.py:704 gestion_agro/models.py:527
+#: gestion_agro/forms.py:709 gestion_agro/models.py:527
 msgid "Nombre presentación"
 msgstr "Nombre presentación"
 
-#: gestion_agro/forms.py:715
+#: gestion_agro/forms.py:720
 msgid "Contenido por envase"
 msgstr "Contenido por envase"
 
-#: gestion_agro/forms.py:796
+#: gestion_agro/forms.py:801
 #, python-format
 msgid "Unidad '%(u)s' no encontrada."
 msgstr "Unidad '%(u)s' no encontrada."
 
-#: gestion_agro/forms.py:821
+#: gestion_agro/forms.py:826
 msgid "Debe seleccionar cultivo."
 msgstr "Debe seleccionar cultivo."
 
-#: gestion_agro/forms.py:823
+#: gestion_agro/forms.py:828
 msgid "Debe seleccionar variedad o escribir una nueva."
 msgstr "Debe seleccionar variedad o escribir una nueva."
 
-#: gestion_agro/forms.py:827
+#: gestion_agro/forms.py:832
 msgid "Indicá el contenido del envase."
 msgstr "Indicá el contenido del envase."
 
-#: gestion_agro/forms.py:829
+#: gestion_agro/forms.py:834
 msgid "Seleccioná la unidad de stock."
 msgstr "Seleccioná la unidad de stock."
 
@@ -930,7 +930,7 @@ msgstr ""
 msgid "Semilla (Multiplicación)"
 msgstr "Semilla (Multiplicación)"
 
-#: gestion_agro/models.py:10 gestion_agro/views.py:1556
+#: gestion_agro/models.py:10 gestion_agro/views.py:1579
 #: templates/tem_administracion/lista_ventas.html:93
 #: templates/vista_agregar_actividad.html:416
 #: templates/vista_detalle_ciclo.html:411 templates/vista_lista_stock.html:352
@@ -990,13 +990,13 @@ msgstr "Ciclo agrícola"
 msgid "Nombre del área"
 msgstr "Nombre del lote"
 
-#: gestion_agro/models.py:60 templates/vista_crear_ciclo.html:252
+#: gestion_agro/models.py:60 templates/vista_crear_ciclo.html:253
 #: templates/vista_editar_ciclo.html:24 templates/vista_lista_ciclos.html:138
 msgid "Superficie (ha)"
 msgstr "Superficie (ha)"
 
 #: gestion_agro/models.py:65 mapas/models.py:46 mapas/models.py:132
-#: mapas/models.py:194 mapas/models.py:232 templates/vista_crear_ciclo.html:315
+#: mapas/models.py:194 mapas/models.py:232 templates/vista_crear_ciclo.html:316
 msgid "Área del campo"
 msgstr "Nombre del campo"
 
@@ -1039,12 +1039,12 @@ msgstr "Variedades"
 msgid "Campaña"
 msgstr "Campaña"
 
-#: gestion_agro/models.py:137 templates/vista_crear_ciclo.html:265
-#: templates/vista_crear_ciclo.html:383 templates/vista_editar_ciclo.html:29
+#: gestion_agro/models.py:137 templates/vista_crear_ciclo.html:266
+#: templates/vista_crear_ciclo.html:384 templates/vista_editar_ciclo.html:29
 msgid "Fecha de inicio"
 msgstr "Fecha de inicio"
 
-#: gestion_agro/models.py:138 templates/vista_crear_ciclo.html:387
+#: gestion_agro/models.py:138 templates/vista_crear_ciclo.html:388
 msgid "Fecha de finalización"
 msgstr "Fecha de finalización"
 
@@ -1208,7 +1208,7 @@ msgid "Maneja stock"
 msgstr "Maneja stock"
 
 #: gestion_agro/models.py:400 templates/vista_agregar_actividad.html:94
-#: templates/vista_crear_ciclo.html:160 templates/vista_crear_ciclo.html:286
+#: templates/vista_crear_ciclo.html:160 templates/vista_crear_ciclo.html:287
 #: templates/vista_lista_ciclos.html:162 templates/vista_producto.html:121
 #: templates/vista_producto.html:200
 msgid "Activo"
@@ -1446,122 +1446,122 @@ msgstr "Cultivo eliminado correctamente."
 msgid "Cultivo actualizado correctamente."
 msgstr "Cultivo actualizado correctamente."
 
-#: gestion_agro/views.py:426
+#: gestion_agro/views.py:448
 msgid "Producto guardado correctamente."
 msgstr "Producto guardado correctamente."
 
-#: gestion_agro/views.py:452
+#: gestion_agro/views.py:474
 msgid "Producto eliminado."
 msgstr "Producto eliminado."
 
-#: gestion_agro/views.py:458
+#: gestion_agro/views.py:480
 msgid "Producto actualizado."
 msgstr "Producto actualizado."
 
-#: gestion_agro/views.py:619
+#: gestion_agro/views.py:641
 msgid "El usuario no tiene una empresa asociada."
 msgstr "El usuario no tiene una empresa asociada."
 
-#: gestion_agro/views.py:638
+#: gestion_agro/views.py:660
 #, python-format
 msgid "Lote-%(numero)s"
 msgstr "Lote-%(numero)s"
 
-#: gestion_agro/views.py:647
+#: gestion_agro/views.py:669
 msgid "Ciclo creado correctamente. Ahora podés registrar actividades."
 msgstr "Ciclo creado correctamente. Ahora podés registrar actividades."
 
-#: gestion_agro/views.py:706
+#: gestion_agro/views.py:729
 msgid "Usuario sin empresa asociada."
 msgstr "Usuario sin empresa asociada."
 
-#: gestion_agro/views.py:709
+#: gestion_agro/views.py:732
 msgid "Cultivo no informado."
 msgstr "Cultivo no informado."
 
-#: gestion_agro/views.py:717
+#: gestion_agro/views.py:740
 msgid "Cultivo no encontrado."
 msgstr "Cultivo no encontrado."
 
-#: gestion_agro/views.py:843
+#: gestion_agro/views.py:866
 #, fuzzy
 #| msgid "Producto actualizado."
 msgid "Ciclo actualizado."
 msgstr "Producto actualizado."
 
-#: gestion_agro/views.py:846
+#: gestion_agro/views.py:869
 #, fuzzy, python-format
 #| msgid "Error procesando factura: %(error)s"
 msgid "Error: %(error)s"
 msgstr "Error procesando factura: %(error)s"
 
-#: gestion_agro/views.py:899
+#: gestion_agro/views.py:922
 msgid "El ciclo no existe."
 msgstr "El ciclo no existe."
 
-#: gestion_agro/views.py:1016
+#: gestion_agro/views.py:1039
 msgid "Actividad registrada e inicio de fase generado."
 msgstr "Actividad registrada e inicio de fase generado."
 
-#: gestion_agro/views.py:1016
+#: gestion_agro/views.py:1039
 msgid "Actividad registrada correctamente."
 msgstr "Actividad registrada correctamente."
 
-#: gestion_agro/views.py:1021
+#: gestion_agro/views.py:1044
 msgid "Hay errores en el formulario."
 msgstr "Hay errores en el formulario."
 
-#: gestion_agro/views.py:1556 templates/configuracion.html:112
+#: gestion_agro/views.py:1579 templates/configuracion.html:112
 #: templates/tem_administracion/lista_ventas.html:91
 #: templates/vista_agregar_actividad.html:348
 #: templates/vista_detalle_ciclo.html:406 templates/vista_lista_stock.html:348
 msgid "Semilla"
 msgstr "Es semilla"
 
-#: gestion_agro/views.py:1739
+#: gestion_agro/views.py:1762
 msgid "Factura cargada correctamente."
 msgstr "Factura cargada correctamente."
 
-#: gestion_agro/views.py:2052
+#: gestion_agro/views.py:2075
 msgid "No se ha seleccionado ningún archivo PDF."
 msgstr "No se ha seleccionado ningún archivo PDF."
 
-#: gestion_agro/views.py:2065
+#: gestion_agro/views.py:2088
 msgid "No se encontraron productos en la factura."
 msgstr "No se encontraron productos en la factura."
 
-#: gestion_agro/views.py:2097
+#: gestion_agro/views.py:2120
 #, python-format
 msgid "Error procesando factura: %(error)s"
 msgstr "Error procesando factura: %(error)s"
 
-#: gestion_agro/views.py:2117
+#: gestion_agro/views.py:2140
 msgid "No hay factura cargada."
 msgstr "No hay factura cargada."
 
-#: gestion_agro/views.py:2122
+#: gestion_agro/views.py:2145
 msgid "No tiene empresa asignada."
 msgstr "No tiene empresa asignada."
 
-#: gestion_agro/views.py:2273
+#: gestion_agro/views.py:2296
 msgid "Sesión expirada."
 msgstr "Sesión expirada."
 
-#: gestion_agro/views.py:2285
+#: gestion_agro/views.py:2308
 msgid "Proveedor no encontrado."
 msgstr "Proveedor no encontrado."
 
-#: gestion_agro/views.py:2306
+#: gestion_agro/views.py:2329
 msgid "Hay errores en la factura. Revisá los campos marcados."
 msgstr "Hay errores en la factura. Revisá los campos marcados."
 
-#: gestion_agro/views.py:2330
+#: gestion_agro/views.py:2353
 #, fuzzy, python-format
 #| msgid "La factura {numero_factura} ya fue ingresada para este proveedor."
 msgid "La factura %(numero)s ya fue ingresada para este proveedor."
 msgstr "La factura {numero_factura} ya fue ingresada para este proveedor."
 
-#: gestion_agro/views.py:2492
+#: gestion_agro/views.py:2515
 #, fuzzy, python-format
 #| msgid "Factura {factura.numero} guardada correctamente."
 msgid "Factura %(numero)s guardada correctamente."
@@ -1632,7 +1632,7 @@ msgstr "% Nubosidad"
 #: templates/tem_administracion/lista_ventas.html:76
 #: templates/temp_mapas/ndvi_campo.html:106
 #: templates/vista_agregar_actividad.html:91
-#: templates/vista_crear_ciclo.html:284 templates/vista_lista_ciclos.html:140
+#: templates/vista_crear_ciclo.html:285 templates/vista_lista_ciclos.html:140
 #: templates/vista_producto.html:181
 msgid "Estado"
 msgstr "Estado"
@@ -1942,9 +1942,10 @@ msgstr "Unidad por defecto al registrar inspección"
 #: templates/tem_facturas/vista_cargar_factura_manual.html:434
 #: templates/temp_mapas/vista_registros_lluvia.html:46
 #: templates/vista_agregar_actividad.html:450
-#: templates/vista_crear_campana.html:119 templates/vista_crear_ciclo.html:361
-#: templates/vista_crear_ciclo.html:399 templates/vista_crear_ciclo.html:439
-#: templates/vista_crear_cultivo.html:98 templates/vista_crear_cultivo.html:255
+#: templates/vista_crear_campana.html:119 templates/vista_crear_ciclo.html:362
+#: templates/vista_crear_ciclo.html:400 templates/vista_crear_ciclo.html:447
+#: templates/vista_crear_ciclo.html:492 templates/vista_crear_cultivo.html:98
+#: templates/vista_crear_cultivo.html:255
 #: templates/vista_crear_deposito.html:122 templates/vista_editar_ciclo.html:41
 #: templates/vista_producto.html:149
 msgid "Guardar"
@@ -2351,9 +2352,10 @@ msgstr "Guardar factura"
 #: templates/temp_mapas/vista_mapas.html:673
 #: templates/vista_agregar_actividad.html:454
 #: templates/vista_crear_campana.html:123 templates/vista_crear_campo.html:153
-#: templates/vista_crear_campo.html:271 templates/vista_crear_ciclo.html:302
-#: templates/vista_crear_ciclo.html:360 templates/vista_crear_ciclo.html:398
-#: templates/vista_crear_ciclo.html:438 templates/vista_crear_cultivo.html:103
+#: templates/vista_crear_campo.html:271 templates/vista_crear_ciclo.html:303
+#: templates/vista_crear_ciclo.html:361 templates/vista_crear_ciclo.html:399
+#: templates/vista_crear_ciclo.html:446 templates/vista_crear_ciclo.html:491
+#: templates/vista_crear_cultivo.html:103
 #: templates/vista_crear_cultivo.html:252
 #: templates/vista_crear_deposito.html:126 templates/vista_editar_ciclo.html:42
 #: templates/vista_lista_stock.html:507 templates/vista_lista_stock.html:595
@@ -2816,8 +2818,9 @@ msgstr "Comprobante de Pago"
 #: templates/tem_administracion/gestion_facturas.html:127
 #: templates/temp_mapas/vista_comparacion.html:207
 #: templates/temp_mapas/vista_mapas.html:603
-#: templates/vista_crear_ciclo.html:352 templates/vista_crear_ciclo.html:378
-#: templates/vista_crear_ciclo.html:417 templates/vista_crear_cultivo.html:205
+#: templates/vista_crear_ciclo.html:353 templates/vista_crear_ciclo.html:379
+#: templates/vista_crear_ciclo.html:418 templates/vista_crear_ciclo.html:464
+#: templates/vista_crear_cultivo.html:205
 msgid "Cerrar"
 msgstr "Cerrar"
 
@@ -3034,7 +3037,7 @@ msgstr "Obtener Sentinel-2"
 #: templates/temp_mapas/ndvi_campo.html:60
 #: templates/vista_agregar_actividad.html:442
 #: templates/vista_crear_campana.html:111 templates/vista_crear_campo.html:141
-#: templates/vista_crear_ciclo.html:297 templates/vista_crear_cultivo.html:90
+#: templates/vista_crear_ciclo.html:298 templates/vista_crear_cultivo.html:90
 #: templates/vista_crear_deposito.html:114 templates/vista_producto.html:141
 msgid "Actualizar"
 msgstr "Actualizar"
@@ -3767,7 +3770,7 @@ msgstr "Se genera automáticamente al guardar"
 msgid "Estado inicial"
 msgstr "Estado inicial"
 
-#: templates/vista_crear_ciclo.html:162 templates/vista_crear_ciclo.html:286
+#: templates/vista_crear_ciclo.html:162 templates/vista_crear_ciclo.html:287
 #: templates/vista_producto.html:202
 msgid "Inactivo"
 msgstr "Inactivo"
@@ -3788,7 +3791,7 @@ msgstr "Crear una campaña nueva sin salir de esta pantalla"
 msgid "Agregar un cultivo nuevo a la lista"
 msgstr "Agregar un cultivo nuevo a la lista"
 
-#: templates/vista_crear_ciclo.html:244
+#: templates/vista_crear_ciclo.html:243
 msgid ""
 "Crear el producto que se obtiene al cosechar este cultivo y dejarlo como "
 "predeterminado"
@@ -3796,59 +3799,59 @@ msgstr ""
 "Crear el producto que se obtiene al cosechar este cultivo y dejarlo como "
 "predeterminado"
 
-#: templates/vista_crear_ciclo.html:255
+#: templates/vista_crear_ciclo.html:256
 msgid "Indicá la superficie estimada o comprometida para este lote."
 msgstr "Indicá la superficie estimada o comprometida para este lote."
 
-#: templates/vista_crear_ciclo.html:260
+#: templates/vista_crear_ciclo.html:261
 msgid "Fechas del ciclo"
 msgstr "Fechas del ciclo"
 
-#: templates/vista_crear_ciclo.html:270
+#: templates/vista_crear_ciclo.html:271
 msgid "Fecha de fin"
 msgstr "Fecha de fin"
 
-#: templates/vista_crear_ciclo.html:273
+#: templates/vista_crear_ciclo.html:274
 msgid "Podés dejarla vacía al inicio."
 msgstr "Podés dejarla vacía al inicio y completarla cuando el ciclo termine."
 
-#: templates/vista_crear_ciclo.html:280 templates/vista_editar_ciclo.html:20
+#: templates/vista_crear_ciclo.html:281 templates/vista_editar_ciclo.html:20
 msgid "Nombre del lote"
 msgstr "Nombre del lote"
 
-#: templates/vista_crear_ciclo.html:298
+#: templates/vista_crear_ciclo.html:299
 msgid "Borrar"
 msgstr "Borrar"
 
-#: templates/vista_crear_ciclo.html:300
+#: templates/vista_crear_ciclo.html:301
 msgid "Crear ciclo"
 msgstr "Crear ciclo"
 
-#: templates/vista_crear_ciclo.html:317
+#: templates/vista_crear_ciclo.html:318
 msgid "Ampliar"
 msgstr "Ampliar"
 
-#: templates/vista_crear_ciclo.html:325
+#: templates/vista_crear_ciclo.html:326
 msgid "Seleccioná un campo para ver el mapa"
 msgstr "Seleccioná un proveedor."
 
-#: templates/vista_crear_ciclo.html:332
+#: templates/vista_crear_ciclo.html:333
 msgid "El dibujo es referencial. Ingresá la superficie real en ha."
 msgstr "El dibujo es referencial. Ingresá la superficie real en ha."
 
-#: templates/vista_crear_ciclo.html:350
+#: templates/vista_crear_ciclo.html:351
 msgid "Nuevo cultivo"
 msgstr "Nuevo cultivo"
 
-#: templates/vista_crear_ciclo.html:376
+#: templates/vista_crear_ciclo.html:377
 msgid "Nueva campaña"
 msgstr "Nueva campaña"
 
-#: templates/vista_crear_ciclo.html:415
+#: templates/vista_crear_ciclo.html:416
 msgid "Nuevo producto de cosecha"
 msgstr "Nuevo producto de cosecha"
 
-#: templates/vista_crear_ciclo.html:420
+#: templates/vista_crear_ciclo.html:421
 msgid ""
 "Este producto quedará como el producto final por defecto del cultivo "
 "seleccionado."
@@ -3856,7 +3859,19 @@ msgstr ""
 "Este producto quedará como el producto final por defecto del cultivo "
 "seleccionado."
 
-#: templates/vista_crear_ciclo.html:756
+#: templates/vista_crear_ciclo.html:431
+msgid "Crear una unidad de medida nueva"
+msgstr "Crear una unidad de medida nueva"
+
+#: templates/vista_crear_ciclo.html:462
+msgid "Nueva unidad de medida"
+msgstr "Nueva unidad de medida"
+
+#: templates/vista_crear_ciclo.html:480
+msgid "Cuántas unidades base equivalen a 1 unidad de ésta."
+msgstr "Cuántas unidades base equivalen a 1 unidad de ésta."
+
+#: templates/vista_crear_ciclo.html:837
 msgid "Primero seleccioná un cultivo."
 msgstr "Primero seleccioná un cultivo."
 

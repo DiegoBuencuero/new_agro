@@ -44,6 +44,11 @@ class CampanaForm(BaseForm):
             "observaciones": forms.Textarea(attrs={"rows": 2}),
         }
 
+class UnidadForm(BaseForm):
+    class Meta:
+        model = Unidad
+        fields = ["nombre", "abreviatura", "factor_a_base", "requiere_pmg"]
+
 class DepositoForm(BaseForm):
     class Meta:
         model = Deposito

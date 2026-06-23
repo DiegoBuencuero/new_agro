@@ -10,7 +10,7 @@ from administracion.views import (vista_registrar_venta, vista_lista_ventas, aja
     vista_cargar_factura_venta_manual, ajax_info_producto_venta, ajax_depositos_producto_destino,
     vista_cuenta_corriente_proveedor, vista_cuenta_corriente_cliente,
     vista_comprobante_pago, vista_comprobante_recibo)
-from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_cultivo, ajax_crear_campana, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_areas_por_campo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo, ajax_eliminar_insumo, ajax_editar_insumo, vista_resumo_economico, ajax_eliminar_actividad, vista_editar_ciclo, ajax_eliminar_ciclo,
+from gestion_agro.views import (ajax_agregar_producto_final, ajax_crear_cultivo, ajax_crear_campana, ajax_crear_unidad, ajax_crear_producto_desde_cultivo, ajax_info_cultivo, ajax_areas_por_campo, ajax_unidades_por_base, ajax_variedades_cultivo, vista_crear_campo, ajax_eliminar_insumo, ajax_editar_insumo, vista_resumo_economico, ajax_eliminar_actividad, vista_editar_ciclo, ajax_eliminar_ciclo,
 vista_editar_campo, vista_crear_campana, vista_editar_campana,vista_crear_ciclo,
 vista_lista_ciclos, vista_detalle_ciclo, ajax_get_ciclos_data, vista_agregar_actividad,
 ajax_subtipos_tipo_actividad, ajax_productos_por_actividad, ajax_valores_actividad, vista_lista_stock,
@@ -46,6 +46,7 @@ urlpatterns = [
     path("ajax/cultivos/<int:cultivo_id>/agregar-producto-final/", ajax_agregar_producto_final, name="ajax_agregar_producto_final"),
     path("ajax/cultivos/crear/", ajax_crear_cultivo, name="ajax_crear_cultivo"),
     path("ajax/campanas/crear/", ajax_crear_campana, name="ajax_crear_campana"),
+    path("ajax/unidades/crear/", ajax_crear_unidad, name="ajax_crear_unidad"),
 
     path('productos/', vista_producto, name='vista_producto'),
     path('productos/<int:id_prod>/', vista_editar_producto, name='editar_producto'),
