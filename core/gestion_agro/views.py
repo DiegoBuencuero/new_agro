@@ -359,6 +359,61 @@ def ajax_agregar_producto_final(request, cultivo_id):
     }, status=400)
 
 @login_required
+def ajax_crear_cultivo(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido"}, status=405)
+
+    empresa = request.user.profile.empresa
+    form = CultivoForm(request.POST)
+
+    if form.is_valid():
+        cultivo = form.save(empresa=empresa)
+        return JsonResponse({
+            "ok": True,
+            "message": "Cultivo creado correctamente",
+            "cultivo": {"id": cultivo.id, "nombre": cultivo.nombre},
+        })
+
+    errores = []
+    for field, field_errors in form.errors.items():
+        for error in field_errors:
+            errores.append(str(field) + ": " + str(error))
+
+    return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
+
+@login_required
+def ajax_crear_campana(request):
+    if request.method != "POST":
+        return JsonResponse({"ok": False, "error": "Método no permitido"}, status=405)
+
+    empresa = request.user.profile.empresa
+    form = CampanaForm(request.POST)
+
+    if form.is_valid():
+        campana = form.save(commit=False)
+        campana.empresa = empresa
+
+        if Campana.objects.filter(
+            empresa=empresa,
+            nombre=f"{campana.fecha_desde.year}/{campana.fecha_desde.year + 1}"
+        ).exists():
+            return JsonResponse({"ok": False, "error": _("Ya existe una campaña para ese período")}, status=400)
+
+        campana.save()
+        return JsonResponse({
+            "ok": True,
+            "message": "Campaña creada correctamente",
+            "campana": {"id": campana.id, "nombre": campana.nombre},
+        })
+
+    errores = []
+    for field, field_errors in form.errors.items():
+        for error in field_errors:
+            errores.append(str(field) + ": " + str(error))
+
+    return JsonResponse({"ok": False, "error": " | ".join(errores)}, status=400)
+
+@login_required
 def vista_producto(request):
     empresa = request.user.profile.empresa
     productos = Producto.objects.filter(empresa=empresa).select_related("categoria", "unidad_base")
@@ -599,6 +654,9 @@ def vista_crear_ciclo(request):
         "form": form,
         "empresa": empresa,
         "modificacion": False,
+        "cultivo_form": CultivoForm(),
+        "campana_form": CampanaForm(),
+        "producto_final_form": CultivoProductoFinalForm(),
     }
     return render(request, "vista_crear_ciclo.html", context)
 

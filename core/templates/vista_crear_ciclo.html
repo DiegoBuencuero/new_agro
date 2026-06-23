@@ -95,6 +95,12 @@
     </div>
     {% endif %}
 
+    <div id="toast_exito"
+         class="alert alert-success shadow"
+         style="display:none; position:fixed; top:20px; right:20px; z-index:9999;">
+        <span id="toast_exito_msg"></span>
+    </div>
+
     <div class="upload-card">
         <div class="upload-header d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3 mb-4">
             <div>
@@ -205,18 +211,40 @@
 
                             <div class="mb-3">
                                 <label class="form-label">{% translate "Campaña" %} *</label>
-                                {{ form.campana }}
-                                {% if form.campana.errors %}<div class="form-error-text">{{ form.campana.errors.0 }}</div>{% endif %}
+                                <div class="d-flex gap-2 align-items-start">
+                                    <div class="flex-grow-1">
+                                        {{ form.campana }}
+                                        {% if form.campana.errors %}<div class="form-error-text">{{ form.campana.errors.0 }}</div>{% endif %}
+                                    </div>
+                                    <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalCampana"
+                                            title="{% translate 'Crear una campaña nueva sin salir de esta pantalla' %}">
+                                        <i class="mdi mdi-plus"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="mb-3">
                                 <label class="form-label">{% translate "Cultivo" %} *</label>
-                                {{ form.cultivo }}
-                                {% if form.cultivo.errors %}<div class="form-error-text">{{ form.cultivo.errors.0 }}</div>{% endif %}
+                                <div class="d-flex gap-2 align-items-start">
+                                    <div class="flex-grow-1">
+                                        {{ form.cultivo }}
+                                        {% if form.cultivo.errors %}<div class="form-error-text">{{ form.cultivo.errors.0 }}</div>{% endif %}
+                                    </div>
+                                    <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalCultivo"
+                                            title="{% translate 'Agregar un cultivo nuevo a la lista' %}">
+                                        <i class="mdi mdi-plus"></i>
+                                    </button>
+                                </div>
                                 <div class="mt-2">
                                     <label class="form-label">{% translate "Producto final" %}</label>
-                                    <input type="text" id="id_producto_final_preview" class="form-control readonly-lote"
-                                           value="{% if form.instance.producto_final %}{{ form.instance.producto_final.nombre }}{% endif %}" readonly>
+                                    <div class="d-flex gap-2 align-items-start">
+                                        <input type="text" id="id_producto_final_preview" class="form-control readonly-lote flex-grow-1"
+                                               value="{% if form.instance.producto_final %}{{ form.instance.producto_final.nombre }}{% endif %}" readonly>
+                                        <button type="button" id="btn-agregar-producto-final" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalProductoFinal"
+                                                title="{% translate 'Crear el producto que se obtiene al cosechar este cultivo y dejarlo como predeterminado' %}">
+                                            <i class="mdi mdi-plus"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
@@ -309,6 +337,110 @@
 
             </div>
         </form>
+    </div>
+
+    {# ── Modal: nuevo cultivo ── #}
+    <div class="modal fade" id="modalCultivo" tabindex="-1" aria-labelledby="modalCultivoLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="formCultivoModal" method="post">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalCultivoLabel">
+                            <i class="mdi mdi-plus-circle me-1"></i>{% translate "Nuevo cultivo" %}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Cerrar' %}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label class="form-label">{% translate "Nombre" %} *</label>
+                        {{ cultivo_form.nombre }}
+                        <div id="modalCultivoErrores" class="text-danger small mt-3"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                        <button type="submit" class="btn btn-success btn-sm"><i class="mdi mdi-check me-1"></i>{% translate "Guardar" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# ── Modal: nueva campaña ── #}
+    <div class="modal fade" id="modalCampana" tabindex="-1" aria-labelledby="modalCampanaLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="formCampanaModal" method="post">
+                    {% csrf_token %}
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalCampanaLabel">
+                            <i class="mdi mdi-plus-circle me-1"></i>{% translate "Nueva campaña" %}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Cerrar' %}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">{% translate "Fecha de inicio" %} *</label>
+                                {{ campana_form.fecha_desde }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{% translate "Fecha de finalización" %} *</label>
+                                {{ campana_form.fecha_hasta }}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">{% translate "Observaciones" %}</label>
+                            {{ campana_form.observaciones }}
+                        </div>
+                        <div id="modalCampanaErrores" class="text-danger small mt-3"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                        <button type="submit" class="btn btn-success btn-sm"><i class="mdi mdi-check me-1"></i>{% translate "Guardar" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {# ── Modal: nuevo producto de cosecha ── #}
+    <div class="modal fade" id="modalProductoFinal" tabindex="-1" aria-labelledby="modalProductoFinalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form id="formProductoFinalModal" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="dejar_como_default" value="true">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalProductoFinalLabel">
+                            <i class="mdi mdi-plus-circle me-1"></i>{% translate "Nuevo producto de cosecha" %}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{% translate 'Cerrar' %}"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="ciclo-help mb-2">{% translate "Este producto quedará como el producto final por defecto del cultivo seleccionado." %}</div>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label">{% translate "Código" %}</label>
+                                {{ producto_final_form.codigo }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">{% translate "Unidad base" %} *</label>
+                                {{ producto_final_form.unidad_base }}
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">{% translate "Detalle" %} *</label>
+                            {{ producto_final_form.detalle }}
+                        </div>
+                        <div id="modalProductoFinalErrores" class="text-danger small mt-3"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">{% translate "Cancelar" %}</button>
+                        <button type="submit" class="btn btn-success btn-sm"><i class="mdi mdi-check me-1"></i>{% translate "Guardar" %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -489,6 +621,99 @@ function elegirArea(area){
     refrescarMapa();
 }
 
+function escapeHtml(text){
+    return $("<div>").text(text || "").html();
+}
+
+function mostrarToast(msg){
+    $("#toast_exito_msg").text(msg);
+    $("#toast_exito").stop(true, true).fadeIn(200);
+    setTimeout(function(){ $("#toast_exito").fadeOut(200); }, 3500);
+}
+
+function actualizarEstadoBotonProductoFinal(){
+    $("#btn-agregar-producto-final").prop("disabled", !$("#id_cultivo").val());
+}
+
+function guardarCultivo(){
+    $("#modalCultivoErrores").html("");
+    $.ajax({
+        url: "{% url 'ajax_crear_cultivo' %}",
+        type: "POST",
+        data: $("#formCultivoModal").serialize(),
+        success(resp){
+            if(!resp.ok){
+                $("#modalCultivoErrores").html(escapeHtml(resp.error || "Error al guardar."));
+                return;
+            }
+            $("#id_cultivo").append(
+                $("<option>").val(resp.cultivo.id).text(resp.cultivo.nombre)
+            ).val(resp.cultivo.id).trigger("change");
+
+            bootstrap.Modal.getInstance(document.getElementById("modalCultivo")).hide();
+            $("#formCultivoModal")[0].reset();
+            mostrarToast(resp.message);
+        },
+        error(xhr){
+            var msg = (xhr.responseJSON && xhr.responseJSON.error) || "Error al guardar.";
+            $("#modalCultivoErrores").html(escapeHtml(msg));
+        }
+    });
+}
+
+function guardarCampana(){
+    $("#modalCampanaErrores").html("");
+    $.ajax({
+        url: "{% url 'ajax_crear_campana' %}",
+        type: "POST",
+        data: $("#formCampanaModal").serialize(),
+        success(resp){
+            if(!resp.ok){
+                $("#modalCampanaErrores").html(escapeHtml(resp.error || "Error al guardar."));
+                return;
+            }
+            $("#id_campana").append(
+                $("<option>").val(resp.campana.id).text(resp.campana.nombre)
+            ).val(resp.campana.id);
+
+            bootstrap.Modal.getInstance(document.getElementById("modalCampana")).hide();
+            $("#formCampanaModal")[0].reset();
+            mostrarToast(resp.message);
+        },
+        error(xhr){
+            var msg = (xhr.responseJSON && xhr.responseJSON.error) || "Error al guardar.";
+            $("#modalCampanaErrores").html(escapeHtml(msg));
+        }
+    });
+}
+
+function guardarProductoFinalCiclo(){
+    var cultivoId = $("#id_cultivo").val();
+    if(!cultivoId) return;
+
+    $("#modalProductoFinalErrores").html("");
+    $.ajax({
+        url: "/ajax/cultivos/" + cultivoId + "/agregar-producto-final/",
+        type: "POST",
+        data: $("#formProductoFinalModal").serialize(),
+        success(resp){
+            if(!resp.ok){
+                $("#modalProductoFinalErrores").html(escapeHtml(resp.error || "Error al guardar."));
+                return;
+            }
+            $("#id_producto_final_preview").val(resp.cultivo.producto_default_nombre || "");
+
+            bootstrap.Modal.getInstance(document.getElementById("modalProductoFinal")).hide();
+            $("#formProductoFinalModal")[0].reset();
+            mostrarToast(resp.message);
+        },
+        error(xhr){
+            var msg = (xhr.responseJSON && xhr.responseJSON.error) || "Error al guardar.";
+            $("#modalProductoFinalErrores").html(escapeHtml(msg));
+        }
+    });
+}
+
 function mostrarMapa(campoId){
     $("#mapa-placeholder").addClass("d-none");
     $("#seccion-mapa").removeClass("d-none");
@@ -519,10 +744,33 @@ $(function(){
             mostrarMapa(this.value);
     });
 
-    $("#id_cultivo").on(
-        "change",
-        cargarProductoFinalCultivo
-    );
+    $("#id_cultivo").on("change",function(){
+        cargarProductoFinalCultivo();
+        actualizarEstadoBotonProductoFinal();
+    });
+    actualizarEstadoBotonProductoFinal();
+
+    $("#modalProductoFinal").on("show.bs.modal",function(e){
+        if(!$("#id_cultivo").val()){
+            e.preventDefault();
+            alert("{% translate 'Primero seleccioná un cultivo.' %}");
+        }
+    });
+
+    $("#formCultivoModal").on("submit",function(e){
+        e.preventDefault();
+        guardarCultivo();
+    });
+
+    $("#formCampanaModal").on("submit",function(e){
+        e.preventDefault();
+        guardarCampana();
+    });
+
+    $("#formProductoFinalModal").on("submit",function(e){
+        e.preventDefault();
+        guardarProductoFinalCiclo();
+    });
 
     $("#id_tipo_area_0").on("change",function(){
 
