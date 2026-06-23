@@ -239,6 +239,7 @@ def vista_crear_cultivo(request):
         form = CultivoForm()
 
     producto_final_form = CultivoProductoFinalForm()
+    producto_final_form.fields["detalle"].required = True
 
     return render(
         request,
@@ -289,6 +290,7 @@ def vista_editar_cultivo(request, id_cultivo):
         form = CultivoEditarForm(instance=cultivo)
 
     producto_final_form = CultivoProductoFinalForm()
+    producto_final_form.fields["detalle"].required = True
 
     return render(
         request,

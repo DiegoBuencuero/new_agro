@@ -85,6 +85,7 @@ class CultivoProductoFinalForm(BaseSimpleForm):
     detalle = forms.CharField(
         label=_("Detalle"),
         max_length=120,
+        required=False,
         widget=forms.TextInput(attrs={
             "class": "form-control form-control-sm",
             "placeholder": "Ej: Bolsa 40 kg / Fiscalizada / Primera",
@@ -107,8 +108,8 @@ class CultivoProductoFinalForm(BaseSimpleForm):
     )
 
     def save(self, empresa, cultivo):
-        detalle = self.cleaned_data["detalle"].strip()
-        nombre = f"{cultivo.nombre} - {detalle}"
+        detalle = (self.cleaned_data.get("detalle") or "").strip()
+        nombre = f"{cultivo.nombre} - {detalle}" if detalle else cultivo.nombre
 
         codigo = (self.cleaned_data.get("codigo") or "").strip()
         if not codigo:
