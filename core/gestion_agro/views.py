@@ -7,6 +7,7 @@ from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Prefetch, Q, Sum
@@ -664,13 +665,19 @@ def vista_crear_ciclo(request):
             }
             ciclo.producto_final = cultivo.producto_default
             ciclo.activa = True
-            ciclo.save()
 
-            messages.success(
-                request,
-                _("Ciclo creado correctamente. Ahora podés registrar actividades.")
-            )
-            return redirect("vista_lista_ciclos")
+            try:
+                ciclo.save()
+            except ValidationError as e:
+                for lista_errores in e.message_dict.values():
+                    for error in lista_errores:
+                        messages.error(request, error)
+            else:
+                messages.success(
+                    request,
+                    _("Ciclo creado correctamente. Ahora podés registrar actividades.")
+                )
+                return redirect("vista_lista_ciclos")
     else:
         form = CicloForm(empresa=empresa)
 
@@ -867,6 +874,10 @@ def vista_editar_ciclo(request, id_ciclo):
             ciclo.save()
             messages.success(request, _("Ciclo actualizado."))
             return redirect("vista_lista_ciclos")
+        except ValidationError as e:
+            for lista_errores in e.message_dict.values():
+                for error in lista_errores:
+                    messages.error(request, error)
         except Exception as e:
             messages.error(request, _("Error: %(error)s") % {"error": e})
 
