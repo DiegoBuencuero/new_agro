@@ -12,19 +12,45 @@ def add_catalogo(apps, schema_editor):
         defaults={"tipo": "M", "activo": True, "requiere_inspeccion": True},
     )
 
-    tipo_aplicacion = TipoActividad.objects.get(nombre="Aplicación")
+    tipo_aplicacion, _c = TipoActividad.objects.get_or_create(
+        nombre="Aplicación",
+        defaults={
+            "tipo": "A", "activo": True,
+            "abre_fase": False, "cierra_fase": False,
+            "requiere_insumo": True, "requiere_mo": True, "requiere_maq": True,
+            "requiere_cosecha": False, "requiere_vist": False,
+        },
+    )
     subtipo_limpa, _c = SubTipoActividad.objects.get_or_create(
         tipo_actividad=tipo_aplicacion,
         codigo="LP",
         defaults={"nombre": "Limpa", "activo": True, "abre_fase": True, "cierra_fase": False},
     )
 
-    tipo_siembra = TipoActividad.objects.get(nombre="Siembra")
-    subtipo_sp = SubTipoActividad.objects.get(tipo_actividad=tipo_siembra, codigo="SP")
+    tipo_siembra, _c = TipoActividad.objects.get_or_create(
+        nombre="Siembra",
+        defaults={
+            "tipo": "S", "activo": True,
+            "abre_fase": True, "cierra_fase": False,
+            "requiere_insumo": True, "requiere_mo": True, "requiere_maq": True,
+            "requiere_cosecha": False, "requiere_vist": False,
+        },
+    )
+    subtipo_sp, _c = SubTipoActividad.objects.get_or_create(
+        tipo_actividad=tipo_siembra,
+        codigo="SP",
+        defaults={"nombre": "Cultivo Principal", "activo": True, "abre_fase": True, "cierra_fase": False},
+    )
 
-    cat_fun = CategoriaProducto.objects.get(codigo="FUN")
-    cat_ins = CategoriaProducto.objects.get(codigo="INS")
-    cat_fer = CategoriaProducto.objects.get(codigo="FER")
+    cat_fun, _c = CategoriaProducto.objects.get_or_create(
+        codigo="FUN", defaults={"nombre": "Fungicida", "es_semilla": False}
+    )
+    cat_ins, _c = CategoriaProducto.objects.get_or_create(
+        codigo="INS", defaults={"nombre": "Insecticida", "es_semilla": False}
+    )
+    cat_fer, _c = CategoriaProducto.objects.get_or_create(
+        codigo="FER", defaults={"nombre": "Fertilizante", "es_semilla": False}
+    )
 
     relaciones_nuevas = [
         (tipo_aplicacion, None, cat_fun),
