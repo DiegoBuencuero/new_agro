@@ -625,27 +625,27 @@ msgstr "PMG (g) — Peso de mil grãos"
 
 #: gestion_agro/forms.py:221 templates/vista_crear_ciclo.html:194
 msgid "Área del ciclo"
-msgstr "Nome do campo"
+msgstr "Área do ciclo"
 
 #: gestion_agro/forms.py:223 templates/temp_mapas/vista_mapas.html:635
 msgid "Todo el campo"
-msgstr "Nome do campo"
+msgstr "Todo o campo"
 
 #: gestion_agro/forms.py:224
 msgid "Usar área existente"
-msgstr "Usar produto existente"
+msgstr "Usar área existente"
 
 #: gestion_agro/forms.py:225
 msgid "Dibujar nueva área"
-msgstr "Desenhar área"
+msgstr "Desenhar nova área"
 
 #: gestion_agro/forms.py:267
 msgid "Debe seleccionar un área."
-msgstr "Selecione um produto."
+msgstr "Deve selecionar uma área."
 
 #: gestion_agro/forms.py:272
 msgid "Debe dibujar un área."
-msgstr "Desenhar área"
+msgstr "Deve desenhar uma área."
 
 #: gestion_agro/forms.py:316 gestion_agro/forms.py:337
 msgid "Horas de mano de obra"

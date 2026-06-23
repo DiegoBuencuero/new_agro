@@ -263,7 +263,7 @@ class CicloForm(BaseForm):
             ("nueva", _("Dibujar nueva área"))
         ],
         initial="todo",
-        widget=forms.RadioSelect
+        widget=forms.RadioSelect(attrs={"class": "form-check-input"})
     )
 
     def __init__(self, *args, empresa=None, **kwargs):
