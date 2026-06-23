@@ -419,21 +419,18 @@
                     </div>
                     <div class="modal-body">
                         <div class="ciclo-help mb-2">{% translate "Este producto quedará como el producto final por defecto del cultivo seleccionado." %}</div>
-                        <div class="row g-2">
-                            <div class="col-md-6">
-                                <label class="form-label">{% translate "Código" %}</label>
-                                {{ producto_final_form.codigo }}
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">{% translate "Unidad base" %} *</label>
-                                <div class="d-flex gap-2 align-items-start">
-                                    <div class="flex-grow-1">{{ producto_final_form.unidad_base }}</div>
-                                    <span title="{% translate 'Crear una unidad de medida nueva' %}">
-                                        <button type="button" id="btn-agregar-unidad" class="btn btn-outline-success">
-                                            <i class="mdi mdi-plus"></i>
-                                        </button>
-                                    </span>
-                                </div>
+                        <div class="mb-3">
+                            <label class="form-label">{% translate "Código" %}</label>
+                            {{ producto_final_form.codigo }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{% translate "Unidad base" %} *</label>
+                            <div class="d-flex gap-2 align-items-start">
+                                <div class="flex-grow-1">{{ producto_final_form.unidad_base }}</div>
+                                <button type="button" id="btn-agregar-unidad" class="btn btn-outline-success flex-shrink-0"
+                                        title="{% translate 'Crear una unidad de medida nueva' %}">
+                                    <i class="mdi mdi-plus"></i>
+                                </button>
                             </div>
                         </div>
                         <div class="mt-3">

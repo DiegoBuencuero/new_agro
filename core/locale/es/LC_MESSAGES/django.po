@@ -5,7 +5,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: AgroInnova\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-22 22:32-0300\n"
+"POT-Creation-Date: 2026-06-22 22:36-0300\n"
 "PO-Revision-Date: 2026-05-07 00:00-0300\n"
 "Language-Team: Spanish\n"
 "Language: es\n"
@@ -499,22 +499,22 @@ msgstr "Unidad por defecto para cantidad aprobada en inspección (ej: semillas)"
 #: templates/tem_facturas/vista_cargar_factura_manual.html:411
 #: templates/vista_crear_campana.html:144 templates/vista_crear_campo.html:113
 #: templates/vista_crear_campo.html:193 templates/vista_crear_ciclo.html:356
-#: templates/vista_crear_ciclo.html:469 templates/vista_crear_cultivo.html:121
+#: templates/vista_crear_ciclo.html:466 templates/vista_crear_cultivo.html:121
 #: templates/vista_crear_deposito.html:51
 #: templates/vista_crear_deposito.html:144 templates/vista_producto.html:80
 #: templates/vista_producto.html:177
 msgid "Nombre"
 msgstr "Nombre"
 
-#: agro/models.py:117 templates/vista_crear_ciclo.html:473
+#: agro/models.py:117 templates/vista_crear_ciclo.html:470
 msgid "Abreviatura"
 msgstr "Abreviatura"
 
-#: agro/models.py:118 templates/vista_crear_ciclo.html:478
+#: agro/models.py:118 templates/vista_crear_ciclo.html:475
 msgid "Factor a unidad base"
 msgstr "Factor a unidad base"
 
-#: agro/models.py:119 templates/vista_crear_ciclo.html:485
+#: agro/models.py:119 templates/vista_crear_ciclo.html:482
 msgid "Requiere PMG"
 msgstr "Requiere PMG"
 
@@ -594,20 +594,20 @@ msgstr "Español"
 #: gestion_agro/forms.py:76 gestion_agro/models.py:380
 #: gestion_agro/models.py:393
 #: templates/tem_facturas/vista_cargar_factura_manual.html:328
-#: templates/vista_crear_ciclo.html:424 templates/vista_crear_cultivo.html:218
+#: templates/vista_crear_ciclo.html:423 templates/vista_crear_cultivo.html:218
 #: templates/vista_movimientos_producto.html:39
 #: templates/vista_producto.html:72 templates/vista_producto.html:176
 msgid "Código"
 msgstr "Código"
 
-#: gestion_agro/forms.py:86 templates/vista_crear_ciclo.html:440
+#: gestion_agro/forms.py:86 templates/vista_crear_ciclo.html:437
 #: templates/vista_crear_cultivo.html:228
 msgid "Detalle"
 msgstr "Detalle"
 
 #: gestion_agro/forms.py:96 gestion_agro/models.py:396
 #: templates/tem_facturas/vista_cargar_factura_manual.html:351
-#: templates/vista_crear_ciclo.html:428 templates/vista_crear_cultivo.html:222
+#: templates/vista_crear_ciclo.html:427 templates/vista_crear_cultivo.html:222
 #: templates/vista_movimientos_producto.html:47
 #: templates/vista_producto.html:96 templates/vista_producto.html:179
 msgid "Unidad base"
@@ -1943,8 +1943,8 @@ msgstr "Unidad por defecto al registrar inspección"
 #: templates/temp_mapas/vista_registros_lluvia.html:46
 #: templates/vista_agregar_actividad.html:450
 #: templates/vista_crear_campana.html:119 templates/vista_crear_ciclo.html:362
-#: templates/vista_crear_ciclo.html:400 templates/vista_crear_ciclo.html:447
-#: templates/vista_crear_ciclo.html:492 templates/vista_crear_cultivo.html:98
+#: templates/vista_crear_ciclo.html:400 templates/vista_crear_ciclo.html:444
+#: templates/vista_crear_ciclo.html:489 templates/vista_crear_cultivo.html:98
 #: templates/vista_crear_cultivo.html:255
 #: templates/vista_crear_deposito.html:122 templates/vista_editar_ciclo.html:41
 #: templates/vista_producto.html:149
@@ -2354,7 +2354,7 @@ msgstr "Guardar factura"
 #: templates/vista_crear_campana.html:123 templates/vista_crear_campo.html:153
 #: templates/vista_crear_campo.html:271 templates/vista_crear_ciclo.html:303
 #: templates/vista_crear_ciclo.html:361 templates/vista_crear_ciclo.html:399
-#: templates/vista_crear_ciclo.html:446 templates/vista_crear_ciclo.html:491
+#: templates/vista_crear_ciclo.html:443 templates/vista_crear_ciclo.html:488
 #: templates/vista_crear_cultivo.html:103
 #: templates/vista_crear_cultivo.html:252
 #: templates/vista_crear_deposito.html:126 templates/vista_editar_ciclo.html:42
@@ -2819,7 +2819,7 @@ msgstr "Comprobante de Pago"
 #: templates/temp_mapas/vista_comparacion.html:207
 #: templates/temp_mapas/vista_mapas.html:603
 #: templates/vista_crear_ciclo.html:353 templates/vista_crear_ciclo.html:379
-#: templates/vista_crear_ciclo.html:418 templates/vista_crear_ciclo.html:464
+#: templates/vista_crear_ciclo.html:418 templates/vista_crear_ciclo.html:461
 #: templates/vista_crear_cultivo.html:205
 msgid "Cerrar"
 msgstr "Cerrar"
@@ -3863,15 +3863,15 @@ msgstr ""
 msgid "Crear una unidad de medida nueva"
 msgstr "Crear una unidad de medida nueva"
 
-#: templates/vista_crear_ciclo.html:462
+#: templates/vista_crear_ciclo.html:459
 msgid "Nueva unidad de medida"
 msgstr "Nueva unidad de medida"
 
-#: templates/vista_crear_ciclo.html:480
+#: templates/vista_crear_ciclo.html:477
 msgid "Cuántas unidades base equivalen a 1 unidad de ésta."
 msgstr "Cuántas unidades base equivalen a 1 unidad de ésta."
 
-#: templates/vista_crear_ciclo.html:837
+#: templates/vista_crear_ciclo.html:834
 msgid "Primero seleccioná un cultivo."
 msgstr "Primero seleccioná un cultivo."
 
