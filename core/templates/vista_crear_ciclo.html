@@ -240,10 +240,11 @@
                                     <div class="d-flex gap-2 align-items-start">
                                         <input type="text" id="id_producto_final_preview" class="form-control readonly-lote flex-grow-1"
                                                value="{% if form.instance.producto_final %}{{ form.instance.producto_final.nombre }}{% endif %}" readonly>
-                                        <button type="button" id="btn-agregar-producto-final" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalProductoFinal"
-                                                title="{% translate 'Crear el producto que se obtiene al cosechar este cultivo y dejarlo como predeterminado' %}">
-                                            <i class="mdi mdi-plus"></i>
-                                        </button>
+                                        <span title="{% translate 'Crear el producto que se obtiene al cosechar este cultivo y dejarlo como predeterminado' %}">
+                                            <button type="button" id="btn-agregar-producto-final" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalProductoFinal">
+                                                <i class="mdi mdi-plus"></i>
+                                            </button>
+                                        </span>
                                     </div>
                                 </div>
                             </div>
