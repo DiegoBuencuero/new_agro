@@ -127,6 +127,10 @@
 .input-group .btn {
     border-left: 0;
 }
+.form-check .form-check-input {
+  float: left;
+  margin-left: 1.5em !important;
+}
 </style>
 {% endblock %}
 
@@ -268,7 +272,7 @@
                                 {% if form.tipo_area.errors %}<div class="form-error-text">{{ form.tipo_area.errors.0 }}</div>{% endif %}
                             </div>
 
-                            <div class="mb-3 ms-3">
+                            <div class="mb-3">
                                 <label class="form-label">{% translate "Campaña" %} *</label>
                                 <div class="row">
                                     <div class="col-11">
