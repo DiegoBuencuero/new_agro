@@ -730,7 +730,7 @@ msgstr "Resultados"
 #: gestion_agro/forms.py:599 gestion_agro/models.py:345
 #: templates/vista_detalle_ciclo.html:450
 msgid "Responsable"
-msgstr "Disponible"
+msgstr "Responsable"
 
 #: gestion_agro/forms.py:614
 msgid "Nombre o código del producto"
@@ -1146,11 +1146,11 @@ msgstr "Aprobado"
 
 #: gestion_agro/models.py:339 templates/vista_detalle_ciclo.html:437
 msgid "Rechazado"
-msgstr "Cosechado"
+msgstr "Rechazado"
 
 #: gestion_agro/models.py:342
 msgid "Cantidad aprobada (por ha)"
-msgstr "Cantidad por envase"
+msgstr "Cantidad aprobada (por ha)"
 
 #: gestion_agro/models.py:348 templates/vista_agregar_actividad.html:316
 #: templates/vista_detalle_ciclo.html:429
