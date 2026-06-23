@@ -167,7 +167,7 @@ def validar_insumos(tipo, insumo_formset):
     if not hay_insumos:
         return False, _("Debe cargar al menos un insumo.")
 
-    if tipo.nombre.lower() == "siembra" and semillas_count > 1:
+    if tipo.nombre_es.lower() == "siembra" and semillas_count > 1:
         return False, _("Solo se permite una semilla por siembra.")
 
     return True, None
@@ -215,7 +215,7 @@ def validar_cosecha(ciclo, tipo, fecha, cosecha_form):
 
     existe_siembra = ActividadProductiva.objects.filter(
         fase__ciclo=ciclo,
-        tipo__nombre__iexact="Siembra",
+        tipo__nombre_es__iexact="Siembra",
         fecha__lte=fecha,
     ).exists()
 
@@ -226,24 +226,24 @@ def validar_cosecha(ciclo, tipo, fecha, cosecha_form):
 
 def validar_reglas_siembra(fase, tipo, subtipo):
     # reglas propias de siembra
-    if tipo.nombre.lower() != "siembra":
+    if tipo.nombre_es.lower() != "siembra":
         return True, None
 
     if not subtipo:
         return False, _("La siembra requiere seleccionar un subtipo (Cultivo principal, Cobertura, etc.).")
 
-    nombre_subtipo = subtipo.nombre.lower()
+    nombre_subtipo = subtipo.nombre_es.lower()
 
     existe_principal = ActividadProductiva.objects.filter(
         fase=fase,
         tipo=tipo,
-        subtipo__nombre__iexact="Cultivo principal",
+        subtipo__nombre_es__iexact="Cultivo principal",
     ).exists()
 
     existe_cobertura = ActividadProductiva.objects.filter(
         fase=fase,
         tipo=tipo,
-        subtipo__nombre__iexact="Cobertura",
+        subtipo__nombre_es__iexact="Cobertura",
     ).exists()
 
     existe_misma_siembra = ActividadProductiva.objects.filter(
@@ -268,7 +268,7 @@ def validar_reglas_siembra(fase, tipo, subtipo):
 
 def validar_reglas_aplicacion(fase, tipo, subtipo, fecha):
     # evita duplicados exactos en aplicaciones
-    if tipo.nombre.lower() != "aplicación" or not fase:
+    if tipo.nombre_es.lower() != "aplicación" or not fase:
         return True, None
 
     existe_misma_aplicacion = ActividadProductiva.objects.filter(
@@ -642,7 +642,7 @@ def registrar_actividad_aux(
                     try:
                         insumo_s = ActividadInsumo.objects.filter(
                             actividad__fase__ciclo=ciclo,
-                            actividad__tipo__nombre__iexact="siembra",
+                            actividad__tipo__nombre_es__iexact="siembra",
                             producto__categoria__es_semilla=True,
                         ).select_related("producto__datos_semilla__variedad").first()
                         pmg = insumo_s.producto.datos_semilla.variedad.pmg

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from modeltranslation.admin import TranslationAdmin
 from agro.models import Profile, Pais, Provincia, Ciudad, Empresa, Moneda, Unidad, ConversionUM
 from gestion_agro.models import ( Campo, Lote, Actividad, Cultivo, Variedad, Campana,
     CicloAgricola, FaseAgricola, TipoActividad, 
@@ -95,7 +96,7 @@ class CamposCosechaAdmin(admin.ModelAdmin):
 
 
 @admin.register(CategoriaProducto)
-class CategoriaProductoAdmin(admin.ModelAdmin):
+class CategoriaProductoAdmin(TranslationAdmin):
     list_display = ("codigo", "nombre")
     search_fields = ("codigo", "nombre")
 
@@ -170,7 +171,7 @@ class MovimientoStockAdmin(admin.ModelAdmin):
 
 
 @admin.register(TipoActividad)
-class TipoActividadAdmin(admin.ModelAdmin):
+class TipoActividadAdmin(TranslationAdmin):
     list_display = (
         "nombre",
         "tipo",
@@ -187,7 +188,7 @@ class TipoActividadAdmin(admin.ModelAdmin):
 
 
 @admin.register(SubTipoActividad)
-class SubTipoActividadAdmin(admin.ModelAdmin):
+class SubTipoActividadAdmin(TranslationAdmin):
     list_display = ("nombre", "codigo", "tipo_actividad", "activo")
     list_filter = ("activo", "tipo_actividad")
     search_fields = ("nombre", "codigo")

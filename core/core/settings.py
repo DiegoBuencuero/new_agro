@@ -44,6 +44,7 @@ ALLOWED_HOSTS = ['www.agroinnova.agr.br', 'agroinnova.agr.br', 'www.innobrar.com
 # Application definition
 
 INSTALLED_APPS = [
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -156,6 +157,12 @@ LANGUAGES = (
 LOCALE_PATHS = (
     os.path.join(BASE_DIR, 'locale'),
 )
+
+# django-modeltranslation: idioma "es" como default porque es el idioma en
+# que ya está guardado todo el dato de catálogo existente (TipoActividad,
+# SubTipoActividad, CategoriaProducto), independiente de LANGUAGE_CODE.
+MODELTRANSLATION_DEFAULT_LANGUAGE = 'es'
+MODELTRANSLATION_LANGUAGES = ('es', 'pt')
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/

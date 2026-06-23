@@ -910,7 +910,7 @@ def ajax_subtipos_tipo_actividad(request):
         "requiere_vist":        tipo.requiere_vist,
         "requiere_cosecha":     tipo.requiere_cosecha,
         "requiere_inspeccion":  tipo.requiere_inspeccion,
-        "es_siembra":           tipo.nombre.lower() == "siembra",
+        "es_siembra":           tipo.nombre_es.lower() == "siembra",
     })
 
 @login_required
@@ -957,7 +957,7 @@ def vista_agregar_actividad(request, id_ciclo):
         try:
             _insumo_s = ActividadInsumo.objects.filter(
                 actividad__fase__ciclo=ciclo,
-                actividad__tipo__nombre__iexact="siembra",
+                actividad__tipo__nombre_es__iexact="siembra",
                 producto__categoria__es_semilla=True,
             ).select_related("producto__datos_semilla__variedad").first()
             pmg_siembra = float(_insumo_s.producto.datos_semilla.variedad.pmg)

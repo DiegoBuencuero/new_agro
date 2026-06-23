@@ -184,23 +184,23 @@
                                                     <!-- ACTIVIDADES -->
                                                     {% for act in fase_group.list %}
                                                         <div class="timeline-item">
-                                                            <div class="activity-icon {{ act.tipo.nombre|slugify }}">
-                                                                {% if act.tipo.nombre|lower == "siembra" %}
+                                                            <div class="activity-icon {{ act.tipo.nombre_es|slugify }}">
+                                                                {% if act.tipo.nombre_es|lower == "siembra" %}
                                                                     <i class="mdi mdi-sprout"></i>
-                                                                {% elif act.tipo.nombre|lower == "aplicación" or act.tipo.nombre|lower == "aplicacion" %}
+                                                                {% elif act.tipo.nombre_es|lower == "aplicación" or act.tipo.nombre_es|lower == "aplicacion" %}
                                                                     <i class="mdi mdi-water"></i>
-                                                                {% elif act.tipo.nombre|lower == "fertilización" or act.tipo.nombre|lower == "fertilizacion" %}
+                                                                {% elif act.tipo.nombre_es|lower == "fertilización" or act.tipo.nombre_es|lower == "fertilizacion" %}
                                                                     <i class="mdi mdi-leaf"></i>
-                                                                {% elif act.tipo.nombre|lower == "cosecha" %}
+                                                                {% elif act.tipo.nombre_es|lower == "cosecha" %}
                                                                     <i class="mdi mdi-basket-fill"></i>
-                                                                {% elif act.tipo.nombre|lower == "visitoría" or act.tipo.nombre|lower == "vistoria" %}
+                                                                {% elif act.tipo.nombre_es|lower == "visitoría" or act.tipo.nombre_es|lower == "vistoria" %}
                                                                     <i class="mdi mdi-eye-outline"></i>
                                                                 {% else %}
                                                                     <i class="mdi mdi-chart-line"></i>
                                                                 {% endif %}
                                                             </div>
 
-                                                            <div class="activity-card {{ act.tipo.nombre|slugify }}" data-act-id="{{ act.id }}">
+                                                            <div class="activity-card {{ act.tipo.nombre_es|slugify }}" data-act-id="{{ act.id }}">
                                                                 <div
                                                                     class="activity-header"
                                                                     data-bs-toggle="collapse"
