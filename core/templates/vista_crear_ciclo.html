@@ -62,6 +62,39 @@
         font-weight: 600;
     }
 
+    .ciclo-radio-group .form-check {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        padding-left: 0;
+        margin-bottom: 0;
+    }
+
+    .ciclo-radio-group .form-check-input {
+        float: none;
+        margin-left: 0;
+        margin-top: 0;
+        flex-shrink: 0;
+        cursor: pointer;
+    }
+
+    .ciclo-radio-group .form-check-input:checked {
+        background-color: #347a34;
+        border-color: #347a34;
+    }
+
+    .ciclo-radio-group .form-check-input:focus {
+        border-color: #347a34;
+        box-shadow: 0 0 0 0.25rem rgba(52, 122, 52, 0.25);
+    }
+
+    .ciclo-radio-group .form-check-label {
+        color: #374151;
+        font-weight: 500;
+        cursor: pointer;
+        margin-bottom: 0;
+    }
+
     .page-subtitle {
         font-size: .92rem;
         color: #6b7280;
@@ -72,6 +105,25 @@
             margin-bottom: 1rem;
         }
     }
+.input-group > .btn {
+    width: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-group > .btn i {
+    font-size: 1.1rem;
+}
+
+#id_cultivo,
+#id_producto_final_preview {
+    border-right: 0;
+}
+
+.input-group .btn {
+    border-left: 0;
+}
 </style>
 {% endblock %}
 
@@ -192,7 +244,7 @@
 
                             <div class="mb-3">
                                 <label class="form-label">{% translate "Área del ciclo" %}</label>
-                                <div class="d-flex gap-3 flex-wrap">
+                                <div class="d-flex gap-3 flex-wrap ciclo-radio-group">
                                     {% for radio in form.tipo_area %}
                                     <div class="form-check">
                                         {{ radio.tag }}
@@ -224,28 +276,44 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">{% translate "Cultivo" %} *</label>
-                                <div class="d-flex gap-2 align-items-start">
-                                    <div class="flex-grow-1">
-                                        {{ form.cultivo }}
-                                        {% if form.cultivo.errors %}<div class="form-error-text">{{ form.cultivo.errors.0 }}</div>{% endif %}
-                                    </div>
-                                    <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalCultivo"
+                                <label class="form-label">
+                                    {% translate "Cultivo" %} *
+                                </label>
+
+                                <div class="input-group mb-2">
+                                    {{ form.cultivo }}
+                                    <button type="button"
+                                            class="btn btn-outline-success"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalCultivo"
                                             title="{% translate 'Agregar un cultivo nuevo a la lista' %}">
                                         <i class="mdi mdi-plus"></i>
                                     </button>
                                 </div>
-                                <div class="mt-2">
-                                    <label class="form-label">{% translate "Producto final" %}</label>
-                                    <div class="d-flex gap-2 align-items-start">
-                                        <input type="text" id="id_producto_final_preview" class="form-control readonly-lote flex-grow-1"
-                                               value="{% if form.instance.producto_final %}{{ form.instance.producto_final.nombre }}{% endif %}" readonly>
-                                        <span title="{% translate 'Crear el producto que se obtiene al cosechar este cultivo y dejarlo como predeterminado' %}">
-                                            <button type="button" id="btn-agregar-producto-final" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalProductoFinal">
-                                                <i class="mdi mdi-plus"></i>
-                                            </button>
-                                        </span>
-                                    </div>
+
+                                {% if form.cultivo.errors %}
+                                    <div class="form-error-text">{{ form.cultivo.errors.0 }}</div>
+                                {% endif %}
+
+                                <label class="form-label mt-3">
+                                    {% translate "Producto final" %}
+                                </label>
+
+                                <div class="input-group">
+                                    <input type="text"
+                                        id="id_producto_final_preview"
+                                        class="form-control readonly-lote"
+                                        value="{% if form.instance.producto_final %}{{ form.instance.producto_final.nombre }}{% endif %}"
+                                        readonly>
+
+                                    <button type="button"
+                                            id="btn-agregar-producto-final"
+                                            class="btn btn-outline-success"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#modalProductoFinal"
+                                            title="{% translate 'Crear el producto obtenido al cosechar este cultivo' %}">
+                                        <i class="mdi mdi-plus"></i>
+                                    </button>
                                 </div>
                             </div>
 
