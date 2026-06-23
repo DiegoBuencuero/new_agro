@@ -70,6 +70,7 @@ categorias = [
     {"codigo": "FER", "nombre": "Fertilizante",   "es_semilla": False},
     {"codigo": "INS", "nombre": "Insecticida",    "es_semilla": False},
     {"codigo": "PF",  "nombre": "Producto Final", "es_semilla": False},
+    {"codigo": "PFS", "nombre": "Producto Final - Semilla", "es_semilla": True},
 ]
 cat_objs = {}
 for c_data in categorias:

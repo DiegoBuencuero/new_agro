@@ -628,6 +628,11 @@ def registrar_actividad_aux(
                 ciclo.producto_final.categoria.es_semilla
             )
 
+            producto_semilla = (
+                ciclo.cultivo.productos_finales.filter(categoria__es_semilla=True).first()
+                or ciclo.producto_final
+            )
+
             # Calcular split semilla / consumo
             if es_semilla_ciclo and inspeccion and inspeccion.cant_semilla_mult_ha:
                 um_insp     = inspeccion.um
@@ -666,7 +671,7 @@ def registrar_actividad_aux(
             with transaction.atomic():
                 if kg_semilla > 0:
                     MovimientoStock.objects.create(
-                        producto=ciclo.producto_final,
+                        producto=producto_semilla,
                         tipo=MovimientoStock.Tipo.ENTRADA,
                         cantidad=kg_semilla,
                         um=unidad_base,

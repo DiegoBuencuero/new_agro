@@ -57,6 +57,43 @@ class DepositoForm(BaseForm):
             "descripcion": forms.Textarea(attrs={"rows": 2}),
         }
 
+def _crear_productos_finales_default(cultivo, empresa):
+    unidad_kg = Unidad.objects.filter(abreviatura__iexact="kg").first()
+
+    categoria_pf, _categoria_creada = CategoriaProducto.objects.get_or_create(
+        codigo="PF", defaults={"nombre": "Producto Final", "es_semilla": False}
+    )
+    categoria_pfs, _categoria_creada = CategoriaProducto.objects.get_or_create(
+        codigo="PFS", defaults={"nombre": "Producto Final - Semilla", "es_semilla": True}
+    )
+
+    def _crear(sufijo_nombre, sufijo_codigo, categoria):
+        nombre = f"{cultivo.nombre} {sufijo_nombre}"
+        base_codigo = f"{cultivo.nombre[:15].upper().replace(' ', '-')}-{sufijo_codigo}"
+        codigo = base_codigo
+        i = 1
+        while Producto.objects.filter(empresa=empresa, codigo=codigo).exists():
+            i += 1
+            codigo = f"{base_codigo}-{i}"
+        return Producto.objects.create(
+            empresa=empresa,
+            codigo=codigo,
+            nombre=nombre,
+            categoria=categoria,
+            unidad_base=unidad_kg,
+            producto_final=True,
+            maneja_stock=True,
+            activo=True,
+        )
+
+    producto_consumo = _crear("Consumo", "CONSUMO", categoria_pf)
+    producto_semilla = _crear("Semilla", "SEMILLA", categoria_pfs)
+
+    cultivo.productos_finales.add(producto_consumo, producto_semilla)
+    cultivo.producto_default = producto_consumo
+    cultivo.save(update_fields=["producto_default"])
+
+
 class CultivoForm(BaseForm):
     class Meta:
         model = Cultivo
@@ -68,6 +105,7 @@ class CultivoForm(BaseForm):
 
         if commit:
             cultivo.save()
+            _crear_productos_finales_default(cultivo, empresa)
 
         return cultivo
 
@@ -121,10 +159,9 @@ class CultivoProductoFinalForm(BaseSimpleForm):
             i += 1
             codigo = f"{base_codigo}-{i}"
 
-        try:
-            categoria_producto_final = CategoriaProducto.objects.get(codigo="PRODUCTO_FINAL")
-        except CategoriaProducto.DoesNotExist:
-            categoria_producto_final = CategoriaProducto.objects.first()
+        categoria_producto_final, _categoria_creada = CategoriaProducto.objects.get_or_create(
+            codigo="PF", defaults={"nombre": "Producto Final", "es_semilla": False}
+        )
 
         producto = Producto.objects.create(
             empresa=empresa,
