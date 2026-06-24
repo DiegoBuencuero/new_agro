@@ -6,11 +6,22 @@
   <h5 class="fw-bold mb-1">✏️ {% translate "Editar Ciclo" %}</h5>
   <p class="text-muted small mb-4">{{ ciclo.campo.nombre }} · {{ ciclo.campana }} · {{ ciclo.cultivo.nombre }}</p>
 
-  {% for msg in messages %}
-  <div class="alert alert-{{ msg.tags }} alert-dismissible fade show py-2" role="alert">
-    {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+  {% if messages %}
+  <div class="mb-4">
+    {% for msg in messages %}
+    <div class="alert {{ msg.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="mdi
+            {% if 'success' in msg.tags %}mdi-check-circle
+            {% elif 'danger' in msg.tags %}mdi-alert-circle
+            {% elif 'warning' in msg.tags %}mdi-alert
+            {% else %}mdi-information{% endif %}
+            me-2"></i>
+        <div>{{ msg }}</div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
   </div>
-  {% endfor %}
+  {% endif %}
 
   <div class="card border-0 shadow-sm">
     <div class="card-body">
