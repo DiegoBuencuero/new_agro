@@ -143,7 +143,7 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
               <td class="text-center text-success fw-semibold costo-mo-cell" style="font-size:.8rem">
                 {% if tipo.costo_mo %}R$ {{ tipo.costo_mo|floatformat:2 }}{% else %}—{% endif %}
               </td>
-              <td class="text-center text-primary fw-semibold costo-maq-cell" style="font-size:.8rem">
+              <td class="text-center text-info fw-semibold costo-maq-cell" style="font-size:.8rem">
                 {% if tipo.costo_maq %}R$ {{ tipo.costo_maq|floatformat:2 }}{% else %}—{% endif %}
               </td>
             </tr>
@@ -175,7 +175,7 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
               <td class="text-center text-success fw-semibold costo-mo-cell" style="font-size:.75rem">
                 {% if sub.costo_mo %}R$ {{ sub.costo_mo|floatformat:2 }}{% else %}—{% endif %}
               </td>
-              <td class="text-center text-primary fw-semibold costo-maq-cell" style="font-size:.75rem">
+              <td class="text-center text-info fw-semibold costo-maq-cell" style="font-size:.75rem">
                 {% if sub.costo_maq %}R$ {{ sub.costo_maq|floatformat:2 }}{% else %}—{% endif %}
               </td>
             </tr>
