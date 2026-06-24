@@ -1840,7 +1840,7 @@ msgstr "Armazéns"
 
 #: templates/base.html:331
 msgid "Compras"
-msgstr "Comparativos"
+msgstr "Compras"
 
 #: templates/base.html:337 templates/base.html:352
 msgid "Cuenta corriente"
@@ -1866,7 +1866,7 @@ msgstr "Gastos"
 
 #: templates/base.html:367
 msgid "Inversiones"
-msgstr "Investimentos"
+msgstr "Gestão de Estoque"
 
 #: templates/base.html:368
 msgid "Costos por Ciclo"
@@ -2286,7 +2286,7 @@ msgstr "Nota fiscal"
 #: templates/tem_administracion/_tabla_pagos.html:29
 #: templates/tem_administracion/cuenta_corriente_proveedor.html:262
 msgid "Comprobante"
-msgstr "Comparativos"
+msgstr "Comprovante"
 
 #: templates/tem_administracion/cargar_factura_venta.html:56
 msgid "Cargar factura de venta"
@@ -2722,18 +2722,14 @@ msgstr "Selecionar produto"
 
 #: templates/tem_administracion/cuenta_corriente_proveedor.html:277
 #: templates/tem_administracion/cuenta_corriente_proveedor.html:551
-#, fuzzy
-#| msgid "Comprobante"
 msgid "Ver comprobante"
-msgstr "Comparativos"
+msgstr "Ver comprovante"
 
 #: templates/tem_administracion/cuenta_corriente_proveedor.html:287
 msgid "Sin pagos registrados aún."
 msgstr "Sem pagamentos registrados ainda."
 
 #: templates/tem_administracion/cuenta_corriente_proveedor.html:317
-#, fuzzy
-#| msgid "Registrar pago"
 msgid "Registrar orden de pago"
 msgstr "registros"
 
@@ -3092,14 +3088,10 @@ msgid "Opacidad NDVI"
 msgstr "Opacidade NDVI"
 
 #: templates/temp_mapas/vista_comparacion.html:15
-#, fuzzy
-#| msgid "Comparación"
 msgid "Comparación de capas"
-msgstr "Configurações"
+msgstr "Comparação de mapas"
 
 #: templates/temp_mapas/vista_comparacion.html:17
-#, fuzzy
-#| msgid "Seleccioná un campo para ver el mapa"
 msgid "Seleccioná un campo para cargar sus capas"
 msgstr "Selecione um campo"
 
@@ -3112,36 +3104,26 @@ msgid "Capas disponibles"
 msgstr "Camadas disponíveis"
 
 #: templates/temp_mapas/vista_comparacion.html:58
-#, fuzzy
-#| msgid "Seleccioná un campo para ver el mapa"
 msgid "Seleccioná un campo para ver sus capas."
 msgstr "Selecione um campo"
 
 #: templates/temp_mapas/vista_comparacion.html:77
 #: templates/temp_mapas/vista_comparacion.html:93
-#, fuzzy
-#| msgid "Seleccioná un campo"
 msgid "Seleccioná una capa"
 msgstr "Selecione um campo"
 
 #: templates/temp_mapas/vista_comparacion.html:126
 #: templates/temp_mapas/vista_mapas.html:525
-#, fuzzy
-#| msgid "Análisis de suelo"
 msgid "Análisis del Punto Seleccionado"
-msgstr "Análise de solo"
+msgstr "Análise do Ponto Selecionado"
 
 #: templates/temp_mapas/vista_comparacion.html:134
 #: templates/temp_mapas/vista_mapas.html:533
-#, fuzzy
-#| msgid "Consultando..."
 msgid "Consultando datos del punto..."
 msgstr "Carregando..."
 
 #: templates/temp_mapas/vista_comparacion.html:143
 #: templates/temp_mapas/vista_mapas.html:541
-#, fuzzy
-#| msgid "Datos de la venta"
 msgid "Datos de Plantío"
 msgstr "Dados da atividade"
 
@@ -3154,17 +3136,13 @@ msgstr "Área"
 
 #: templates/temp_mapas/vista_comparacion.html:149
 #: templates/temp_mapas/vista_mapas.html:547
-#, fuzzy
-#| msgid "Fecha de pago"
 msgid "Fecha de Plantío"
-msgstr "Data de encerramento"
+msgstr "Data de Plantio"
 
 #: templates/temp_mapas/vista_comparacion.html:158
 #: templates/temp_mapas/vista_mapas.html:555
-#, fuzzy
-#| msgid "Comparación"
 msgid "Localización"
-msgstr "Configurações"
+msgstr "Localización"
 
 #: templates/temp_mapas/vista_comparacion.html:161
 #: templates/temp_mapas/vista_mapas.html:558
@@ -3173,60 +3151,49 @@ msgstr ""
 
 #: templates/temp_mapas/vista_comparacion.html:164
 #: templates/temp_mapas/vista_mapas.html:561
-#, fuzzy
-#| msgid "Rendimiento esperado"
 msgid "Rendimiento en el Punto"
-msgstr "Produtividade esperada"
+msgstr "Produtividade no Ponto"
 
 #: templates/temp_mapas/vista_comparacion.html:165
 #: templates/temp_mapas/vista_mapas.html:562
-#, fuzzy
-#| msgid "Rendimiento"
 msgid "Rendimiento Máximo"
-msgstr "Produtividade"
+msgstr "Produtividade Máxima"
 
 #: templates/temp_mapas/vista_comparacion.html:166
 #: templates/temp_mapas/vista_mapas.html:563
-#, fuzzy
-#| msgid "Rendimiento promedio"
 msgid "Rendimiento Medio"
-msgstr "Produtividade esperada"
+msgstr "Produtividade Média"
 
 #: templates/temp_mapas/vista_comparacion.html:167
 #: templates/temp_mapas/vista_mapas.html:564
-#, fuzzy
-#| msgid "Rendimiento"
 msgid "Rendimiento Mínimo"
-msgstr "Produtividade"
+msgstr "Produtividade Mínima"
+
 
 #: templates/temp_mapas/vista_comparacion.html:174
 #: templates/temp_mapas/vista_mapas.html:571
-#, fuzzy
-#| msgid "Análisis de suelo"
 msgid "Análisis de Nutrientes"
-msgstr "Análise de solo"
+msgstr "Análise de Nutrientes"
 
 #: templates/temp_mapas/vista_comparacion.html:177
 #: templates/temp_mapas/vista_mapas.html:574
 msgid "Sin datos analíticos para este punto"
-msgstr ""
+msgstr "Sem dados analíticos para este ponto"
 
 #: templates/temp_mapas/vista_comparacion.html:183
 #: templates/temp_mapas/vista_mapas.html:580
 msgid "Valor en el Punto"
-msgstr ""
+msgstr "Valor no Ponto"
 
 #: templates/temp_mapas/vista_comparacion.html:184
 #: templates/temp_mapas/vista_mapas.html:581
-#, fuzzy
-#| msgid "Valor máximo escala"
 msgid "Valor Máximo"
-msgstr "Valor máximo da escala"
+msgstr "Valor Máximo"
 
 #: templates/temp_mapas/vista_comparacion.html:185
 #: templates/temp_mapas/vista_mapas.html:582
 msgid "Diferencia"
-msgstr ""
+msgstr "Diferença"""
 
 #: templates/temp_mapas/vista_comparacion.html:197
 #: templates/temp_mapas/vista_mapas.html:593
@@ -3250,14 +3217,12 @@ msgid "NDVI / Satélite"
 msgstr "Satélite"
 
 #: templates/temp_mapas/vista_mapas.html:43
-#, fuzzy
-#| msgid "Comparativas"
 msgid "Comparar capas"
-msgstr "Comparativos"
+msgstr "Comparar camadas"
 
 #: templates/temp_mapas/vista_mapas.html:48
 msgid "Comparación"
-msgstr "Configurações"
+msgstr "Comparação"
 
 #: templates/temp_mapas/vista_mapas.html:54
 msgid "Subir datos"

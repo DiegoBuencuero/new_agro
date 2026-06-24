@@ -1819,7 +1819,7 @@ msgstr "Cultivos"
 
 #: templates/base.html:315
 msgid "Inventario"
-msgstr "Inversiones"
+msgstr "Gestión de Stock"
 
 #: templates/base.html:320
 #: templates/tem_administracion/cargar_factura_venta.html:335
@@ -1858,9 +1858,6 @@ msgstr "Resultados"
 msgid "Gastos"
 msgstr "Gastos"
 
-#: templates/base.html:367
-msgid "Inversiones"
-msgstr "Inversiones"
 
 #: templates/base.html:368
 msgid "Costos por Ciclo"
