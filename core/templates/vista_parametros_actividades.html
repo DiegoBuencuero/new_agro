@@ -67,7 +67,7 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
             <label class="form-label small fw-semibold">{% translate "R$/dia-homem (base)" %}</label>
             <div class="input-group input-group-sm">
               <span class="input-group-text">R$</span>
-              <input type="number" name="empresa_v_mo" class="form-control"
+              <input type="number" id="empresa-v-mo" name="empresa_v_mo" class="form-control"
                      step="0.01" value="{{ empresa.valor_mobra|default:'140' }}">
             </div>
           </div>
@@ -75,7 +75,7 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
             <label class="form-label small fw-semibold">{% translate "R$/h máquina (base)" %}</label>
             <div class="input-group input-group-sm">
               <span class="input-group-text">R$</span>
-              <input type="number" name="empresa_v_maq" class="form-control"
+              <input type="number" id="empresa-v-maq" name="empresa_v_maq" class="form-control"
                      step="0.01" value="{{ empresa.valor_maquina|default:'100' }}">
             </div>
           </div>
@@ -108,7 +108,7 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
           </thead>
           <tbody>
             {% for tipo in tipos %}
-            <tr class="table-white fw-semibold">
+            <tr class="table-white fw-semibold" data-calc-row>
               <td>
                 <span class="badge bg-light text-dark border me-1" style="font-size:.65rem">{{ tipo.tipo }}</span>
                 {{ tipo.nombre }}
@@ -140,15 +140,15 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
                        placeholder="{{ tipo.eff_v_maq|floatformat:0 }}"
                        {% if tipo.tiene_subtipos %}disabled{% endif %}>
               </td>
-              <td class="text-center text-success fw-semibold" style="font-size:.8rem">
+              <td class="text-center text-success fw-semibold costo-mo-cell" style="font-size:.8rem">
                 {% if tipo.costo_mo %}R$ {{ tipo.costo_mo|floatformat:2 }}{% else %}—{% endif %}
               </td>
-              <td class="text-center text-primary fw-semibold" style="font-size:.8rem">
+              <td class="text-center text-primary fw-semibold costo-maq-cell" style="font-size:.8rem">
                 {% if tipo.costo_maq %}R$ {{ tipo.costo_maq|floatformat:2 }}{% else %}—{% endif %}
               </td>
             </tr>
             {% for sub in tipo.subs_calc %}
-            <tr class="sub-row">
+            <tr class="sub-row" data-calc-row>
               <td>↳ {{ sub.nombre }}</td>
               <td class="text-center">
                 <input type="number" class="param-input mo-h" step="0.01" min="0"
@@ -172,10 +172,10 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
                        value="{{ sub.valor_maquina|default:'' }}"
                        placeholder="{{ sub.eff_v_maq|floatformat:0 }}">
               </td>
-              <td class="text-center text-muted" style="font-size:.75rem">
+              <td class="text-center text-muted costo-mo-cell" style="font-size:.75rem">
                 {% if sub.costo_mo %}R$ {{ sub.costo_mo|floatformat:2 }}{% else %}—{% endif %}
               </td>
-              <td class="text-center text-muted" style="font-size:.75rem">
+              <td class="text-center text-muted costo-maq-cell" style="font-size:.75rem">
                 {% if sub.costo_maq %}R$ {{ sub.costo_maq|floatformat:2 }}{% else %}—{% endif %}
               </td>
             </tr>
@@ -193,4 +193,47 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
     </div>
   </form>
 </div>
+
+{% block custom_js %}
+<script>
+(function() {
+  var empresaVMo  = document.getElementById('empresa-v-mo');
+  var empresaVMaq = document.getElementById('empresa-v-maq');
+  var rows = document.querySelectorAll('tr[data-calc-row]');
+
+  function num(input, fallbackInput) {
+    var v = parseFloat(input.value);
+    if (!isNaN(v)) return v;
+    var f = parseFloat(fallbackInput.value);
+    return isNaN(f) ? 0 : f;
+  }
+
+  function recalcRow(row) {
+    var moH  = parseFloat(row.querySelector('.mo-h').value) || 0;
+    var maqH = parseFloat(row.querySelector('.maq-h').value) || 0;
+    var vMo  = num(row.querySelector('.v-mo'), empresaVMo);
+    var vMaq = num(row.querySelector('.v-maq'), empresaVMaq);
+
+    var costoMo  = row.querySelector('.costo-mo-cell');
+    var costoMaq = row.querySelector('.costo-maq-cell');
+
+    costoMo.textContent  = moH  ? ('R$ ' + (moH  * vMo ).toFixed(2)) : '—';
+    costoMaq.textContent = maqH ? ('R$ ' + (maqH * vMaq).toFixed(2)) : '—';
+  }
+
+  function recalcAll() {
+    rows.forEach(recalcRow);
+  }
+
+  rows.forEach(function(row) {
+    row.querySelectorAll('.param-input').forEach(function(input) {
+      input.addEventListener('input', function() { recalcRow(row); });
+    });
+  });
+
+  empresaVMo.addEventListener('input', recalcAll);
+  empresaVMaq.addEventListener('input', recalcAll);
+})();
+</script>
+{% endblock %}
 {% endblock %}
