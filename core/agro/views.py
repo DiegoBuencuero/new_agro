@@ -594,8 +594,12 @@ def vista_parametros_actividades(request):
     for tipo in tipos:
         subs = list(tipo.subtipos.all())
         tipo.tiene_subtipos = bool(subs)
-        tipo.eff_v_mo = tipo.valor_mo or empresa.valor_mobra
-        tipo.eff_v_maq = tipo.valor_maquina or empresa.valor_maquina
+        if tipo.tiene_subtipos:
+            tipo.eff_v_mo = empresa.valor_mobra
+            tipo.eff_v_maq = empresa.valor_maquina
+        else:
+            tipo.eff_v_mo = tipo.valor_mo or empresa.valor_mobra
+            tipo.eff_v_maq = tipo.valor_maquina or empresa.valor_maquina
         tipo.costo_mo = tipo.valor_x_ha_mo * tipo.eff_v_mo if tipo.valor_x_ha_mo else None
         tipo.costo_maq = tipo.valor_x_ha_mq * tipo.eff_v_maq if tipo.valor_x_ha_mq else None
 

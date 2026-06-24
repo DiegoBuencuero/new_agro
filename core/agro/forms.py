@@ -54,16 +54,12 @@ class ConfiguracionEmpresaForm(ModelForm):
     class Meta:
         model = Empresa
         fields = [
-            "valor_mobra",
-            "valor_maquina",
             "calculo_costo",
             "deposito_insumos_default",
             "deposito_producto_final_default",
             "unidad_inspeccion_semilla",
         ]
         widgets = {
-            "valor_mobra":                    forms.NumberInput(attrs={"class": "form-control"}),
-            "valor_maquina":                  forms.NumberInput(attrs={"class": "form-control"}),
             "calculo_costo":                  forms.Select(attrs={"class": "form-control"}),
             "deposito_insumos_default":       forms.Select(attrs={"class": "form-control"}),
             "deposito_producto_final_default":forms.Select(attrs={"class": "form-control"}),

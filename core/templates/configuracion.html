@@ -42,41 +42,6 @@
           <form method="POST">
             {% csrf_token %}
 
-            <!-- COSTOS OPERATIVOS -->
-            <p class="card-description">{% translate "Costos operativos" %}</p>
-            <div class="row">
-              <div class="col-md-6">
-                <div class="form-group row">
-                  <label class="col-sm-4 col-form-label">
-                    {% translate "Valor hora MO" %}
-                  </label>
-                  <div class="col-sm-8">
-                    <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      {{ form.valor_mobra }}
-                    </div>
-                    {{ form.valor_mobra.errors }}
-                  </div>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="form-group row">
-                  <label class="col-sm-4 col-form-label">
-                    {% translate "Valor hora máquina" %}
-                  </label>
-                  <div class="col-sm-8">
-                    <div class="input-group">
-                      <span class="input-group-text">$</span>
-                      {{ form.valor_maquina }}
-                    </div>
-                    {{ form.valor_maquina.errors }}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <hr class="my-3">
-
             <!-- STOCK E INVENTARIO -->
             <p class="card-description">{% translate "Stock e inventario" %}</p>
             <div class="row">
