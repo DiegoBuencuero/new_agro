@@ -107,7 +107,8 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
               <td class="text-center">
                 <input type="number" class="param-input v-mo" step="1" min="0"
                        name="tipo_{{ tipo.id }}_v_mo"
-                       value="{{ tipo.eff_v_mo|floatformat:0 }}"
+                       value="{{ tipo.valor_mo|default:'' }}"
+                       placeholder="{{ tipo.eff_v_mo|floatformat:0 }}"
                        {% if tipo.tiene_subtipos %}disabled{% endif %}>
               </td>
               <td class="text-center">
@@ -119,7 +120,8 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
               <td class="text-center">
                 <input type="number" class="param-input v-maq" step="1" min="0"
                        name="tipo_{{ tipo.id }}_v_maq"
-                       value="{{ tipo.eff_v_maq|floatformat:0 }}"
+                       value="{{ tipo.valor_maquina|default:'' }}"
+                       placeholder="{{ tipo.eff_v_maq|floatformat:0 }}"
                        {% if tipo.tiene_subtipos %}disabled{% endif %}>
               </td>
               <td class="text-center text-success fw-semibold" style="font-size:.8rem">
@@ -140,7 +142,8 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
               <td class="text-center">
                 <input type="number" class="param-input v-mo" step="1" min="0"
                        name="sub_{{ sub.id }}_v_mo"
-                       value="{{ sub.eff_v_mo|floatformat:0 }}">
+                       value="{{ sub.valor_mo|default:'' }}"
+                       placeholder="{{ sub.eff_v_mo|floatformat:0 }}">
               </td>
               <td class="text-center">
                 <input type="number" class="param-input maq-h" step="0.1" min="0"
@@ -150,7 +153,8 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
               <td class="text-center">
                 <input type="number" class="param-input v-maq" step="1" min="0"
                        name="sub_{{ sub.id }}_v_maq"
-                       value="{{ sub.eff_v_maq|floatformat:0 }}">
+                       value="{{ sub.valor_maquina|default:'' }}"
+                       placeholder="{{ sub.eff_v_maq|floatformat:0 }}">
               </td>
               <td class="text-center text-muted" style="font-size:.75rem">
                 {% if sub.costo_mo %}R$ {{ sub.costo_mo|floatformat:2 }}{% else %}—{% endif %}
