@@ -172,10 +172,10 @@ input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-al
                        value="{{ sub.valor_maquina|default:'' }}"
                        placeholder="{{ sub.eff_v_maq|floatformat:0 }}">
               </td>
-              <td class="text-center text-muted costo-mo-cell" style="font-size:.75rem">
+              <td class="text-center text-success fw-semibold costo-mo-cell" style="font-size:.75rem">
                 {% if sub.costo_mo %}R$ {{ sub.costo_mo|floatformat:2 }}{% else %}—{% endif %}
               </td>
-              <td class="text-center text-muted costo-maq-cell" style="font-size:.75rem">
+              <td class="text-center text-primary fw-semibold costo-maq-cell" style="font-size:.75rem">
                 {% if sub.costo_maq %}R$ {{ sub.costo_maq|floatformat:2 }}{% else %}—{% endif %}
               </td>
             </tr>
