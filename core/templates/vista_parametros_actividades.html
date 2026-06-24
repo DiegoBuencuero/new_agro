@@ -18,6 +18,8 @@ input.param-input:focus { outline: 2px solid #22c55e; border-color: #22c55e; col
 .sub-row { background: #f9fafb; }
 .sub-row td:first-child { padding-left: 2.5rem; color: #6b7280; font-style: italic; }
 th { font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
+input.param-input:disabled { background: #f3f4f6; color: #9ca3af; cursor: not-allowed; }
+.tipo-locked-note { font-size: .68rem; color: #9ca3af; font-style: italic; }
 </style>
 {% endblock %}
 
@@ -94,84 +96,67 @@ th { font-size: .75rem; text-transform: uppercase; letter-spacing: .05em; color:
               <td>
                 <span class="badge bg-light text-dark border me-1" style="font-size:.65rem">{{ tipo.tipo }}</span>
                 {{ tipo.nombre }}
+                {% if tipo.tiene_subtipos %}<div class="tipo-locked-note">{% translate "Configurar por subtipo" %}</div>{% endif %}
               </td>
               <td class="text-center">
                 <input type="number" class="param-input mo-h" step="0.01" min="0"
                        name="tipo_{{ tipo.id }}_mo_h"
-                       data-vmo="tipo_{{ tipo.id }}_v_mo"
-                       data-out="costo-mo-tipo-{{ tipo.id }}"
-                       value="{{ tipo.valor_x_ha_mo|default:'' }}">
+                       value="{{ tipo.valor_x_ha_mo|default:'' }}"
+                       {% if tipo.tiene_subtipos %}disabled{% endif %}>
               </td>
               <td class="text-center">
                 <input type="number" class="param-input v-mo" step="1" min="0"
                        name="tipo_{{ tipo.id }}_v_mo"
-                       data-moh="tipo_{{ tipo.id }}_mo_h"
-                       data-out="costo-mo-tipo-{{ tipo.id }}"
-                       value="{{ tipo.valor_mo|default:'' }}">
+                       value="{{ tipo.eff_v_mo|floatformat:0 }}"
+                       {% if tipo.tiene_subtipos %}disabled{% endif %}>
               </td>
               <td class="text-center">
                 <input type="number" class="param-input maq-h" step="0.1" min="0"
                        name="tipo_{{ tipo.id }}_maq_h"
-                       data-vmaq="tipo_{{ tipo.id }}_v_maq"
-                       data-out="costo-maq-tipo-{{ tipo.id }}"
-                       value="{{ tipo.valor_x_ha_mq|default:'' }}">
+                       value="{{ tipo.valor_x_ha_mq|default:'' }}"
+                       {% if tipo.tiene_subtipos %}disabled{% endif %}>
               </td>
               <td class="text-center">
                 <input type="number" class="param-input v-maq" step="1" min="0"
                        name="tipo_{{ tipo.id }}_v_maq"
-                       data-maqh="tipo_{{ tipo.id }}_maq_h"
-                       data-out="costo-maq-tipo-{{ tipo.id }}"
-                       value="{{ tipo.valor_maquina|default:'' }}">
+                       value="{{ tipo.eff_v_maq|floatformat:0 }}"
+                       {% if tipo.tiene_subtipos %}disabled{% endif %}>
               </td>
-              <td class="text-center text-success fw-semibold" id="costo-mo-tipo-{{ tipo.id }}"
-                  style="font-size:.8rem">
-                {% if tipo.valor_x_ha_mo and tipo.valor_mo %}
-                  R$ {{ tipo.valor_x_ha_mo|floatformat:2 }}×{{ tipo.valor_mo|floatformat:0 }}
-                {% else %}—{% endif %}
+              <td class="text-center text-success fw-semibold" style="font-size:.8rem">
+                {% if tipo.costo_mo %}R$ {{ tipo.costo_mo|floatformat:2 }}{% else %}—{% endif %}
               </td>
-              <td class="text-center text-primary fw-semibold" id="costo-maq-tipo-{{ tipo.id }}"
-                  style="font-size:.8rem">
-                {% if tipo.valor_x_ha_mq and tipo.valor_maquina %}
-                  R$ {{ tipo.valor_x_ha_mq|floatformat:2 }}×{{ tipo.valor_maquina|floatformat:0 }}
-                {% else %}—{% endif %}
+              <td class="text-center text-primary fw-semibold" style="font-size:.8rem">
+                {% if tipo.costo_maq %}R$ {{ tipo.costo_maq|floatformat:2 }}{% else %}—{% endif %}
               </td>
             </tr>
-            {% for sub in tipo.subtipos.all %}
+            {% for sub in tipo.subs_calc %}
             <tr class="sub-row">
               <td>↳ {{ sub.nombre }}</td>
               <td class="text-center">
                 <input type="number" class="param-input mo-h" step="0.01" min="0"
                        name="sub_{{ sub.id }}_mo_h"
-                       value="{{ sub.valor_x_ha_mo|default:'' }}"
-                       placeholder="{{ tipo.valor_x_ha_mo|default:'' }}">
+                       value="{{ sub.valor_x_ha_mo|default:'' }}">
               </td>
               <td class="text-center">
                 <input type="number" class="param-input v-mo" step="1" min="0"
                        name="sub_{{ sub.id }}_v_mo"
-                       value="{{ sub.valor_mo|default:'' }}"
-                       placeholder="{{ tipo.valor_mo|default:'' }}">
+                       value="{{ sub.eff_v_mo|floatformat:0 }}">
               </td>
               <td class="text-center">
                 <input type="number" class="param-input maq-h" step="0.1" min="0"
                        name="sub_{{ sub.id }}_maq_h"
-                       value="{{ sub.valor_x_ha_mq|default:'' }}"
-                       placeholder="{{ tipo.valor_x_ha_mq|default:'' }}">
+                       value="{{ sub.valor_x_ha_mq|default:'' }}">
               </td>
               <td class="text-center">
                 <input type="number" class="param-input v-maq" step="1" min="0"
                        name="sub_{{ sub.id }}_v_maq"
-                       value="{{ sub.valor_maquina|default:'' }}"
-                       placeholder="{{ tipo.valor_maquina|default:'' }}">
+                       value="{{ sub.eff_v_maq|floatformat:0 }}">
               </td>
               <td class="text-center text-muted" style="font-size:.75rem">
-                {% if sub.valor_x_ha_mo and sub.valor_mo %}
-                  R$ {% widthratio sub.valor_x_ha_mo 1 sub.valor_mo %}/ha
-                {% else %}—{% endif %}
+                {% if sub.costo_mo %}R$ {{ sub.costo_mo|floatformat:2 }}{% else %}—{% endif %}
               </td>
               <td class="text-center text-muted" style="font-size:.75rem">
-                {% if sub.valor_x_ha_mq and sub.valor_maquina %}
-                  R$ {% widthratio sub.valor_x_ha_mq 1 sub.valor_maquina %}/ha
-                {% else %}—{% endif %}
+                {% if sub.costo_maq %}R$ {{ sub.costo_maq|floatformat:2 }}{% else %}—{% endif %}
               </td>
             </tr>
             {% endfor %}

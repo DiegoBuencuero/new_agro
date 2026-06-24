@@ -591,6 +591,21 @@ def vista_parametros_actividades(request):
 
     tipos = TipoActividad.objects.prefetch_related("subtipos").order_by("nombre")
 
+    for tipo in tipos:
+        subs = list(tipo.subtipos.all())
+        tipo.tiene_subtipos = bool(subs)
+        tipo.eff_v_mo = tipo.valor_mo or empresa.valor_mobra
+        tipo.eff_v_maq = tipo.valor_maquina or empresa.valor_maquina
+        tipo.costo_mo = tipo.valor_x_ha_mo * tipo.eff_v_mo if tipo.valor_x_ha_mo else None
+        tipo.costo_maq = tipo.valor_x_ha_mq * tipo.eff_v_maq if tipo.valor_x_ha_mq else None
+
+        for sub in subs:
+            sub.eff_v_mo = sub.valor_mo or tipo.eff_v_mo
+            sub.eff_v_maq = sub.valor_maquina or tipo.eff_v_maq
+            sub.costo_mo = sub.valor_x_ha_mo * sub.eff_v_mo if sub.valor_x_ha_mo else None
+            sub.costo_maq = sub.valor_x_ha_mq * sub.eff_v_maq if sub.valor_x_ha_mq else None
+        tipo.subs_calc = subs
+
     return render(request, "vista_parametros_actividades.html", {
         "tipos":   tipos,
         "empresa": empresa,
