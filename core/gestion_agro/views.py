@@ -2340,12 +2340,26 @@ def vista_confirmar_factura(request):
 
     if not cabecera_form.is_valid() or not formset.is_valid():
         messages.error(request, _("Hay errores en la factura. Revisá los campos marcados."))
+        _idata_err = []
+        for raw in factura_temp.get("items", []):
+            cant = _br_to_float(raw.get("quantidade", 0)) or 0
+            p_u  = _br_to_float(raw.get("v_unit", 0)) or 0
+            contenido, unidad, _ = _detectar_contenido_unidad(
+                raw.get("descricao", ""), raw.get("unidade", "")
+            )
+            _idata_err.append({
+                "descripcion":    raw.get("descricao", ""),
+                "unidad_medida":  unidad,
+                "cantidad_num":   format(cant, 'g') if cant else '',
+                "precio_num":     format(p_u,  'g') if p_u  else '',
+                "contenido_num":  format(contenido, 'g') if contenido else '',
+            })
         return render(request, "tem_facturas/vista_revisar_factura.html", {
             "cabecera_form":   cabecera_form,
             "formset":         formset,
             "items_con_match": [
-                (f, {"score": 0, "label": "ninguno", "candidatos": [], "presentaciones": []}, {})
-                for f in formset
+                (f, {"score": 0, "label": "ninguno", "candidatos": [], "presentaciones": []}, idata)
+                for f, idata in zip(formset, _idata_err)
             ],
             "items":           factura_temp["items"],
             "nombre_archivo":  factura_temp["nombre_archivo"],
