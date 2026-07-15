@@ -355,6 +355,17 @@
                                                    value="{{ form.subtotal.value|default:'' }}">
                                         </td>
                                     </tr>
+                                    {% if form.errors %}
+                                    <tr>
+                                        <td colspan="10" class="bg-danger bg-opacity-10 px-3 py-1">
+                                            {% for field, errs in form.errors.items %}
+                                                {% for e in errs %}
+                                                <div class="text-danger small"><strong>{{ field }}:</strong> {{ e }}</div>
+                                                {% endfor %}
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
                                     {% empty %}
                                     <tr>
                                         <td colspan="10" class="text-center text-muted py-4">
