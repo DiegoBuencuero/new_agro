@@ -2339,6 +2339,13 @@ def vista_confirmar_factura(request):
     )
 
     if not cabecera_form.is_valid() or not formset.is_valid():
+        print("=== FACTURA ERROR DEBUG ===")
+        print("cabecera_form.errors:", cabecera_form.errors)
+        for i, f in enumerate(formset):
+            if f.errors:
+                print(f"formset[{i}].errors:", f.errors)
+        print("formset.non_form_errors():", formset.non_form_errors())
+        print("===========================")
         messages.error(request, _("Hay errores en la factura. Revisá los campos marcados."))
         _idata_err = []
         for raw in factura_temp.get("items", []):
