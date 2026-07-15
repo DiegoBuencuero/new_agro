@@ -2344,7 +2344,7 @@ def vista_confirmar_factura(request):
             "cabecera_form":   cabecera_form,
             "formset":         formset,
             "items_con_match": [
-                (f, {"score": 0, "label": "ninguno", "candidatos": [], "presentaciones": []})
+                (f, {"score": 0, "label": "ninguno", "candidatos": [], "presentaciones": []}, {})
                 for f in formset
             ],
             "items":           factura_temp["items"],
