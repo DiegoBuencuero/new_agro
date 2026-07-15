@@ -2344,7 +2344,7 @@ def vista_confirmar_factura(request):
         for raw in factura_temp.get("items", []):
             cant = _br_to_float(raw.get("quantidade", 0)) or 0
             p_u  = _br_to_float(raw.get("v_unit", 0)) or 0
-            contenido, unidad, _ = _detectar_contenido_unidad(
+            contenido, unidad, _pn = _detectar_contenido_unidad(
                 raw.get("descricao", ""), raw.get("unidade", "")
             )
             _idata_err.append({
