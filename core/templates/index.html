@@ -9,22 +9,50 @@
 <div class="content-wrapper py-3 px-3">
 
   <!-- ─── TICKER ──────────────────────────────────────────── -->
-<!-- ─── TICKER ──────────────────────────────────────────── -->
-<div class="d-flex align-items-center justify-content-between mb-3 px-3 py-2 rounded"
-     style="background:#f0fdf4;border:1px solid #d1fae5">
-  <div class="d-flex gap-4 flex-wrap align-items-center" id="ticker-area">
-    <span id="tk-usd"   class="small text-muted">USD/BRL <span class="spinner-border spinner-border-sm ms-1" style="width:.6rem;height:.6rem;border-width:2px"></span></span>
-    <span id="tk-soja"  class="small text-muted">SOJA <span class="spinner-border spinner-border-sm ms-1" style="width:.6rem;height:.6rem;border-width:2px"></span></span>
-    <span id="tk-maiz"  class="small text-muted">MAÍZ <span class="spinner-border spinner-border-sm ms-1" style="width:.6rem;height:.6rem;border-width:2px"></span></span>
-    <span id="tk-trigo" class="small text-muted">TRIGO <span class="spinner-border spinner-border-sm ms-1" style="width:.6rem;height:.6rem;border-width:2px"></span></span>
+<div class="d-flex align-items-center justify-content-between mb-3 px-3 py-2 rounded-3"
+     style="background:#0f172a;min-height:44px">
+
+  <div class="d-flex align-items-center gap-3 flex-wrap">
+
+    <!-- USD/BRL -->
+    <div id="tk-usd" class="d-flex align-items-center gap-2">
+      <span style="font-size:.62rem;color:#475569;letter-spacing:.08em;font-weight:600">USD/BRL</span>
+      <span class="spinner-border spinner-border-sm" style="width:.65rem;height:.65rem;border-width:2px;color:#64748b"></span>
+    </div>
+
+    <!-- separador -->
+    <span style="width:1px;height:18px;background:#334155;display:inline-block"></span>
+
+    <!-- Label CHICAGO CBOT -->
+    <span style="font-size:.58rem;color:#cbd5e1;letter-spacing:.1em;font-weight:700">CHICAGO CBOT</span>
+
+    <!-- SOJA -->
+    <div id="tk-soja" class="d-flex align-items-center gap-2">
+      <span style="font-size:.62rem;color:#cbd5e1;letter-spacing:.06em;font-weight:600">SOJA</span>
+      <span class="spinner-border spinner-border-sm" style="width:.65rem;height:.65rem;border-width:2px;color:#64748b"></span>
+    </div>
+
+    <!-- MAÍZ -->
+    <div id="tk-maiz" class="d-flex align-items-center gap-2">
+      <span style="font-size:.62rem;color:#cbd5e1;letter-spacing:.06em;font-weight:600">MAÍZ</span>
+      <span class="spinner-border spinner-border-sm" style="width:.65rem;height:.65rem;border-width:2px;color:#64748b"></span>
+    </div>
+
+    <!-- TRIGO -->
+    <div id="tk-trigo" class="d-flex align-items-center gap-2">
+      <span style="font-size:.62rem;color:#cbd5e1;letter-spacing:.06em;font-weight:600">TRIGO</span>
+      <span class="spinner-border spinner-border-sm" style="width:.65rem;height:.65rem;border-width:2px;color:#64748b"></span>
+    </div>
+
   </div>
+
   <button class="btn p-1 border-0 bg-transparent position-relative"
           data-bs-toggle="modal" data-bs-target="#modal-alertas">
     <i class="mdi mdi-bell{% if total_alertas %}-ring{% else %}-outline{% endif %}"
-       style="font-size:1.4rem;color:{% if total_alertas %}#b91c1c{% else %}#15803d{% endif %}"></i>
+       style="font-size:1.4rem;color:{% if total_alertas %}#f87171{% else %}#475569{% endif %}"></i>
     {% if total_alertas %}
     <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill"
-          style="font-size:.6rem;padding:2px 5px;background:#b91c1c">{{ total_alertas }}</span>
+          style="font-size:.6rem;padding:2px 5px;background:#ef4444">{{ total_alertas }}</span>
     {% endif %}
   </button>
 </div>
@@ -312,12 +340,22 @@ function fmtR(v) {
 // ── Ticker + cotizaciones ─────────────────────────────────────
 function trendHtml(direction, pct) {
   if (!direction) return '';
-  var up   = direction === 'up';
-  var flat = direction === 'flat';
-  var color = flat ? '#9ca3af' : (up ? '#16a34a' : '#dc2626');
-  var arrow = flat ? '→' : (up ? '↑' : '↓');
-  return ' <span style="font-size:.72rem;font-weight:600;color:' + color + '">'
+  var up    = direction === 'up';
+  var flat  = direction === 'flat';
+  var color = flat ? '#475569' : (up ? '#4ade80' : '#f87171');
+  var arrow = flat ? '→' : (up ? '▲' : '▼');
+  return '<span style="font-size:.65rem;font-weight:700;color:' + color + ';margin-left:3px">'
        + arrow + (pct ? ' ' + pct + '%' : '') + '</span>';
+}
+
+function tkLabel(txt) {
+  return '<span style="font-size:.6rem;color:#cbd5e1;letter-spacing:.07em;font-weight:700;margin-right:5px">' + txt + '</span>';
+}
+function tkPrice(txt) {
+  return '<span style="font-size:.82rem;font-weight:700;color:#f1f5f9;font-variant-numeric:tabular-nums">' + txt + '</span>';
+}
+function tkSub(txt) {
+  return '<span style="font-size:.62rem;color:#cbd5e1;margin-left:4px">' + txt + '</span>';
 }
 
 fetch("{% url 'ajax_cotizaciones' %}")
@@ -327,22 +365,33 @@ fetch("{% url 'ajax_cotizaciones' %}")
     var usd = d.usd_brl;
 
     var tkUsd = document.getElementById('tk-usd');
-    tkUsd.innerHTML = usd !== null
-      ? '<span class="text-muted me-1" style="font-size:.8rem">USD/BRL</span>'
-        + '<span class="fw-semibold" style="color:#374151">R$' + usd.toFixed(4) + '</span>'
+    if (usd !== null && usd !== undefined) {
+      tkUsd.innerHTML = tkLabel('USD/BRL')
+        + tkPrice('R$' + usd.toFixed(4))
         + trendHtml(d.usd_trend, d.usd_pct)
-        + (d.usd_fecha ? ' <span style="font-size:.65rem;color:#9ca3af">' + d.usd_fecha + '</span>' : '')
-      : '<span class="text-muted">USD/BRL —</span>';
+        + (d.usd_fecha ? tkSub(d.usd_fecha) : '');
+    } else {
+      tkUsd.innerHTML = tkLabel('USD/BRL') + '<span style="color:#334155">—</span>';
+    }
 
     [['soja','SOJA'],['maiz','MAÍZ'],['trigo','TRIGO']].forEach(([key, lbl]) => {
       var el = document.getElementById('tk-' + key);
       var p  = d[key];
-      el.innerHTML = p && p.brl_saca !== null
-        ? '<span class="text-muted me-1" style="font-size:.8rem">' + lbl + '</span>'
-          + '<span class="fw-semibold" style="color:#374151">R$' + p.brl_saca.toFixed(2) + '/sc</span>'
-          + trendHtml(p.trend, p.pct)
-          + ' <span style="font-size:.68rem;color:#9ca3af">US$' + p.usd_ton + '/tn</span>'
-        : '<span class="text-muted">' + lbl + ' —</span>';
+      if (!p) {
+        el.innerHTML = tkLabel(lbl) + '<span style="color:#334155">—</span>';
+        return;
+      }
+      var html = tkLabel(lbl);
+      if (p.brl_saca !== null && p.brl_saca !== undefined) {
+        html += tkPrice('R$' + p.brl_saca.toFixed(2) + '/sc');
+        html += trendHtml(p.trend, p.pct);
+        html += tkSub('US$' + p.usd_ton + '/tn');
+      } else {
+        html += tkPrice('US$' + p.usd_ton + '/tn');
+        html += trendHtml(p.trend, p.pct);
+        html += tkSub(p.cents_bu.toFixed(0) + '¢/bu');
+      }
+      el.innerHTML = html;
     });
 
     renderCiclo();
@@ -583,5 +632,6 @@ function navCiclo(dir) {
   cicloIdx = Math.max(0, Math.min(CICLOS_DATA.length - 1, cicloIdx + dir));
   renderCiclo();
 }
+
 </script>
 {% endblock %}

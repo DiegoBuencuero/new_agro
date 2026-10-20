@@ -31,10 +31,13 @@ _STOOQ = {
     "trigo": "https://stooq.com/q/l/?s=zw.f&f=sd2t2ohlcv&h&e=json",
 }
 
+_COT_CACHE = {"ts": 0, "data": None}
+_COT_TTL   = 900  # 15 minutos
+
 def _stooq_price(url):
     try:
         import requests
-        r = requests.get(url, timeout=5)
+        r = requests.get(url, timeout=6, headers={"User-Agent": "Mozilla/5.0"})
         if r.status_code != 200:
             return None, None
         raw  = r.text.replace('"volume":}', '"volume": null}')
@@ -42,7 +45,7 @@ def _stooq_price(url):
         syms = data.get("symbols", [])
         if not syms:
             return None, None
-        sym   = syms[0]
+        sym = syms[0]
         close = sym.get("close")
         open_ = sym.get("open")
         return (float(close) if close is not None else None,
@@ -50,17 +53,40 @@ def _stooq_price(url):
     except Exception:
         return None, None
 
+def _yahoo_futures(session, symbol):
+    """Precio de futuros CBOT vía Yahoo Finance — devuelve (precio, prev) en cents/bu."""
+    try:
+        r = session.get(
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{symbol}",
+            params={"range": "5d", "interval": "1d"},
+            headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json",
+                     "Referer": "https://finance.yahoo.com/"},
+            timeout=6,
+        )
+        if r.status_code != 200:
+            return None, None
+        meta  = r.json()["chart"]["result"][0]["meta"]
+        price = meta.get("regularMarketPrice")
+        prev  = meta.get("chartPreviousClose")
+        if price is None:
+            return None, None
+        return float(price), (float(prev) if prev is not None else None)
+    except Exception:
+        return None, None
+
 def _usd_brl():
+    """Compatibilidad: devuelve (precio, prev, fecha) del USD/BRL."""
     try:
         import requests
         session = requests.Session()
-        session.get("https://finance.yahoo.com", headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+        session.get("https://finance.yahoo.com",
+                    headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
         r = session.get(
             "https://query1.finance.yahoo.com/v8/finance/chart/USDBRL=X",
             params={"range": "7d", "interval": "1d"},
             headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json",
                      "Referer": "https://finance.yahoo.com/"},
-            timeout=5,
+            timeout=6,
         )
         if r.status_code != 200:
             return None, None, None
@@ -83,22 +109,72 @@ def _trend(close, ref):
     return direction, round(abs(pct), 2)
 
 def ajax_cotizaciones(request):
-    soja_c,  soja_o  = _stooq_price(_STOOQ["soja"])
-    maiz_c,  maiz_o  = _stooq_price(_STOOQ["maiz"])
-    trigo_c, trigo_o = _stooq_price(_STOOQ["trigo"])
-    usd, usd_prev, usd_fecha = _usd_brl()
+    import time, requests as _req
 
-    def fmt(cents, ref_cents, kg_bushel):
-        if cents is None:
+    # Cache de 15 min para no martillar las APIs en cada carga del dashboard
+    now = time.time()
+    if _COT_CACHE["data"] and now - _COT_CACHE["ts"] < _COT_TTL:
+        return JsonResponse(_COT_CACHE["data"])
+
+    session = _req.Session()
+    try:
+        session.get("https://finance.yahoo.com",
+                    headers={"User-Agent": "Mozilla/5.0"}, timeout=5)
+    except Exception:
+        pass
+
+    # USD/BRL
+    usd, usd_prev, usd_fecha = None, None, None
+    try:
+        r = session.get(
+            "https://query1.finance.yahoo.com/v8/finance/chart/USDBRL=X",
+            params={"range": "7d", "interval": "1d"},
+            headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json",
+                     "Referer": "https://finance.yahoo.com/"},
+            timeout=6,
+        )
+        if r.status_code == 200:
+            meta  = r.json()["chart"]["result"][0]["meta"]
+            price = meta.get("regularMarketPrice")
+            prev  = meta.get("chartPreviousClose")
+            ts    = meta.get("regularMarketTime")
+            usd   = round(float(price), 4) if price is not None else None
+            usd_prev = float(prev) if prev is not None else None
+            if ts:
+                usd_fecha = datetime.datetime.utcfromtimestamp(ts).strftime("%d/%m %H:%Mz")
+    except Exception:
+        pass
+
+    # Granos CBOT — Yahoo Finance primario, Stooq fallback
+    # Yahoo Finance devuelve cents/bu para ZS=F, ZC=F, ZW=F
+    soja_c,  soja_o  = _yahoo_futures(session, "ZS=F")
+    maiz_c,  maiz_o  = _yahoo_futures(session, "ZC=F")
+    trigo_c, trigo_o = _yahoo_futures(session, "ZW=F")
+
+    if soja_c  is None: soja_c,  soja_o  = _stooq_price(_STOOQ["soja"])
+    if maiz_c  is None: maiz_c,  maiz_o  = _stooq_price(_STOOQ["maiz"])
+    if trigo_c is None: trigo_c, trigo_o = _stooq_price(_STOOQ["trigo"])
+
+    def fmt(price_raw, ref_raw, kg_bushel, yahoo=True):
+        if price_raw is None:
             return None
-        usd_bushel = cents / 100
-        usd_ton    = round(usd_bushel / kg_bushel * 1000, 2)
-        brl_saca   = round(usd_bushel * (60 / kg_bushel) * usd, 2) if usd else None
-        direction, pct = _trend(cents, ref_cents)
-        return {"usd_ton": usd_ton, "brl_saca": brl_saca, "trend": direction, "pct": pct}
+        # Yahoo devuelve cents/bu para granos CBOT
+        cents = price_raw
+        ref   = ref_raw
+        usd_bu  = cents / 100
+        usd_ton = round(usd_bu / kg_bushel * 1000, 2)
+        brl_saca = round(usd_bu * (60 / kg_bushel) * usd, 2) if usd else None
+        direction, pct = _trend(cents, ref)
+        return {
+            "usd_ton":  usd_ton,
+            "brl_saca": brl_saca,
+            "cents_bu": round(cents, 1),
+            "trend":    direction,
+            "pct":      pct,
+        }
 
     usd_direction, usd_pct = _trend(usd, usd_prev)
-    return JsonResponse({
+    payload = {
         "soja":      fmt(soja_c,  soja_o,  27.2155),
         "maiz":      fmt(maiz_c,  maiz_o,  25.4012),
         "trigo":     fmt(trigo_c, trigo_o, 27.2155),
@@ -106,7 +182,10 @@ def ajax_cotizaciones(request):
         "usd_trend": usd_direction,
         "usd_pct":   usd_pct,
         "usd_fecha": usd_fecha,
-    })
+    }
+    _COT_CACHE["data"] = payload
+    _COT_CACHE["ts"]   = now
+    return JsonResponse(payload)
 
 
 @login_required
@@ -494,7 +573,7 @@ def index(request):
         "alertas_ndvi":          alertas_ndvi,
         "alertas_sin_contorno":  alertas_sin_contorno,
         "total_alertas":         total_alertas,
-        "ultimas_actividades": ultimas_actividades,
+        "ultimas_actividades":   ultimas_actividades,
     })
 
 

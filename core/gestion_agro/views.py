@@ -730,6 +730,86 @@ def ajax_areas_por_campo(request):
     })
 
 @login_required
+def ajax_dashboard_mapa(request):
+    """GeoJSON FeatureCollection de todos los campos de la empresa con su ciclo activo."""
+    empresa = getattr(request.user.profile, "empresa", None)
+    if not empresa:
+        return JsonResponse({"type": "FeatureCollection", "features": []})
+
+    import json as _json
+
+    CULTIVO_COLORS = [
+        "#22c55e", "#3b82f6", "#f59e0b", "#ef4444",
+        "#8b5cf6", "#ec4899", "#14b8a6", "#f97316",
+        "#a3e635", "#06b6d4",
+    ]
+    color_map = {}
+
+    campos = (
+        Campo.objects.filter(empresa=empresa)
+        .prefetch_related("ciclos__cultivo", "areas")
+    )
+
+    features = []
+    for campo in campos:
+        # Obtener geometría: contorno del campo o unión de áreas
+        geom = None
+        if campo.contorno:
+            try:
+                raw = _json.loads(campo.contorno)
+                geom = raw if raw.get("type") not in ("FeatureCollection", "Feature") else (
+                    raw["geometry"] if raw.get("type") == "Feature"
+                    else (raw["features"][0]["geometry"] if raw["features"] else None)
+                )
+            except Exception:
+                pass
+
+        if geom is None:
+            # fallback: primera área con contorno
+            for area in campo.areas.all():
+                if area.contorno:
+                    try:
+                        raw = _json.loads(area.contorno)
+                        geom = raw if raw.get("type") not in ("FeatureCollection", "Feature") else (
+                            raw["geometry"] if raw.get("type") == "Feature" else None
+                        )
+                        if geom:
+                            break
+                    except Exception:
+                        pass
+
+        if geom is None:
+            continue
+
+        ciclos_activos = [c for c in campo.ciclos.all() if c.activa and not c.fecha_fin]
+        if ciclos_activos:
+            cultivo_nombre = ciclos_activos[0].cultivo.nombre
+            ha_total = sum(float(c.superficie_ha) for c in ciclos_activos)
+        else:
+            cultivo_nombre = None
+            ha_total = float(campo.superficie_ha)
+
+        if cultivo_nombre and cultivo_nombre not in color_map:
+            color_map[cultivo_nombre] = CULTIVO_COLORS[len(color_map) % len(CULTIVO_COLORS)]
+
+        color = color_map.get(cultivo_nombre, "#94a3b8")
+
+        features.append({
+            "type": "Feature",
+            "geometry": geom,
+            "properties": {
+                "id": campo.id,
+                "nombre": campo.nombre,
+                "ha": round(ha_total, 1),
+                "cultivo": cultivo_nombre or "Sin ciclo",
+                "color": color,
+            },
+        })
+
+    return JsonResponse({"type": "FeatureCollection", "features": features})
+
+
+@login_required
 def ajax_info_cultivo(request):
     empresa = getattr(request.user.profile, "empresa", None)
     cultivo_id = request.GET.get("cultivo_id")
@@ -871,6 +951,8 @@ def vista_editar_ciclo(request, id_ciclo):
             if fecha_inicio:
                 ciclo.fecha_inicio = datetime.strptime(fecha_inicio, "%Y-%m-%d").date()
             ciclo.activa = activa
+            if activa:
+                ciclo.fecha_fin = None
             ciclo.save()
             messages.success(request, _("Ciclo actualizado."))
             return redirect("vista_lista_ciclos")
