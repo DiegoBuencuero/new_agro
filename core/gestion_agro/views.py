@@ -37,6 +37,7 @@ from gestion_agro.models import (
     ActividadInsumo, CategoriaProducto, MovimientoStock,
     FacturaCompra, Proveedor, PresentacionProducto, FacturaCompraItem, Variedad,
     Cultivo, ProductoSemilla, Deposito, CamposCosecha, CamposInspeccion, Cliente,
+    Socio, ConceptoSociedad, Sociedad, SociedadParticipacion,
 )
 
 @login_required
@@ -915,6 +916,24 @@ def vista_detalle_ciclo(request, id_ciclo):
 
     rendimiento_esperado_sacos = getattr(ciclo, 'rendimiento_esperado_sacos', None)
 
+    # siembra en sociedad: reparto de costos y producción por socio
+    sociedad_conceptos, sociedad_filas = [], []
+    rendimiento_ha = None
+    if empresa.usa_sociedades and ciclo.sociedad_id:
+        rendimientos = [
+            act.camposcosecha.rendimiento for act in actividades
+            if hasattr(act, "camposcosecha") and act.camposcosecha.rendimiento is not None
+        ]
+        if rendimientos:
+            rendimiento_ha = sum(rendimientos, Decimal("0"))
+        sociedad_conceptos, sociedad_filas = ciclo.sociedad.reparto(
+            costos={"MO": costo_mo_ciclo, "MAQ": costo_maq_ciclo, "INS": costo_ins_ciclo},
+            produccion=rendimiento_ha,
+        )
+        for fila in sociedad_filas:
+            fila["costo_ha"] = fila["costo"] / ha
+            fila["produccion_total"] = fila["produccion"] * ciclo.superficie_ha if fila["produccion"] is not None else None
+
     context = {
         "ciclo": ciclo,
         "fases": fases,
@@ -928,6 +947,9 @@ def vista_detalle_ciclo(request, id_ciclo):
         "sacos_equilibrio_ha": sacos_equilibrio_ha,
         "rendimiento_esperado_sacos": rendimiento_esperado_sacos,
         "fecha_fin_real": fecha_fin_real,
+        "sociedad_conceptos": sociedad_conceptos,
+        "sociedad_filas": sociedad_filas,
+        "rendimiento_ha": rendimiento_ha,
     }
 
     return render(request, "vista_detalle_ciclo.html", context)
@@ -1087,6 +1109,7 @@ def vista_agregar_actividad(request, id_ciclo):
         insumo_formset    = ActividadInsumoFormSet(
             request.POST, prefix="insumos",
             form_kwargs={"empresa": empresa}, superficie=ciclo.superficie_ha,
+            permite_sin_stock=empresa.permite_sin_stock,
         )
         vistoria_form     = CamposVistoriaForm(request.POST, request.FILES, prefix="vistoria")
         cosecha_form      = CamposCosechaForm(
@@ -2767,3 +2790,252 @@ def ajax_transferir_stock(request):
         "message": "Transferencia realizada correctamente.",
     })
 
+
+
+# ── Siembra en sociedad ──────────────────────────────────────────────────────
+
+def _sociedades_deshabilitadas(request, empresa):
+    if empresa.usa_sociedades:
+        return None
+    messages.warning(request, _("La siembra en sociedad no está habilitada para esta empresa. Actívela en Parámetros del sistema."))
+    return redirect("vista_configuracion")
+
+
+def _parse_porcentaje(valor):
+    valor = (valor or "").strip().replace(",", ".")
+    if not valor:
+        return None
+    return Decimal(valor)
+
+
+@login_required
+def vista_lista_sociedades(request):
+    empresa = request.user.profile.empresa
+    if (respuesta := _sociedades_deshabilitadas(request, empresa)):
+        return respuesta
+    ConceptoSociedad.crear_defaults(empresa)
+
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        try:
+            if accion == "crear_socio":
+                nombre = request.POST.get("nombre", "").strip()
+                if not nombre:
+                    raise ValidationError(_("Indique el nombre del socio."))
+                es_propia = request.POST.get("es_propia") == "1"
+                socio = Socio(
+                    empresa=empresa, nombre=nombre, es_propia=es_propia,
+                    identificador=request.POST.get("identificador", "").strip() or None,
+                )
+                socio.full_clean()
+                socio.save()
+                if es_propia:
+                    Socio.objects.filter(empresa=empresa, es_propia=True).exclude(id=socio.id).update(es_propia=False)
+                messages.success(request, _("Socio creado."))
+
+            elif accion == "toggle_socio":
+                socio = get_object_or_404(Socio, id=request.POST.get("id"), empresa=empresa)
+                socio.activo = not socio.activo
+                socio.save(update_fields=["activo"])
+
+            elif accion == "crear_concepto":
+                nombre = request.POST.get("nombre", "").strip()
+                if not nombre:
+                    raise ValidationError(_("Indique el nombre del concepto."))
+                concepto = ConceptoSociedad(
+                    empresa=empresa, nombre=nombre,
+                    tipo=request.POST.get("tipo") or ConceptoSociedad.TIPO_APORTE,
+                    origen_costo=request.POST.get("origen_costo", ""),
+                    orden=int(request.POST.get("orden") or 50),
+                )
+                concepto.full_clean()
+                concepto.save()
+                messages.success(request, _("Concepto creado."))
+
+            elif accion == "toggle_concepto":
+                concepto = get_object_or_404(ConceptoSociedad, id=request.POST.get("id"), empresa=empresa)
+                concepto.activo = not concepto.activo
+                concepto.save(update_fields=["activo"])
+
+            elif accion == "eliminar_sociedad":
+                sociedad = get_object_or_404(Sociedad, id=request.POST.get("id"), empresa=empresa)
+                sociedad.delete()
+                messages.success(request, _("Sociedad eliminada."))
+
+        except ValidationError as e:
+            for error in e.messages:
+                messages.error(request, error)
+        return redirect("vista_lista_sociedades")
+
+    sociedades = (
+        Sociedad.objects.filter(empresa=empresa)
+        .select_related("campana")
+        .prefetch_related("ciclos", "participaciones__socio", "participaciones__concepto")
+    )
+    for sociedad in sociedades:
+        sociedad.tabla_conceptos, sociedad.tabla_filas = sociedad.reparto()
+
+    context = {
+        "sociedades": sociedades,
+        "socios": Socio.objects.filter(empresa=empresa),
+        "conceptos": ConceptoSociedad.objects.filter(empresa=empresa),
+        "tipo_choices": ConceptoSociedad.TIPO_CHOICES,
+        "origen_choices": ConceptoSociedad.ORIGEN_CHOICES,
+    }
+    return render(request, "vista_lista_sociedades.html", context)
+
+
+@login_required
+def vista_editar_sociedad(request, id_sociedad=None):
+    empresa = request.user.profile.empresa
+    if (respuesta := _sociedades_deshabilitadas(request, empresa)):
+        return respuesta
+    ConceptoSociedad.crear_defaults(empresa)
+
+    sociedad = None
+    if id_sociedad:
+        sociedad = get_object_or_404(Sociedad, id=id_sociedad, empresa=empresa)
+
+    conceptos = list(ConceptoSociedad.objects.filter(empresa=empresa, activo=True))
+    if sociedad:
+        # conceptos desactivados que ya están cargados en esta sociedad se siguen mostrando
+        ids_usados = set(sociedad.participaciones.values_list("concepto_id", flat=True))
+        conceptos += list(ConceptoSociedad.objects.filter(id__in=ids_usados, activo=False))
+        conceptos.sort(key=lambda c: (c.orden, c.nombre))
+
+    socios = Socio.objects.filter(empresa=empresa)
+    if sociedad:
+        socios = socios.filter(Q(activo=True) | Q(participaciones__sociedad=sociedad)).distinct()
+    else:
+        socios = socios.filter(activo=True)
+    socios = list(socios)
+
+    campanas = Campana.objects.filter(empresa=empresa)
+    ciclos = (
+        CicloAgricola.objects.filter(campo__empresa=empresa)
+        .filter(Q(sociedad__isnull=True) | Q(sociedad=sociedad) if sociedad else Q(sociedad__isnull=True))
+        .select_related("campo", "cultivo", "campana")
+        .order_by("campo__nombre", "nombre_lote")
+    )
+
+    matriz = sociedad.matriz() if sociedad else {}
+    socios_sel = set(matriz.keys())
+    ciclos_sel = set(sociedad.ciclos.values_list("id", flat=True)) if sociedad else set()
+    datos = {
+        "nombre": sociedad.nombre if sociedad else "",
+        "campana": sociedad.campana_id if sociedad else (campanas.filter(activa=True).values_list("id", flat=True).first()),
+        "observaciones": (sociedad.observaciones or "") if sociedad else "",
+        "activa": sociedad.activa if sociedad else True,
+    }
+    valores = {f"pct_{s}_{c}": v for s, fila in matriz.items() for c, v in fila.items()}
+
+    if request.method == "POST":
+        datos = {
+            "nombre": request.POST.get("nombre", "").strip(),
+            "campana": int(request.POST.get("campana") or 0) or None,
+            "observaciones": request.POST.get("observaciones", "").strip(),
+            "activa": request.POST.get("activa") == "1",
+        }
+        socios_sel = {int(x) for x in request.POST.getlist("socios")}
+        ciclos_sel = {int(x) for x in request.POST.getlist("ciclos")}
+        valores = {k: v for k, v in request.POST.items() if k.startswith("pct_")}
+
+        errores = []
+        if not datos["nombre"]:
+            errores.append(_("Indique el nombre de la sociedad."))
+        campana = campanas.filter(id=datos["campana"]).first()
+        if not campana:
+            errores.append(_("Seleccione la campaña."))
+
+        socios_validos = {s.id for s in socios}
+        socios_sel &= socios_validos
+        if len(socios_sel) < 2:
+            errores.append(_("Una sociedad necesita al menos dos socios."))
+
+        # porcentajes[concepto_id][socio_id]
+        porcentajes = {}
+        for concepto in conceptos:
+            fila = {}
+            for socio_id in socios_sel:
+                try:
+                    valor = _parse_porcentaje(valores.get(f"pct_{socio_id}_{concepto.id}"))
+                except Exception:
+                    errores.append(_("Porcentaje inválido en %(concepto)s.") % {"concepto": concepto.nombre})
+                    valor = None
+                if valor is not None:
+                    fila[socio_id] = valor
+            total = sum(fila.values(), Decimal("0"))
+            # se acepta cargar en fracción (0,48 / 0,52) y se pasa a porcentaje
+            if fila and total == Decimal("1") and all(v <= 1 for v in fila.values()):
+                fila = {k: v * 100 for k, v in fila.items()}
+                total = Decimal("100")
+            if any(v < 0 or v > 100 for v in fila.values()):
+                errores.append(_("%(concepto)s: cada porcentaje debe estar entre 0 y 100.") % {"concepto": concepto.nombre})
+            elif total and total != Decimal("100"):
+                errores.append(
+                    _("%(concepto)s: los porcentajes suman %(total)s%% y deben sumar 100%%.")
+                    % {"concepto": concepto.nombre, "total": total}
+                )
+            if total:
+                porcentajes[concepto.id] = fila
+
+        if not any(c.tipo == ConceptoSociedad.TIPO_REPARTO and c.id in porcentajes for c in conceptos):
+            errores.append(_("Cargue cómo se reparte el rendimiento entre los socios."))
+
+        if campana:
+            ciclos_validos = set(ciclos.filter(campana=campana).values_list("id", flat=True))
+            ciclos_sel &= ciclos_validos
+
+        if errores:
+            for error in errores:
+                messages.error(request, error)
+        else:
+            try:
+                with transaction.atomic():
+                    if not sociedad:
+                        sociedad = Sociedad(empresa=empresa)
+                    sociedad.campana = campana
+                    sociedad.nombre = datos["nombre"]
+                    sociedad.observaciones = datos["observaciones"] or None
+                    sociedad.activa = datos["activa"]
+                    sociedad.full_clean()
+                    sociedad.save()
+
+                    sociedad.participaciones.all().delete()
+                    SociedadParticipacion.objects.bulk_create([
+                        SociedadParticipacion(sociedad=sociedad, socio_id=socio_id, concepto_id=concepto_id, porcentaje=valor)
+                        for concepto_id, fila in porcentajes.items()
+                        for socio_id, valor in fila.items()
+                    ])
+
+                    CicloAgricola.objects.filter(sociedad=sociedad).exclude(id__in=ciclos_sel).update(sociedad=None)
+                    CicloAgricola.objects.filter(id__in=ciclos_sel).update(sociedad=sociedad)
+
+                messages.success(request, _("Sociedad guardada."))
+                return redirect("vista_lista_sociedades")
+            except ValidationError as e:
+                for error in e.messages:
+                    messages.error(request, error)
+
+    grilla = [
+        {
+            "socio": socio,
+            "incluido": socio.id in socios_sel,
+            "celdas": [
+                {"name": f"pct_{socio.id}_{c.id}", "valor": valores.get(f"pct_{socio.id}_{c.id}", ""), "concepto": c}
+                for c in conceptos
+            ],
+        }
+        for socio in socios
+    ]
+
+    context = {
+        "sociedad": sociedad,
+        "datos": datos,
+        "campanas": campanas,
+        "ciclos": ciclos,
+        "ciclos_sel": ciclos_sel,
+        "conceptos": conceptos,
+        "grilla": grilla,
+    }
+    return render(request, "vista_editar_sociedad.html", context)

@@ -58,12 +58,16 @@ class ConfiguracionEmpresaForm(ModelForm):
             "deposito_insumos_default",
             "deposito_producto_final_default",
             "unidad_inspeccion_semilla",
+            "usa_sociedades",
+            "permite_sin_stock",
         ]
         widgets = {
             "calculo_costo":                  forms.Select(attrs={"class": "form-control"}),
             "deposito_insumos_default":       forms.Select(attrs={"class": "form-control"}),
             "deposito_producto_final_default":forms.Select(attrs={"class": "form-control"}),
             "unidad_inspeccion_semilla":      forms.Select(attrs={"class": "form-control"}),
+            "usa_sociedades":                 forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch", "style": "position:static; margin:0; width:2.5em; height:1.25em; cursor:pointer"}),
+            "permite_sin_stock":              forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch", "style": "position:static; margin:0; width:2.5em; height:1.25em; cursor:pointer"}),
         }
 
     def __init__(self, empresa, *args, **kwargs):

@@ -6,7 +6,7 @@ from gestion_agro.models import ( Campo, Lote, Actividad, Cultivo, Variedad, Cam
     SubTipoActividad, ActividadProductiva, CamposVistoria, CamposCosecha, CategoriaProducto,
     Producto, ProductoSemilla, ActividadInsumo, ProductoNormalizado, PresentacionProducto,
     Proveedor, FacturaCompra, FacturaCompraItem, MovimientoStock, TipoActividadCategoriaProducto,
-    Cliente
+    Cliente, Socio, ConceptoSociedad, Sociedad, SociedadParticipacion,
 )
 
 
@@ -199,3 +199,28 @@ class ClienteAdmin(admin.ModelAdmin):
     list_display = ("razon_social", "identificador", "empresa")
     search_fields = ("razon_social", "identificador")
     list_filter = ("empresa",)
+
+@admin.register(Socio)
+class SocioAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "empresa", "identificador", "es_propia", "activo")
+    search_fields = ("nombre", "identificador")
+    list_filter = ("empresa", "es_propia", "activo")
+
+
+@admin.register(ConceptoSociedad)
+class ConceptoSociedadAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "empresa", "tipo", "origen_costo", "orden", "activo")
+    list_filter = ("empresa", "tipo", "activo")
+
+
+class SociedadParticipacionInline(admin.TabularInline):
+    model = SociedadParticipacion
+    extra = 0
+
+
+@admin.register(Sociedad)
+class SociedadAdmin(admin.ModelAdmin):
+    list_display = ("nombre", "empresa", "campana", "activa")
+    search_fields = ("nombre",)
+    list_filter = ("empresa", "campana", "activa")
+    inlines = [SociedadParticipacionInline]

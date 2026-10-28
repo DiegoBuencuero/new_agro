@@ -17,7 +17,8 @@ ajax_subtipos_tipo_actividad, ajax_productos_por_actividad, ajax_valores_activid
 vista_lista_facturas, vista_cargar_factura, vista_cargar_factura_manual, vista_procesar_pdf_factura,
 vista_revisar_factura, vista_confirmar_factura, ajax_unidades_conversion, vista_producto, vista_editar_producto,
 ajax_presentaciones_producto, ajax_crear_producto, ajax_crear_presentacion, vista_movimientos_producto,
-vista_crear_cultivo, vista_editar_cultivo, vista_crear_deposito, vista_editar_deposito, ajax_transferir_stock
+vista_crear_cultivo, vista_editar_cultivo, vista_crear_deposito, vista_editar_deposito, ajax_transferir_stock,
+vista_lista_sociedades, vista_editar_sociedad
 )
 
 urlpatterns = [
@@ -63,6 +64,9 @@ urlpatterns = [
     path('ciclos/<int:id_ciclo>/editar/',   vista_editar_ciclo,  name='vista_editar_ciclo'),
     path('ciclos/<int:id_ciclo>/eliminar/', ajax_eliminar_ciclo, name='ajax_eliminar_ciclo'),
     path('ciclo/<int:id_ciclo>/actividad/nueva/', vista_agregar_actividad, name="vista_agregar_actividad"),
+    path('sociedades/',                       vista_lista_sociedades, name='vista_lista_sociedades'),
+    path('sociedades/nueva/',                 vista_editar_sociedad,  name='vista_crear_sociedad'),
+    path('sociedades/<int:id_sociedad>/',     vista_editar_sociedad,  name='vista_editar_sociedad'),
     path("ajax/subtipos-tipo-actividad/", ajax_subtipos_tipo_actividad, name="ajax_subtipos_tipo_actividad" ),
     path("ajax/productos-por-actividad/", ajax_productos_por_actividad, name="ajax_productos_por_actividad"),
     path("ajax/valores-actividad/", ajax_valores_actividad, name="ajax_valores_actividad",),

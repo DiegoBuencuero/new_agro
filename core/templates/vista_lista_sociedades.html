@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="container-fluid py-3 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-1">
+    <h5 class="fw-bold mb-0"><i class="mdi mdi-handshake-outline me-1"></i>{% translate "Siembra en sociedad" %}</h5>
+    <a href="{% url 'vista_crear_sociedad' %}" class="btn btn-success btn-sm">
+      <i class="mdi mdi-plus-circle-outline me-1"></i>{% translate "Nueva sociedad" %}
+    </a>
+  </div>
+  <p class="text-muted small mb-4">{% translate "Quiénes son los socios, qué aporta cada uno y en qué proporción se reparte el rendimiento." %}</p>
+
+  {% if messages %}
+  <div class="mb-4">
+    {% for msg in messages %}
+    <div class="alert {{ msg.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="mdi
+            {% if 'success' in msg.tags %}mdi-check-circle
+            {% elif 'danger' in msg.tags %}mdi-alert-circle
+            {% elif 'warning' in msg.tags %}mdi-alert
+            {% else %}mdi-information{% endif %}
+            me-2"></i>
+        <div>{{ msg }}</div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── SOCIEDADES ── -->
+  {% for sociedad in sociedades %}
+  <div class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-start mb-2">
+        <div>
+          <span class="fw-bold">{{ sociedad.nombre }}</span>
+          <span class="text-muted small ms-2">{{ sociedad.campana }}</span>
+          {% if not sociedad.activa %}<span class="badge bg-secondary ms-2">{% translate "Inactiva" %}</span>{% endif %}
+          <div class="small text-muted mt-1">
+            <i class="mdi mdi-map-outline me-1"></i>
+            {% for ciclo in sociedad.ciclos.all %}{{ ciclo.nombre_lote }}{% if not forloop.last %}, {% endif %}{% empty %}{% translate "Sin ciclos asignados" %}{% endfor %}
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'vista_editar_sociedad' id_sociedad=sociedad.id %}" class="btn btn-outline-secondary btn-sm">
+            <i class="mdi mdi-pencil"></i>
+          </a>
+          <form method="post" onsubmit="return confirm('{% translate "¿Eliminar la sociedad? Los ciclos quedan sin sociedad." %}')">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="eliminar_sociedad">
+            <input type="hidden" name="id" value="{{ sociedad.id }}">
+            <button class="btn btn-outline-danger btn-sm"><i class="mdi mdi-delete"></i></button>
+          </form>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 small">
+          <thead>
+            <tr>
+              <th>{% translate "Socio" %}</th>
+              {% for c in sociedad.tabla_conceptos %}
+              <th class="text-end">{{ c.nombre }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for fila in sociedad.tabla_filas %}
+            <tr>
+              <td>{{ fila.socio.nombre }}{% if fila.socio.es_propia %} <span class="badge bg-success-subtle text-success">{% translate "propia" %}</span>{% endif %}</td>
+              {% for pct in fila.celdas %}
+              <td class="text-end">{% if pct is not None %}{{ pct|floatformat:2 }}%{% else %}–{% endif %}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body text-center text-muted py-4">
+      <div class="mb-3">{% translate "Todavía no hay sociedades cargadas." %}</div>
+      {% if socios|length >= 2 %}
+      <a href="{% url 'vista_crear_sociedad' %}" class="btn btn-success">
+        <i class="mdi mdi-plus-circle-outline me-1"></i>{% translate "Crear sociedad y cargar porcentajes" %}
+      </a>
+      {% else %}
+      <div class="small">{% translate "Primero cargue al menos dos socios abajo." %}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <div class="row g-3 mt-2">
+    <!-- ── SOCIOS ── -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-3">{% translate "Socios" %}</h6>
+          <table class="table table-sm small">
+            {% for socio in socios %}
+            <tr class="{% if not socio.activo %}text-muted{% endif %}">
+              <td>{{ socio.nombre }}{% if socio.es_propia %} <span class="badge bg-success-subtle text-success">{% translate "propia" %}</span>{% endif %}</td>
+              <td>{{ socio.identificador|default:"" }}</td>
+              <td class="text-end">
+                <form method="post" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="toggle_socio">
+                  <input type="hidden" name="id" value="{{ socio.id }}">
+                  <button class="btn btn-link btn-sm p-0">{% if socio.activo %}{% translate "Desactivar" %}{% else %}{% translate "Activar" %}{% endif %}</button>
+                </form>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td class="text-muted">{% translate "Sin socios cargados." %}</td></tr>
+            {% endfor %}
+          </table>
+          <form method="post" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="crear_socio">
+            <div class="col-md-5">
+              <label class="form-label small fw-semibold">{% translate "Nombre / Razón social" %}</label>
+              <input type="text" name="nombre" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">{% translate "CUIT / CNPJ / CPF" %}</label>
+              <input type="text" name="identificador" class="form-control form-control-sm">
+            </div>
+            <div class="col-md-3">
+              <label class="d-flex align-items-center gap-2 small mb-0" for="chk-propia" style="min-height:38px; cursor:pointer">
+                <input type="checkbox" name="es_propia" value="1" id="chk-propia" style="position:static; margin:0; width:1.1em; height:1.1em">
+                {% translate "Es mi empresa" %}
+              </label>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-success btn-sm">{% translate "Agregar socio" %}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CONCEPTOS ── -->
+    <div class="col-lg-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <h6 class="text-muted mb-1">{% translate "Conceptos de aporte y reparto" %}</h6>
+          <p class="small text-muted mb-3">{% translate "Los conceptos con costo asociado reparten entre los socios ese costo del ciclo según su porcentaje." %}</p>
+          <table class="table table-sm small">
+            {% for c in conceptos %}
+            <tr class="{% if not c.activo %}text-muted{% endif %}">
+              <td>{{ c.nombre }}</td>
+              <td>{{ c.get_tipo_display }}</td>
+              <td>{% if c.origen_costo %}{{ c.get_origen_costo_display }}{% endif %}</td>
+              <td class="text-end">
+                <form method="post" class="d-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="accion" value="toggle_concepto">
+                  <input type="hidden" name="id" value="{{ c.id }}">
+                  <button class="btn btn-link btn-sm p-0">{% if c.activo %}{% translate "Desactivar" %}{% else %}{% translate "Activar" %}{% endif %}</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </table>
+          <form method="post" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <input type="hidden" name="accion" value="crear_concepto">
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold">{% translate "Concepto" %}</label>
+              <input type="text" name="nombre" class="form-control form-control-sm" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label small fw-semibold">{% translate "Tipo" %}</label>
+              <select name="tipo" class="form-select form-select-sm">
+                {% for valor, etiqueta in tipo_choices %}<option value="{{ valor }}">{{ etiqueta }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label small fw-semibold">{% translate "Costo asociado" %}</label>
+              <select name="origen_costo" class="form-select form-select-sm">
+                {% for valor, etiqueta in origen_choices %}<option value="{{ valor }}">{{ etiqueta }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-success btn-sm">{% translate "Agregar concepto" %}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

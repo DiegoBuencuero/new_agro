@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block content %}
+<div class="container-fluid py-3 px-4" style="max-width:1100px">
+  <h5 class="fw-bold mb-1">
+    <i class="mdi mdi-handshake-outline me-1"></i>
+    {% if sociedad %}{% translate "Editar sociedad" %}{% else %}{% translate "Nueva sociedad" %}{% endif %}
+  </h5>
+  <p class="text-muted small mb-4">{% translate "Cada concepto tiene que sumar 100% entre los socios. Se puede cargar en porcentaje (48 / 52) o en fracción (0,48 / 0,52). Un concepto que no aplica se deja vacío." %}</p>
+
+  {% if messages %}
+  <div class="mb-4">
+    {% for msg in messages %}
+    <div class="alert {{ msg.tags }} alert-dismissible fade show d-flex align-items-center" role="alert">
+        <i class="mdi
+            {% if 'success' in msg.tags %}mdi-check-circle
+            {% elif 'danger' in msg.tags %}mdi-alert-circle
+            {% elif 'warning' in msg.tags %}mdi-alert
+            {% else %}mdi-information{% endif %}
+            me-2"></i>
+        <div>{{ msg }}</div>
+        <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" id="form-sociedad">
+    {% csrf_token %}
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body row g-3">
+        <div class="col-md-5">
+          <label class="form-label small fw-semibold">{% translate "Nombre" %}</label>
+          <input type="text" name="nombre" class="form-control" value="{{ datos.nombre }}" required
+                 placeholder="{% translate 'Ej.: Soja Campo Norte con Pérez' %}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">{% translate "Campaña" %}</label>
+          <select name="campana" id="sel-campana" class="form-select" required>
+            {% for c in campanas %}
+            <option value="{{ c.id }}" {% if c.id == datos.campana %}selected{% endif %}>{{ c.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 d-flex align-items-end">
+          <label class="d-flex align-items-center gap-2 small mb-2" for="switch-activa" style="cursor:pointer">
+            <input type="checkbox" name="activa" value="1" id="switch-activa"
+                   style="position:static; margin:0; width:1.1em; height:1.1em" {% if datos.activa %}checked{% endif %}>
+            {% translate "Sociedad activa" %}
+          </label>
+        </div>
+        <div class="col-12">
+          <label class="form-label small fw-semibold">{% translate "Observaciones" %}</label>
+          <textarea name="observaciones" class="form-control" rows="2">{{ datos.observaciones }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CICLOS ── -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h6 class="text-muted mb-3">{% translate "Ciclos / lotes sembrados en sociedad" %}</h6>
+        <div class="row g-2" id="lista-ciclos">
+          {% for ciclo in ciclos %}
+          <div class="col-md-4 ciclo-item" data-campana="{{ ciclo.campana_id }}">
+            <label class="d-flex align-items-center gap-2 small mb-0" for="ciclo-{{ ciclo.id }}" style="cursor:pointer">
+              <input type="checkbox" name="ciclos" value="{{ ciclo.id }}" id="ciclo-{{ ciclo.id }}"
+                     style="position:static; margin:0; width:1.1em; height:1.1em" {% if ciclo.id in ciclos_sel %}checked{% endif %}>
+              <span>{{ ciclo.nombre_lote }} <span class="text-muted">· {{ ciclo.campo.nombre }} · {{ ciclo.cultivo.nombre }} · {{ ciclo.superficie_ha }} ha</span></span>
+            </label>
+          </div>
+          {% endfor %}
+          <div class="col-12 small text-muted" id="sin-ciclos" style="display:none">
+            {% translate "No hay ciclos libres en esta campaña." %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GRILLA DE PARTICIPACIONES ── -->
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="text-muted mb-0">{% translate "Participación de cada socio (%)" %}</h6>
+          <a href="{% url 'vista_lista_sociedades' %}" class="small">{% translate "Agregar socios o conceptos" %}</a>
+        </div>
+        {% if grilla %}
+        <div class="table-responsive">
+          <table class="table table-sm align-middle" id="tabla-pct">
+            <thead>
+              <tr>
+                <th style="width:40px"></th>
+                <th>{% translate "Socio" %}</th>
+                {% for c in conceptos %}
+                <th class="text-center" style="min-width:110px">
+                  {{ c.nombre }}
+                  <div class="fw-normal small text-muted">{% if c.tipo == 'REP' %}{% translate "reparto" %}{% else %}{% translate "aporte" %}{% endif %}</div>
+                </th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for fila in grilla %}
+              <tr data-socio="{{ fila.socio.id }}">
+                <td><input class="chk-socio" style="position:static; margin:0; width:1.1em; height:1.1em; cursor:pointer" type="checkbox" name="socios" value="{{ fila.socio.id }}" {% if fila.incluido %}checked{% endif %}></td>
+                <td class="small">{{ fila.socio.nombre }}{% if fila.socio.es_propia %} <span class="badge bg-success-subtle text-success">{% translate "propia" %}</span>{% endif %}</td>
+                {% for celda in fila.celdas %}
+                <td>
+                  <input type="text" inputmode="decimal" name="{{ celda.name }}" value="{{ celda.valor }}"
+                         class="form-control form-control-sm text-end inp-pct" data-concepto="{{ celda.concepto.id }}">
+                </td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td></td>
+                <td class="small fw-semibold">{% translate "Total" %}</td>
+                {% for c in conceptos %}
+                <td class="text-end small fw-semibold total-pct" data-concepto="{{ c.id }}">–</td>
+                {% endfor %}
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-muted small">
+          {% translate "Primero cargue los socios." %}
+          <a href="{% url 'vista_lista_sociedades' %}">{% translate "Ir a socios" %}</a>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-success">{% translate "Guardar" %}</button>
+      <a href="{% url 'vista_lista_sociedades' %}" class="btn btn-outline-secondary">{% translate "Cancelar" %}</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block custom_js %}
+<script>
+(function () {
+    // ciclos: mostrar solo los de la campaña elegida
+    var selCampana = document.getElementById('sel-campana');
+    function filtrarCiclos() {
+        var visibles = 0;
+        document.querySelectorAll('.ciclo-item').forEach(function (el) {
+            var ok = el.dataset.campana === selCampana.value;
+            el.style.display = ok ? '' : 'none';
+            if (!ok) { el.querySelector('input').checked = false; } else { visibles++; }
+        });
+        document.getElementById('sin-ciclos').style.display = visibles ? 'none' : '';
+    }
+    selCampana.addEventListener('change', filtrarCiclos);
+    filtrarCiclos();
+
+    // grilla: habilitar filas de socios incluidos y mostrar el total por concepto
+    function num(v) { v = (v || '').replace(',', '.').trim(); return v === '' ? null : parseFloat(v); }
+    function recalcular() {
+        document.querySelectorAll('#tabla-pct tbody tr').forEach(function (tr) {
+            var incluido = tr.querySelector('.chk-socio').checked;
+            tr.querySelectorAll('.inp-pct').forEach(function (inp) { inp.disabled = !incluido; });
+            tr.classList.toggle('text-muted', !incluido);
+        });
+        document.querySelectorAll('.total-pct').forEach(function (td) {
+            var total = 0, hay = false, fraccion = true;
+            document.querySelectorAll('.inp-pct[data-concepto="' + td.dataset.concepto + '"]:not(:disabled)').forEach(function (inp) {
+                var v = num(inp.value);
+                if (v !== null && !isNaN(v)) { total += v; hay = true; if (v > 1) { fraccion = false; } }
+            });
+            if (hay && fraccion && Math.abs(total - 1) < 0.0001) { total = 100; }
+            td.textContent = hay ? total.toFixed(2) + '%' : '–';
+            td.classList.toggle('text-success', hay && Math.abs(total - 100) < 0.005);
+            td.classList.toggle('text-danger', hay && Math.abs(total - 100) >= 0.005);
+        });
+    }
+    document.querySelectorAll('.chk-socio, .inp-pct').forEach(function (el) {
+        el.addEventListener('input', recalcular);
+        el.addEventListener('change', recalcular);
+    });
+    recalcular();
+})();
+</script>
+{% endblock %}

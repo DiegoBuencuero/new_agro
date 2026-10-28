@@ -494,12 +494,16 @@ class ActividadInsumoForm(BaseForm):
 
 class ActividadInsumoBaseFormSet(BaseInlineFormSet):
 
-    def __init__(self, *args, superficie=None, **kwargs):
+    def __init__(self, *args, superficie=None, permite_sin_stock=False, **kwargs):
         self.superficie = superficie or 1
+        self.permite_sin_stock = permite_sin_stock
         super().__init__(*args, **kwargs)
 
     def clean(self):
         super().clean()
+
+        if self.permite_sin_stock:
+            return
 
         for form in self.forms:
             cd = form.cleaned_data

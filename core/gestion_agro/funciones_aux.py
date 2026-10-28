@@ -367,7 +367,7 @@ def obtener_capas_stock(producto, unidad, metodo="FIFO"):
 
     return capas
 
-def calcular_costo_salida(producto, cantidad_salida, unidad, metodo="FIFO"):
+def calcular_costo_salida(producto, cantidad_salida, unidad, metodo="FIFO", precio_faltante=None):
     cantidad_salida = Decimal(cantidad_salida)
     capas = obtener_capas_stock(producto, unidad, metodo=metodo)
 
@@ -404,7 +404,18 @@ def calcular_costo_salida(producto, cantidad_salida, unidad, metodo="FIFO"):
         pendiente -= consumir
 
     if pendiente > 0:
-        raise ValueError("Stock insuficiente para realizar la salida.")
+        # precio_faltante solo llega si la empresa permite aplicar insumos sin stock
+        if precio_faltante is None:
+            raise ValueError("Stock insuficiente para realizar la salida.")
+        costo_parcial = pendiente * precio_faltante
+        detalle.append({
+            "movimiento_entrada_id": None,
+            "cantidad": pendiente,
+            "precio_unitario": precio_faltante,
+            "costo_parcial": costo_parcial,
+        })
+        costo_total += costo_parcial
+        pendiente = Decimal("0")
 
     precio_promedio = (
         costo_total / cantidad_salida if cantidad_salida > 0 else Decimal("0")
@@ -436,7 +447,17 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa):
         for insumo in insumos:
             if insumo.producto:
                 cantidad = insumo.dosis * superficie
-                algo = calcular_costo_salida(insumo.producto, cantidad, insumo.um, metodo=metodo)
+                precio_faltante = None
+                if empresa.permite_sin_stock:
+                    precio_faltante = convertir_unidad_precio(
+                        insumo.producto.precio or Decimal("0"), insumo.producto.unidad_base, insumo.um,
+                    )
+                    if precio_faltante is None:
+                        raise ValueError(
+                            _("Falta conversión de unidad: %(origen)s → %(destino)s. Configurala en el sistema antes de continuar.")
+                            % {"origen": insumo.producto.unidad_base, "destino": insumo.um}
+                        )
+                algo = calcular_costo_salida(insumo.producto, cantidad, insumo.um, metodo=metodo, precio_faltante=precio_faltante)
                 MovimientoStock.objects.create(
                     producto=insumo.producto,
                     tipo="SALIDA",

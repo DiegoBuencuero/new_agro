@@ -111,6 +111,12 @@ class Empresa(models.Model):
     unidad_inspeccion_semilla = models.ForeignKey("Unidad", on_delete=models.CASCADE, null=True, blank=True, related_name="empresas_inspeccion_semilla", verbose_name=_("Unidad inspección semilla"),
         help_text=_("Unidad por defecto para cantidad aprobada en inspección (ej: semillas)"),
     )
+    usa_sociedades = models.BooleanField(default=False, verbose_name=_("Usa siembra en sociedad"),
+        help_text=_("Habilita la carga de socios, aportes y reparto de rendimiento por ciclo"),
+    )
+    permite_sin_stock = models.BooleanField(default=False, verbose_name=_("Permitir aplicar insumos sin stock"),
+        help_text=_("Las actividades se guardan aunque el insumo no tenga stock; el faltante se valoriza al precio del producto"),
+    )
 
 class Unidad(models.Model):
     nombre        = models.CharField(max_length=50, verbose_name=_("Nombre"))

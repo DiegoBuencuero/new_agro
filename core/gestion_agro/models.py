@@ -197,6 +197,10 @@ class CicloAgricola(models.Model):
     fecha_inicio  = models.DateField()
     fecha_fin     = models.DateField(null=True, blank=True)
     activa        = models.BooleanField(default=True)
+    sociedad      = models.ForeignKey(
+        "Sociedad", on_delete=models.SET_NULL,
+        null=True, blank=True, related_name="ciclos", verbose_name=_("Siembra en sociedad"),
+    )
 
     class Meta:
         verbose_name = _("Ciclo agrícola")
@@ -213,6 +217,10 @@ class CicloAgricola(models.Model):
         if self.cultivo_id and self.campo_id:
             if self.cultivo.empresa_id != self.campo.empresa_id:
                 errores["cultivo"] = _("El cultivo y el campo deben pertenecer a la misma empresa.")
+
+        if self.sociedad_id and self.campana_id:
+            if self.sociedad.campana_id != self.campana_id:
+                errores["sociedad"] = _("La sociedad debe ser de la misma campaña que el ciclo.")
 
         if self.fecha_inicio and self.fecha_fin:
             if self.fecha_fin < self.fecha_inicio:
@@ -665,3 +673,164 @@ class ProductoNormalizado(models.Model):
     
     def __str__(self):
         return f"{self.nombre} - {self.envase_desc}"
+
+
+# ── Siembra en sociedad ──────────────────────────────────────────────────────
+# Una Sociedad agrupa uno o más ciclos de una campaña sembrados entre varios
+# socios. Lo que aporta / recibe cada socio se define por ConceptoSociedad
+# (configurable por empresa): ej. Tierra 50/50, Insumos 50/50, Rendimiento 48/52.
+
+class Socio(models.Model):
+    empresa       = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="socios", verbose_name=_("Empresa"))
+    nombre        = models.CharField(max_length=255, verbose_name=_("Nombre / Razón social"))
+    identificador = models.CharField(max_length=30, blank=True, null=True, verbose_name=_("CUIT / CNPJ / CPF"))
+    es_propia     = models.BooleanField(default=False, verbose_name=_("Es la propia empresa"))
+    activo        = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _("Socio")
+        verbose_name_plural = _("Socios")
+        ordering = ["-es_propia", "nombre"]
+        unique_together = ("empresa", "nombre")
+
+    def __str__(self):
+        return self.nombre
+
+
+class ConceptoSociedad(models.Model):
+    TIPO_APORTE  = "APO"
+    TIPO_REPARTO = "REP"
+    TIPO_CHOICES = [
+        (TIPO_APORTE,  _("Aporte")),
+        (TIPO_REPARTO, _("Reparto")),
+    ]
+
+    # Costo calculado del ciclo al que se aplica el % (vacío = no tiene costo
+    # cargado en el sistema, ej. Tierra).
+    ORIGEN_CHOICES = [
+        ("",    _("Sin costo asociado")),
+        ("MO",  _("Costo de mano de obra")),
+        ("MAQ", _("Costo de maquinaria")),
+        ("INS", _("Costo de insumos")),
+    ]
+
+    DEFAULTS = [
+        # (nombre, tipo, origen_costo, orden)
+        ("Tierra",       TIPO_APORTE,  "",    10),
+        ("Mano de obra", TIPO_APORTE,  "MO",  20),
+        ("Maquinaria",   TIPO_APORTE,  "MAQ", 30),
+        ("Insumos",      TIPO_APORTE,  "INS", 40),
+        ("Rendimiento",  TIPO_REPARTO, "",    90),
+    ]
+
+    empresa      = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="conceptos_sociedad", verbose_name=_("Empresa"))
+    nombre       = models.CharField(max_length=60, verbose_name=_("Concepto"))
+    tipo         = models.CharField(max_length=3, choices=TIPO_CHOICES, default=TIPO_APORTE, verbose_name=_("Tipo"))
+    origen_costo = models.CharField(max_length=3, choices=ORIGEN_CHOICES, blank=True, default="", verbose_name=_("Costo asociado"))
+    orden        = models.PositiveSmallIntegerField(default=50, verbose_name=_("Orden"))
+    activo       = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _("Concepto de sociedad")
+        verbose_name_plural = _("Conceptos de sociedad")
+        ordering = ["orden", "nombre"]
+        unique_together = ("empresa", "nombre")
+
+    def __str__(self):
+        return self.nombre
+
+    def clean(self):
+        if self.tipo == self.TIPO_REPARTO and self.origen_costo:
+            raise ValidationError({"origen_costo": _("Un concepto de reparto no puede tener costo asociado.")})
+
+    @classmethod
+    def crear_defaults(cls, empresa):
+        """Crea los conceptos base la primera vez que la empresa usa sociedades."""
+        if cls.objects.filter(empresa=empresa).exists():
+            return
+        cls.objects.bulk_create([
+            cls(empresa=empresa, nombre=nombre, tipo=tipo, origen_costo=origen, orden=orden)
+            for nombre, tipo, origen, orden in cls.DEFAULTS
+        ])
+
+
+class Sociedad(models.Model):
+    empresa       = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name="sociedades", verbose_name=_("Empresa"))
+    campana       = models.ForeignKey(Campana, on_delete=models.PROTECT, related_name="sociedades", verbose_name=_("Campaña"))
+    nombre        = models.CharField(max_length=100, verbose_name=_("Nombre"))
+    observaciones = models.TextField(blank=True, null=True, verbose_name=_("Observaciones"))
+    activa        = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = _("Sociedad")
+        verbose_name_plural = _("Sociedades")
+        ordering = ["-campana__fecha_desde", "nombre"]
+        unique_together = ("empresa", "campana", "nombre")
+
+    def __str__(self):
+        return f"{self.nombre} – {self.campana}"
+
+    def clean(self):
+        if self.empresa_id and self.campana_id and self.campana.empresa_id != self.empresa_id:
+            raise ValidationError({"campana": _("La campaña debe pertenecer a la misma empresa.")})
+
+    def socios(self):
+        return Socio.objects.filter(participaciones__sociedad=self).distinct()
+
+    def matriz(self):
+        """{socio_id: {concepto_id: porcentaje}}"""
+        datos = {}
+        for p in self.participaciones.all():
+            datos.setdefault(p.socio_id, {})[p.concepto_id] = p.porcentaje
+        return datos
+
+    def reparto(self, costos=None, produccion=None):
+        """
+        Distribuye entre los socios los costos calculados del ciclo y la producción.
+
+        costos:     {"MO": Decimal, "MAQ": Decimal, "INS": Decimal}
+        produccion: cantidad total cosechada (o None si todavía no hay cosecha)
+
+        Devuelve una lista (una fila por socio) con el % de cada concepto, el
+        costo que le corresponde por concepto con costo asociado y su parte de
+        la producción según el/los concepto(s) de reparto.
+        """
+        costos = costos or {}
+        participaciones = list(self.participaciones.select_related("socio", "concepto"))
+        conceptos = sorted({p.concepto for p in participaciones}, key=lambda c: (c.orden, c.nombre))
+
+        filas = {}
+        for p in participaciones:
+            fila = filas.setdefault(p.socio_id, {
+                "socio": p.socio, "porcentajes": {}, "costo": Decimal("0"), "produccion": None,
+            })
+            fila["porcentajes"][p.concepto_id] = p.porcentaje
+            factor = p.porcentaje / Decimal("100")
+            if p.concepto.tipo == ConceptoSociedad.TIPO_APORTE and p.concepto.origen_costo:
+                fila["costo"] += (costos.get(p.concepto.origen_costo) or Decimal("0")) * factor
+            elif p.concepto.tipo == ConceptoSociedad.TIPO_REPARTO and produccion is not None:
+                fila["produccion"] = (fila["produccion"] or Decimal("0")) + produccion * factor
+
+        filas = sorted(filas.values(), key=lambda f: (not f["socio"].es_propia, f["socio"].nombre))
+        for fila in filas:
+            fila["celdas"] = [fila["porcentajes"].get(c.id) for c in conceptos]
+        return conceptos, filas
+
+
+class SociedadParticipacion(models.Model):
+    sociedad   = models.ForeignKey(Sociedad, on_delete=models.CASCADE, related_name="participaciones")
+    socio      = models.ForeignKey(Socio, on_delete=models.PROTECT, related_name="participaciones")
+    concepto   = models.ForeignKey(ConceptoSociedad, on_delete=models.PROTECT, related_name="participaciones")
+    porcentaje = models.DecimalField(max_digits=6, decimal_places=2, verbose_name=_("Porcentaje (%)"))
+
+    class Meta:
+        verbose_name = _("Participación en sociedad")
+        verbose_name_plural = _("Participaciones en sociedad")
+        unique_together = ("sociedad", "socio", "concepto")
+
+    def __str__(self):
+        return f"{self.sociedad} · {self.socio} · {self.concepto}: {self.porcentaje}%"
+
+    def clean(self):
+        if self.porcentaje is not None and not (Decimal("0") <= self.porcentaje <= Decimal("100")):
+            raise ValidationError({"porcentaje": _("El porcentaje debe estar entre 0 y 100.")})

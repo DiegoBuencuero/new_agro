@@ -76,6 +76,21 @@
               </div>
             </div>
 
+            <div class="row">
+              <div class="col-md-8">
+                <div class="form-group row">
+                  <label class="col-sm-4 col-form-label" for="{{ form.permite_sin_stock.id_for_label }}">{% translate "Permitir aplicar insumos sin stock" %}</label>
+                  <div class="col-sm-8">
+                    <div class="form-check form-switch d-flex align-items-center m-0 p-0" style="min-height:38px">
+                      {{ form.permite_sin_stock }}
+                    </div>
+                    <small class="text-muted">{% translate "Las actividades se guardan aunque el insumo no tenga stock. El faltante se valoriza al precio del producto." %}</small>
+                    {{ form.permite_sin_stock.errors }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <hr class="my-3">
 
             <!-- SEMILLA -->
@@ -88,6 +103,25 @@
                     {{ form.unidad_inspeccion_semilla }}
                     <small class="text-muted">{% translate "Unidad por defecto al registrar inspección" %}</small>
                     {{ form.unidad_inspeccion_semilla.errors }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr class="my-3">
+
+            <!-- SOCIEDADES -->
+            <p class="card-description">{% translate "Siembra en sociedad" %}</p>
+            <div class="row">
+              <div class="col-md-8">
+                <div class="form-group row">
+                  <label class="col-sm-4 col-form-label" for="{{ form.usa_sociedades.id_for_label }}">{% translate "Usa siembra en sociedad" %}</label>
+                  <div class="col-sm-8">
+                    <div class="form-check form-switch d-flex align-items-center m-0 p-0" style="min-height:38px">
+                      {{ form.usa_sociedades }}
+                    </div>
+                    <small class="text-muted">{% translate "Habilita la carga de socios, qué aporta cada uno y cómo se reparte el rendimiento de los ciclos." %}</small>
+                    {{ form.usa_sociedades.errors }}
                   </div>
                 </div>
               </div>

@@ -121,6 +121,56 @@
 
         </div>
 
+        {% if sociedad_filas %}
+        <!-- Siembra en sociedad -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="text-muted mb-0">
+                        <i class="mdi mdi-handshake-outline me-1"></i>{% translate "Siembra en sociedad" %}:
+                        <span class="fw-bold text-body">{{ ciclo.sociedad.nombre }}</span>
+                    </h6>
+                    <a href="{% url 'vista_editar_sociedad' id_sociedad=ciclo.sociedad_id %}" class="small">{% translate "Editar sociedad" %}</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm small mb-0">
+                        <thead>
+                            <tr>
+                                <th>{% translate "Socio" %}</th>
+                                {% for c in sociedad_conceptos %}<th class="text-end">{{ c.nombre }}</th>{% endfor %}
+                                <th class="text-end">{% translate "Costo a cargo" %}</th>
+                                <th class="text-end">{% translate "Costo/ha" %}</th>
+                                {% if rendimiento_ha is not None %}
+                                <th class="text-end">{% translate "Rend./ha" %}</th>
+                                <th class="text-end">{% translate "Producción total" %}</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for fila in sociedad_filas %}
+                            <tr>
+                                <td>{{ fila.socio.nombre }}{% if fila.socio.es_propia %} <span class="badge bg-success-subtle text-success">{% translate "propia" %}</span>{% endif %}</td>
+                                {% for pct in fila.celdas %}
+                                <td class="text-end">{% if pct is not None %}{{ pct|floatformat:2 }}%{% else %}–{% endif %}</td>
+                                {% endfor %}
+                                <td class="text-end fw-semibold">R$ {{ fila.costo|floatformat:0 }}</td>
+                                <td class="text-end">R$ {{ fila.costo_ha|floatformat:0 }}</td>
+                                {% if rendimiento_ha is not None %}
+                                <td class="text-end">{% if fila.produccion is not None %}{{ fila.produccion|floatformat:2 }}{% else %}–{% endif %}</td>
+                                <td class="text-end fw-semibold">{% if fila.produccion_total is not None %}{{ fila.produccion_total|floatformat:0 }}{% else %}–{% endif %}</td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if rendimiento_ha is None %}
+                <div class="small text-muted mt-2">{% translate "La producción por socio se calcula cuando se registre la cosecha." %}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <div class="d-flex justify-content-between align-items-center mb-4">
             <a href="{% url 'vista_lista_ciclos' %}" class="btn btn-outline-secondary">
                 <i class="mdi mdi-arrow-left me-1"></i>
