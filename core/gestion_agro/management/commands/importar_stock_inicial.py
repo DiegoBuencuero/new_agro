@@ -24,6 +24,7 @@ Uso:
     python manage.py importar_stock_inicial <archivo.csv> --empresa "Agroinnova" --reemplazar-stock --confirmar
 """
 import csv
+import re
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -52,8 +53,16 @@ class Command(BaseCommand):
         deposito = self._deposito(empresa, opts.get("deposito"))
         filas = self._leer(opts["archivo"])
 
-        self.stdout.write(f"Empresa: {empresa.nombre} · Depósito: {deposito.nombre}")
+        self.stdout.write(f"Empresa: {empresa.nombre} · Depósito destino: {deposito.nombre}")
+        otros = ", ".join(Deposito.objects.filter(empresa=empresa).exclude(id=deposito.id).values_list("nombre", flat=True))
+        if otros:
+            self.stdout.write(f"  (otros depósitos: {otros} — se elige con --deposito \"<nombre>\")")
         self.stdout.write("MODO PRUEBA: no se graba nada.\n" if not opts["confirmar"] else "GRABANDO.\n")
+
+        # se valida todo el CSV antes de borrar o grabar nada
+        for fila in filas:
+            fila["_categoria"] = self._categoria(fila)
+            fila["_unidad"] = self._unidad(fila["unidad"])
 
         with transaction.atomic():
             if opts["reemplazar_stock"]:
@@ -105,6 +114,31 @@ class Command(BaseCommand):
             raise CommandError("La empresa no tiene depósito de insumos por defecto; indique --deposito.")
         return empresa.deposito_insumos_default
 
+    CATEGORIA_NOMBRES = {
+        "HER": ["herbicida"],
+        "INS": ["insecticida", "inseticida"],
+        "FUN": ["fungicida"],
+        "FER": ["fertilizante"],
+        "SEM": ["semilla", "semente"],
+    }
+
+    def _categoria(self, fila):
+        codigo = fila["categoria"].strip()
+        categoria = CategoriaProducto.objects.filter(codigo__iexact=codigo).first()
+        if categoria:
+            return categoria
+        for nombre in self.CATEGORIA_NOMBRES.get(codigo.upper(), []):
+            categoria = (
+                CategoriaProducto.objects.filter(nombre__iexact=nombre).first()
+                or CategoriaProducto.objects.filter(nombre__istartswith=nombre[:6]).first()
+            )
+            if categoria:
+                return categoria
+        disponibles = ", ".join(f"{c.codigo}={c.nombre}" for c in CategoriaProducto.objects.all())
+        raise CommandError(
+            f"No existe la categoría '{codigo}' ({fila['producto']}). Categorías en esta base: {disponibles}"
+        )
+
     def _unidad(self, abreviatura):
         # si hay varias con la misma abreviatura (ej. kg / Kgs) se usa la más usada por productos
         unidad = (
@@ -133,27 +167,44 @@ class Command(BaseCommand):
                 raise CommandError(f"Línea {n} del CSV inválida: {e}")
         return filas
 
+    @staticmethod
+    def _codigo_automatico(nombre):
+        # mismo criterio que usa el sistema al crear productos desde facturas
+        return re.sub(r"[^A-Z0-9]", "", nombre.upper())[:20]
+
+    def _buscar_existente(self, empresa, fila):
+        insumos = Producto.objects.filter(empresa=empresa, producto_final=False).select_related("unidad_base")
+        codigos = [
+            (fila.get("codigo_existente") or "").strip(),
+            f"COOP-{fila['codigo_coop']}",
+            self._codigo_automatico(fila["producto"]),
+        ]
+        for codigo in filter(None, codigos):
+            producto = insumos.filter(codigo=codigo).first()
+            if producto:
+                return producto
+        return (
+            insumos.filter(nombre__iexact=fila["producto"]).first()
+            or insumos.filter(nombre__istartswith=fila["producto"]).first()
+        )
+
     def _producto(self, empresa, fila, resumen):
-        codigo = (fila.get("codigo_existente") or "").strip() or f"COOP-{fila['codigo_coop']}"
-        producto = Producto.objects.filter(empresa=empresa, codigo=codigo).select_related("unidad_base").first()
+        producto = self._buscar_existente(empresa, fila)
         if producto:
-            if producto.unidad_base_id != self._unidad(fila["unidad"]).id and \
+            if producto.unidad_base_id != fila["_unidad"].id and \
                     producto.unidad_base.abreviatura.lower() not in (fila["unidad"].lower(), "kgs" if fila["unidad"].lower() == "kg" else ""):
                 raise CommandError(
-                    f"{producto.nombre} (código {codigo}) está en {producto.unidad_base} y el CSV en {fila['unidad']}. "
+                    f"{producto.nombre} (código {producto.codigo}) está en {producto.unidad_base} y el CSV en {fila['unidad']}. "
                     "Corrija el CSV o el producto antes de cargar."
                 )
             return producto, "existente"
 
-        categoria = CategoriaProducto.objects.filter(codigo=fila["categoria"]).first()
-        if not categoria:
-            raise CommandError(f"No existe la categoría '{fila['categoria']}' ({fila['producto']}).")
         producto = Producto.objects.create(
             empresa=empresa,
-            codigo=codigo,
+            codigo=f"COOP-{fila['codigo_coop']}",
             nombre=fila["producto"],
-            categoria=categoria,
-            unidad_base=self._unidad(fila["unidad"]),
+            categoria=fila["_categoria"],
+            unidad_base=fila["_unidad"],
             maneja_stock=True,
             activo=True,
         )
