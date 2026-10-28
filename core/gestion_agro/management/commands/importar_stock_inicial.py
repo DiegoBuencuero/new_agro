@@ -14,9 +14,14 @@ Columnas del CSV:
 - valor_total:      valor del saldo de esa línea (no por envase)
 - codigo_existente: código de un producto ya cargado; si está vacío se usa / crea COOP-<codigo_coop>
 
+--reemplazar-stock borra antes TODOS los movimientos de stock de los insumos de la
+empresa (todo producto que no sea producto final / cosecha), así el stock queda
+exactamente igual al CSV. Los productos no se borran; el stock de cosecha no se toca.
+
 Uso:
     python manage.py importar_stock_inicial <archivo.csv> --empresa "Agroinnova"
     python manage.py importar_stock_inicial <archivo.csv> --empresa "Agroinnova" --confirmar
+    python manage.py importar_stock_inicial <archivo.csv> --empresa "Agroinnova" --reemplazar-stock --confirmar
 """
 import csv
 from datetime import datetime
@@ -39,6 +44,8 @@ class Command(BaseCommand):
         parser.add_argument("--empresa", required=True, help="Nombre o id de la empresa")
         parser.add_argument("--deposito", help="Nombre del depósito destino (default: depósito de insumos de la empresa)")
         parser.add_argument("--confirmar", action="store_true", help="Graba los cambios")
+        parser.add_argument("--reemplazar-stock", action="store_true",
+                            help="Borra antes todo el stock de insumos de la empresa (no toca la cosecha)")
 
     def handle(self, *args, **opts):
         empresa = self._empresa(opts["empresa"])
@@ -49,6 +56,8 @@ class Command(BaseCommand):
         self.stdout.write("MODO PRUEBA: no se graba nada.\n" if not opts["confirmar"] else "GRABANDO.\n")
 
         with transaction.atomic():
+            if opts["reemplazar_stock"]:
+                self._borrar_stock_insumos(empresa)
             resumen = self._procesar(empresa, deposito, filas)
             if not opts["confirmar"]:
                 transaction.set_rollback(True)
@@ -65,6 +74,19 @@ class Command(BaseCommand):
             self.stdout.write(self.style.SUCCESS("Listo."))
 
     # ── auxiliares ──────────────────────────────────────────────────────────
+
+    def _borrar_stock_insumos(self, empresa):
+        movimientos = MovimientoStock.objects.filter(producto__empresa=empresa, producto__producto_final=False)
+        self.stdout.write(self.style.WARNING("SE BORRA el stock actual de insumos:"))
+        saldos = {}
+        for m in movimientos.select_related("producto", "um"):
+            clave = (m.producto.nombre, m.um.abreviatura if m.um else "")
+            saldos[clave] = saldos.get(clave, Decimal("0")) + (m.cantidad if m.tipo == MovimientoStock.Tipo.ENTRADA else -m.cantidad)
+        for (nombre, um), saldo in sorted(saldos.items()):
+            self.stdout.write(f"    {nombre[:45]:45} saldo {saldo:>12} {um}")
+        total = movimientos.count()
+        movimientos.delete()
+        self.stdout.write(self.style.WARNING(f"    {total} movimientos borrados · el stock de cosecha no se toca\n"))
 
     def _empresa(self, valor):
         qs = Empresa.objects.filter(id=valor) if str(valor).isdigit() else Empresa.objects.filter(nombre__iexact=valor)
