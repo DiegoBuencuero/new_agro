@@ -432,7 +432,7 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa):
 
     with transaction.atomic():
         insumo_formset.instance = actividad
-        insumos = insumo_formset.save()  # ← ahora adentro del atomic
+        insumos = insumo_formset.save()
 
         superficie = actividad.fase.ciclo.superficie_ha
 
@@ -443,40 +443,58 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa):
         else:
             metodo = "FIFO"
 
+        # la salida va con la fecha de la actividad, no con la de carga
+        fecha_mov = timezone.make_aware(
+            datetime.combine(actividad.fecha, datetime.min.time())
+        )
+
         for insumo in insumos:
-            if insumo.producto:
-                cantidad = insumo.dosis * superficie
-                precio_faltante = None
-                if empresa.permite_sin_stock:
-                    precio_faltante = convertir_unidad_precio(
-                        insumo.producto.precio or Decimal("0"), insumo.producto.unidad_base, insumo.um,
-                    )
-                    if precio_faltante is None:
-                        raise ValueError(
-                            _("Falta conversión de unidad: %(origen)s → %(destino)s. Configurala en el sistema antes de continuar.")
-                            % {"origen": insumo.producto.unidad_base, "destino": insumo.um}
-                        )
-                algo = calcular_costo_salida(insumo.producto, cantidad, insumo.um, metodo=metodo, precio_faltante=precio_faltante)
-                MovimientoStock.objects.create(
-                    producto=insumo.producto,
-                    tipo="SALIDA",
-                    cantidad=cantidad,
-                    um=insumo.um,
-                    fecha=timezone.now(),
-                    actividad_item=insumo,
-                    precio_unitario=algo["precio_promedio"],
+            if not insumo.producto:
+                continue
+
+            # depósito: el del producto o, si no tiene, el de insumos de la empresa
+            deposito = insumo.producto.deposito_default or empresa.deposito_insumos_default
+            if deposito is None:
+                raise ValueError(
+                    _("El producto %(prod)s no tiene depósito asignado y la empresa no tiene "
+                      "depósito de insumos por defecto. Configúrelo antes de continuar.")
+                    % {"prod": insumo.producto}
                 )
-                insumo.cantidad_real = cantidad
-                insumo.costo_total   = algo["costo_total"]
-                insumo.costo_ha      = algo["costo_total"] / superficie if superficie else Decimal("0")
-                # auto-calcular densidad si es semilla con PMG
-                try:
-                    pmg = insumo.producto.datos_semilla.variedad.pmg
-                    if pmg and pmg > 0:
-                        insumo.densidad_siembra = round(insumo.dosis * Decimal("1000000") / pmg)
-                except Exception:
-                    pass
-                insumo.save()
+
+            cantidad = insumo.dosis * superficie
+            precio_faltante = None
+            if empresa.permite_sin_stock:
+                precio_faltante = convertir_unidad_precio(
+                    insumo.producto.precio or Decimal("0"), insumo.producto.unidad_base, insumo.um,
+                )
+                if precio_faltante is None:
+                    raise ValueError(
+                        _("Falta conversión de unidad: %(origen)s → %(destino)s. Configurala en el sistema antes de continuar.")
+                        % {"origen": insumo.producto.unidad_base, "destino": insumo.um}
+                    )
+
+            algo = calcular_costo_salida(insumo.producto, cantidad, insumo.um, metodo=metodo, precio_faltante=precio_faltante)
+            MovimientoStock.objects.create(
+                producto=insumo.producto,
+                tipo="SALIDA",
+                cantidad=cantidad,
+                um=insumo.um,
+                fecha=fecha_mov,
+                actividad_item=insumo,
+                actividad=actividad,
+                deposito_origen=deposito,
+                precio_unitario=algo["precio_promedio"],
+            )
+            insumo.cantidad_real = cantidad
+            insumo.costo_total   = algo["costo_total"]
+            insumo.costo_ha      = algo["costo_total"] / superficie if superficie else Decimal("0")
+            try:
+                pmg = insumo.producto.datos_semilla.variedad.pmg
+                if pmg and pmg > 0:
+                    insumo.densidad_siembra = round(insumo.dosis * Decimal("1000000") / pmg)
+            except Exception:
+                pass
+            insumo.save()
 
     return insumos
 
