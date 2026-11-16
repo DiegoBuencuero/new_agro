@@ -8,6 +8,7 @@ from django.http import JsonResponse
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from datetime import datetime
 from agro.models import ConversionUM, Unidad
 from gestion_agro.models import ( MovimientoStock, FaseAgricola, ActividadProductiva,
                                    ActividadInsumo, CamposInspeccion,
