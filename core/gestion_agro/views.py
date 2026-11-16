@@ -1,7 +1,6 @@
 import base64
 import os
 import re
-import tempfile
 from datetime import datetime
 from decimal import Decimal
 
@@ -21,8 +20,9 @@ from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST
 
 from agro.models import ConversionUM, Unidad
+from .lector_notas import leer_nota, ErrorLecturaNota
 from .funciones_aux import (
-    parse_nfe_pdf, br_to_float, _buscar_candidatos, _score, _detectar_contenido_unidad,
+    br_to_float, _buscar_candidatos, _score, _detectar_contenido_unidad,
     convertir_unidad, registrar_actividad_aux, obtener_valores_costos,
 )
 from gestion_agro.forms import (
@@ -2195,12 +2195,8 @@ def vista_procesar_pdf_factura(request):
 
     pdf_content = pdf_file.read()
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-        tmp.write(pdf_content)
-        tmp_path = tmp.name
-
     try:
-        datos = parse_nfe_pdf(tmp_path)
+        datos = leer_nota(pdf_content, pdf_file.name)
 
         if not datos.get("items"):
             messages.error(request, _("No se encontraron productos en la factura."))
@@ -2224,6 +2220,8 @@ def vista_procesar_pdf_factura(request):
             "items": datos["items"],
             "nombre_archivo": pdf_file.name,
             "proveedor_data": datos.get("proveedor"),
+            "proveedor_cnpj": datos.get("proveedor_cnpj", ""),
+            "chave_acesso": datos.get("chave_acesso", ""),
             "datos_factura": {
                 "numero_factura": datos.get("numero_nfe"),
                 "fecha_emision": fecha_html,
@@ -2234,13 +2232,14 @@ def vista_procesar_pdf_factura(request):
         }
         return redirect("vista_revisar_factura")
 
+    except ErrorLecturaNota as e:
+        messages.error(request, str(e))
+        return redirect("vista_cargar_factura")
+
     except Exception as e:
         messages.error(request, _("Error procesando factura: %(error)s") % {"error": str(e)})
         return redirect("vista_cargar_factura")
 
-    finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)
 
 def _br_to_float(valor):
     if not valor:
@@ -2269,13 +2268,18 @@ def vista_revisar_factura(request):
 
     # ── Proveedor ────────────────────────────────────────────────────────
     nombre    = (proveedor_data or "").upper()[:255] or "PROVEEDOR SIN IDENTIFICAR"
-    documento = re.sub(r"[^\d]", "", proveedor_data or "") or "00000000000"
+    documento = factura_temp.get("proveedor_cnpj") or ""
 
-    proveedor_obj, _creado = Proveedor.objects.get_or_create(
-        empresa=empresa,
-        razon_social=nombre,
-        defaults={"identificador": documento},
-    )
+    # primero por CNPJ (no cambia aunque la razón social venga escrita distinto)
+    proveedor_obj = None
+    if documento:
+        proveedor_obj = Proveedor.objects.filter(empresa=empresa, identificador=documento).first()
+    if proveedor_obj is None:
+        proveedor_obj, _creado = Proveedor.objects.get_or_create(
+            empresa=empresa,
+            razon_social=nombre,
+            defaults={"identificador": documento or None},
+        )
     request.session["proveedor_seleccionado"] = proveedor_obj.id
 
     # ── Formulario cabecera ───────────────────────────────────────────────
