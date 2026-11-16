@@ -3,12 +3,12 @@ from django.utils.translation import gettext_lazy as _
 import re
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
-import pdfplumber
 from typing import Any, Dict, List, Optional, Tuple
 from django.http import JsonResponse
 from django.db import transaction
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from datetime import datetime
 from agro.models import ConversionUM, Unidad
 from gestion_agro.models import ( MovimientoStock, FaseAgricola, ActividadProductiva,
                                    ActividadInsumo, CamposInspeccion,
@@ -433,7 +433,7 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa):
 
     with transaction.atomic():
         insumo_formset.instance = actividad
-        insumos = insumo_formset.save()  # ← ahora adentro del atomic
+        insumos = insumo_formset.save()
 
         superficie = actividad.fase.ciclo.superficie_ha
 
@@ -444,40 +444,58 @@ def guardar_insumos_y_stock(actividad, tipo, insumo_formset, empresa):
         else:
             metodo = "FIFO"
 
+        # la salida va con la fecha de la actividad, no con la de carga
+        fecha_mov = timezone.make_aware(
+            datetime.combine(actividad.fecha, datetime.min.time())
+        )
+
         for insumo in insumos:
-            if insumo.producto:
-                cantidad = insumo.dosis * superficie
-                precio_faltante = None
-                if empresa.permite_sin_stock:
-                    precio_faltante = convertir_unidad_precio(
-                        insumo.producto.precio or Decimal("0"), insumo.producto.unidad_base, insumo.um,
-                    )
-                    if precio_faltante is None:
-                        raise ValueError(
-                            _("Falta conversión de unidad: %(origen)s → %(destino)s. Configurala en el sistema antes de continuar.")
-                            % {"origen": insumo.producto.unidad_base, "destino": insumo.um}
-                        )
-                algo = calcular_costo_salida(insumo.producto, cantidad, insumo.um, metodo=metodo, precio_faltante=precio_faltante)
-                MovimientoStock.objects.create(
-                    producto=insumo.producto,
-                    tipo="SALIDA",
-                    cantidad=cantidad,
-                    um=insumo.um,
-                    fecha=timezone.now(),
-                    actividad_item=insumo,
-                    precio_unitario=algo["precio_promedio"],
+            if not insumo.producto:
+                continue
+
+            # depósito: el del producto o, si no tiene, el de insumos de la empresa
+            deposito = insumo.producto.deposito_default or empresa.deposito_insumos_default
+            if deposito is None:
+                raise ValueError(
+                    _("El producto %(prod)s no tiene depósito asignado y la empresa no tiene "
+                      "depósito de insumos por defecto. Configúrelo antes de continuar.")
+                    % {"prod": insumo.producto}
                 )
-                insumo.cantidad_real = cantidad
-                insumo.costo_total   = algo["costo_total"]
-                insumo.costo_ha      = algo["costo_total"] / superficie if superficie else Decimal("0")
-                # auto-calcular densidad si es semilla con PMG
-                try:
-                    pmg = insumo.producto.datos_semilla.variedad.pmg
-                    if pmg and pmg > 0:
-                        insumo.densidad_siembra = round(insumo.dosis * Decimal("1000000") / pmg)
-                except Exception:
-                    pass
-                insumo.save()
+
+            cantidad = insumo.dosis * superficie
+            precio_faltante = None
+            if empresa.permite_sin_stock:
+                precio_faltante = convertir_unidad_precio(
+                    insumo.producto.precio or Decimal("0"), insumo.producto.unidad_base, insumo.um,
+                )
+                if precio_faltante is None:
+                    raise ValueError(
+                        _("Falta conversión de unidad: %(origen)s → %(destino)s. Configurala en el sistema antes de continuar.")
+                        % {"origen": insumo.producto.unidad_base, "destino": insumo.um}
+                    )
+
+            algo = calcular_costo_salida(insumo.producto, cantidad, insumo.um, metodo=metodo, precio_faltante=precio_faltante)
+            MovimientoStock.objects.create(
+                producto=insumo.producto,
+                tipo="SALIDA",
+                cantidad=cantidad,
+                um=insumo.um,
+                fecha=fecha_mov,
+                actividad_item=insumo,
+                actividad=actividad,
+                deposito_origen=deposito,
+                precio_unitario=algo["precio_promedio"],
+            )
+            insumo.cantidad_real = cantidad
+            insumo.costo_total   = algo["costo_total"]
+            insumo.costo_ha      = algo["costo_total"] / superficie if superficie else Decimal("0")
+            try:
+                pmg = insumo.producto.datos_semilla.variedad.pmg
+                if pmg and pmg > 0:
+                    insumo.densidad_siembra = round(insumo.dosis * Decimal("1000000") / pmg)
+            except Exception:
+                pass
+            insumo.save()
 
     return insumos
 
@@ -729,216 +747,6 @@ def registrar_actividad_aux(
         "inicio_fase": inicio_fase,
     }
 
-
-RE_DATE    = re.compile(r"\b(\d{2}/\d{2}/\d{4})\b")
-RE_EMISSAO = re.compile(r"\bEMISS[ÃA]O\b\s*:?\s*(\d{2}/\d{2}/\d{4})", re.I)
-RE_CODE    = re.compile(r"^\d{6,8}$")
-RE_QTD_3DEC = re.compile(r"^\d{1,3}(?:\.\d{3})*,\d{3}$")
-RE_MONEY   = re.compile(r"^\d{1,3}(?:\.\d{3})*,\d{2,4}$")
-RE_FOOTER  = re.compile(r"^\s*(INFORMAÇÕES COMPLEMENTARES|RESERVADO AO FISCO|CÁLCULO DO ISSQN)\b", re.I)
-# Tokens de columnas fiscales NF-e que deben excluirse de la descripción
-RE_NCM        = re.compile(r"^\d{8}$")        # NCM/SH: 8 dígitos
-RE_NCM_CST    = re.compile(r"^\d{11}$")       # NCM+CST concatenados sin espacio
-RE_CST        = re.compile(r"^\d{3}$")        # CST: 3 dígitos
-RE_CFOP       = re.compile(r"^[1-7]\d{3}$")   # CFOP: 4 dígitos empezando con 1-7
-RE_FISCAL_JUNK = re.compile(r"^\*\)?$")       # líneas sueltas de cierre de lote
-# Texto que es solo unidad de medida expandida (ej: LITROS, QUILOS)
-RE_UNIT_LABEL = re.compile(r"^(LITROS?|QUILOS?|GRAMAS?|UNIDADES?|CAIXAS?|SACOS?)$", re.I)
-
-UNIT_SET = {"pc", "un", "kg", "lt", "l", "cx", "sc", "und", "pct", "bld", "gl", "fr", "tb", "cx"}
-
-
-# ── PDF parser ───────────────────────────────────────────────────────────────
-
-def group_words_by_line(words: List[Dict[str, Any]], y_tol: float = 3.0) -> List[Dict[str, Any]]:
-    rows: Dict[float, List[Dict[str, Any]]] = {}
-    for w in words:
-        y = round(w["top"] / y_tol) * y_tol
-        rows.setdefault(y, []).append(w)
-
-    out = []
-    for y in sorted(rows.keys()):
-        row = sorted(rows[y], key=lambda a: a["x0"])
-        text = " ".join(w["text"] for w in row)
-        out.append({"y": y, "words": row, "text": text})
-    return out
-
-def find_table_range(rows: List[Dict[str, Any]]) -> Tuple[int, int]:
-    start = -1
-    end = len(rows)
-
-    for i, r in enumerate(rows):
-        t = r["text"].upper()
-        if "DADOS DO PRODUTO" in t:
-            start = i + 1
-            break
-
-    if start == -1:
-        start = 0
-
-    for i in range(start, len(rows)):
-        t = rows[i]["text"]
-        if RE_FOOTER.match(t):
-            end = i
-            break
-
-    return start, end
-
-def extract_nfe_number_from_lines(lines: List[str]) -> Optional[str]:
-    for i, ln in enumerate(lines):
-        m = re.search(r"\bN[ºO]\b\s*(\d{4,10})\b", ln, re.I)
-        if m:
-            return m.group(1)
-
-        up = ln.upper().strip()
-        if up == "NF-E" or "NF-E" in up:
-            for j in range(i, min(i + 6, len(lines))):
-                m2 = re.search(r"\b(\d{4,10})\b", lines[j])
-                if m2 and "/" not in lines[j] and "-" not in lines[j]:
-                    window = " ".join(lines[i:j+1]).upper()
-                    if "Nº" in window or "N°" in window or "N " in window:
-                        return m2.group(1)
-
-    for ln in lines:
-        m = re.search(r"NUM\.\s*FAT\.\s*:\s*0*(\d{4,10})", ln, re.I)
-        if m:
-            return m.group(1)
-
-    return None
-
-_RE_PROV_JUNK = re.compile(
-    r"\b(RECEBEMOS|NF-E|NF\s*E|DANFE|OS PRODUTOS|SERVIÇOS CONSTANTES|DA NOTA FISCAL|INDICADA AO LADO)\b",
-    re.I,
-)
-
-def extract_provider_from_lines(lines: List[str]) -> Optional[str]:
-    for i, ln in enumerate(lines):
-        up = ln.strip().upper()
-        # Línea exacta "RECEBEMOS" → buscar la siguiente
-        if up == "RECEBEMOS":
-            for j in range(i + 1, min(i + 6, len(lines))):
-                cand = lines[j].strip()
-                if len(cand) >= 20 and any(ch.isalpha() for ch in cand):
-                    if "PRODUTOS" in cand.upper() or "SERVIÇOS" in cand.upper():
-                        continue
-                    return cand
-        # Línea que mezcla "RECEBEMOS" con el nombre del proveedor
-        if "RECEBEMOS" in up and len(up) > 15:
-            cleaned = _RE_PROV_JUNK.sub("", ln).strip(" -|")
-            cleaned = re.sub(r"\s{2,}", " ", cleaned).strip()
-            if len(cleaned) >= 15:
-                return cleaned
-
-    for ln in lines:
-        if "COOPERATIVA" in ln.upper() and len(ln.strip()) >= 20:
-            cleaned = _RE_PROV_JUNK.sub("", ln).strip(" -|")
-            return re.sub(r"\s{2,}", " ", cleaned).strip()
-
-    return None
-
-def extract_emission_date(full_text: str) -> Optional[str]:
-    m = RE_EMISSAO.search(full_text)
-    return m.group(1) if m else None
-
-def parse_item_row(tokens: List[str]) -> Optional[Dict[str, Any]]:
-    if not tokens or not RE_CODE.match(tokens[0]):
-        return None
-
-    codigo = tokens[0]
-
-    unit_idx = None
-    for i in range(1, len(tokens) - 1):
-        if tokens[i].lower() in UNIT_SET and RE_QTD_3DEC.match(tokens[i + 1]):
-            unit_idx = i
-            break
-
-    if unit_idx is None:
-        return None
-
-    # Filtrar tokens fiscales (NCM, CST, CFOP) de la descripción
-    desc_tokens = []
-    for t in tokens[1:unit_idx]:
-        if RE_NCM.match(t) or RE_NCM_CST.match(t) or RE_CST.match(t) or RE_CFOP.match(t):
-            continue
-        desc_tokens.append(t)
-
-    descricao  = " ".join(desc_tokens).strip()
-    unidade    = tokens[unit_idx]
-    quantidade = tokens[unit_idx + 1]
-
-    right  = tokens[unit_idx + 2:]
-    monies = [t for t in right if RE_MONEY.match(t)]
-    v_unit  = monies[0] if len(monies) >= 1 else None
-    v_total = monies[1] if len(monies) >= 2 else None
-
-    return {
-        "codigo":    codigo,
-        "descricao": descricao,
-        "unidade":   unidade,
-        "quantidade": quantidade,
-        "v_unit":    v_unit,
-        "v_total":   v_total,
-    }
-
-def parse_nfe_pdf(pdf_path: str) -> Dict[str, Any]:
-    with pdfplumber.open(pdf_path) as pdf:
-        page = pdf.pages[0]
-
-        full_text = page.extract_text() or ""
-        lines = [ln.strip() for ln in full_text.splitlines() if ln.strip()]
-
-        proveedor    = extract_provider_from_lines(lines)
-        numero_nfe   = extract_nfe_number_from_lines(lines)
-        fecha_emision = extract_emission_date(full_text)
-
-        words = page.extract_words(use_text_flow=False, keep_blank_chars=False)
-        rows  = group_words_by_line(words, y_tol=3.0)
-
-        start, end   = find_table_range(rows)
-        table_rows   = rows[start:end]
-
-        items: List[Dict[str, Any]] = []
-        current: Optional[Dict[str, Any]] = None
-
-        for r in table_rows:
-            tokens = [w["text"] for w in r["words"]]
-            text   = r["text"].strip()
-
-            if RE_FOOTER.match(text):
-                break
-
-            parsed = parse_item_row(tokens)
-            if parsed:
-                if current:
-                    items.append(current)
-                current = parsed
-                continue
-
-            if current:
-                up = text.upper()
-                if "(" in text and "**" in text:
-                    continue
-                if " LOTE:" in up or " SAFRA:" in up or " RENASEM:" in up:
-                    continue
-                if "IBPT" in up or "VAL APROX" in up or "FONTE:" in up:
-                    continue
-                if RE_FOOTER.match(text):
-                    break
-                if RE_UNIT_LABEL.match(text.strip()):
-                    continue
-                if RE_FISCAL_JUNK.match(text.strip()):
-                    continue
-                current["descricao"] = (current["descricao"] + " " + text).strip()
-
-        if current:
-            items.append(current)
-
-        return {
-            "proveedor":    proveedor,
-            "numero_nfe":   numero_nfe,
-            "fecha_emision": fecha_emision,
-            "items":        items,
-        }
 
  # ── Helpers de matching ──────────────────────────────────────────────────────
 
